@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
+import { canSubmitRecord } from '../lib/recordValidation';
 import type { ExperienceTag } from '../types';
 
 interface StructureResponse {
@@ -26,7 +27,7 @@ export function RecordPage() {
   const effectiveText = text || speech.transcript;
 
   async function handleSubmit() {
-    if (!effectiveText.trim()) return;
+    if (!canSubmitRecord(effectiveText)) return;
     setSaving(true);
     setError(null);
     setStatusMessage('저장 중...');
@@ -114,7 +115,7 @@ export function RecordPage() {
       {error && <p>{error}</p>}
       {statusMessage && <p>{statusMessage}</p>}
 
-      <button type="button" onClick={handleSubmit} disabled={saving || !effectiveText.trim()}>
+      <button type="button" onClick={handleSubmit} disabled={saving || !canSubmitRecord(effectiveText)}>
         기록하기
       </button>
     </div>

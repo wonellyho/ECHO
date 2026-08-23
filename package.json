@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "typecheck:api": "tsc -p tsconfig.api.json",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
@@ -28,6 +29,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vercel": "^59.5.0",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "vitest": "^4.1.11"
   }
 }

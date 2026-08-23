@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { filterEntries } from '../lib/entryFilter';
 import type { ExperienceTag } from '../types';
 
 const ALL_TAGS: ExperienceTag[] = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'];
@@ -46,11 +47,7 @@ export function EntriesPage() {
   }, []);
 
   // MVP 검색: 태그 필터 + 키워드 매칭. 추후 임베딩 기반 유사도 검색으로 고도화 예정 (CLAUDE.md 참고)
-  const filtered = entries.filter((e) => {
-    const matchesTag = !activeTag || e.tags.includes(activeTag);
-    const matchesQuery = !query.trim() || e.raw_text.includes(query.trim());
-    return matchesTag && matchesQuery;
-  });
+  const filtered = filterEntries(entries, activeTag, query);
 
   return (
     <div>
