@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callClaude, extractJson } from './_lib/anthropic.js';
+import { callLlmJson } from './_lib/llm.js';
 
 interface StarResult {
   situation: string;
@@ -42,13 +42,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const input = JSON.stringify(structured, null, 2);
 
-    const raw = await callClaude({
+    const { data: parsed } = await callLlmJson<StarResult>({
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: input }],
       maxTokens: 800,
     });
-
-    const parsed = extractJson<StarResult>(raw);
     res.status(200).json(parsed);
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : '알 수 없는 오류' });

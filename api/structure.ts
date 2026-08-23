@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callClaude, extractJson } from './_lib/anthropic.js';
+import { callLlmJson } from './_lib/llm.js';
 
 const VALID_TAGS = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'] as const;
 
@@ -47,13 +47,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    const raw = await callClaude({
+    const { data: parsed } = await callLlmJson<StructureResult>({
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: raw_text }],
       maxTokens: 800,
     });
-
-    const parsed = extractJson<StructureResult>(raw);
     parsed.tags = (parsed.tags ?? []).filter((t) => (VALID_TAGS as readonly string[]).includes(t));
 
     res.status(200).json(parsed);

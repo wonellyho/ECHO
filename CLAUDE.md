@@ -14,16 +14,17 @@
 - **백엔드/DB/Auth**: Supabase (Postgres + Auth 이메일/비번 + RLS). 스키마는 `supabase/schema.sql`.
 - **서버 로직**: Vercel Functions (`/api/*.ts`, `@vercel/node`). API 키(ANTHROPIC_API_KEY)는 반드시 여기서만 사용하고
   프론트(Vite `VITE_*` env)로 절대 노출하지 않는다.
-- **LLM**: Anthropic Claude API. 비용 최소화가 우선순위이므로 구조화/태깅/STAR 변환처럼
-  정형화된 짧은 작업은 기본적으로 Haiku급 저비용 모델을 사용한다(`api/_lib/anthropic.ts`의 `CHEAP_MODEL`).
-  더 비싼 모델로 올릴지는 품질 이슈가 실제로 생겼을 때만 검토.
+- **LLM**: `api/_lib/llm.ts`의 `callLlmJson()`이 단일 진입점. 기본은 **OpenRouter 무료 모델**(비용 0원)로 시도하고,
+  실패(요청 제한/네트워크 오류/JSON 파싱 실패)하면 **Claude Haiku로 자동 폴백**한다. `OPENROUTER_API_KEY`가 없으면
+  바로 Claude로 간다. 무료 모델 라인업은 자주 바뀌므로 `OPENROUTER_MODEL` 환경변수로 override 가능
+  (기본값은 코드 내 `DEFAULT_OPENROUTER_MODEL`, 주기적으로 openrouter.ai/models에서 max_price=0으로 확인 필요).
 - **STT(음성 인식)**: 1차는 브라우저 내장 Web Speech API(무료)로 시작. 정확도 문제가 실제로 확인되면
   그때 Whisper 등 유료 STT 도입을 검토한다. 지금 단계에서 미리 붙이지 않는다.
 
 ## 폴더 구조
 ```
 /api                  Vercel 서버리스 함수 (LLM 호출 등 키가 필요한 로직만)
-  /_lib/anthropic.ts   Claude API 호출 공통 헬퍼
+  /_lib/llm.ts         LLM 호출 공통 헬퍼 (OpenRouter 무료 모델 → Claude Haiku 폴백)
   structure.ts         기록 → 상황/역할/갈등/행동/결과/감정/이유 + 태그 구조화
   star.ts               구조화 데이터 → STAR 변환
   (예정) insights.ts     반복 기록 → 에너지원/소진요인 요약(근거 entry_id 포함)
@@ -51,7 +52,9 @@ PRD_ECHO.md            원본 요구사항 (변경 금지, 항상 최신 기준�
 
 ## 환경 변수
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` — 프론트 (`.env.local`)
-- `ANTHROPIC_API_KEY` — Vercel 서버리스 함수 전용, Vercel 프로젝트 환경변수로만 설정 (로컬은 `.env` 또는 `vercel env pull`)
+- `ANTHROPIC_API_KEY` — Vercel 서버리스 함수 전용, OpenRouter 실패 시 폴백용 (Vercel 프로젝트 환경변수로만 설정)
+- `OPENROUTER_API_KEY` — Vercel 서버리스 함수 전용, 무료 모델 1차 시도용
+- `OPENROUTER_MODEL` (선택) — 기본 무료 모델을 바꾸고 싶을 때만 설정
 
 ## 일정 (Day 14 데모 기준)
 1~4일차 셋업/인증/기록 입력, 5~7일차 구조화 파이프라인, 8~9일차 음성 입력,
