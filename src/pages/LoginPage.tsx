@@ -22,23 +22,17 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-slate-50 px-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold text-slate-900">ECHO</h1>
-        <p className="mt-1 text-sm text-slate-500">경험을 기록하고, 나를 발견하다.</p>
-      </div>
+    <div>
+      <h1>ECHO</h1>
+      <p>경험을 기록하고, 나를 발견하다.</p>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-3 rounded-2xl bg-white p-6 shadow-sm"
-      >
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
           placeholder="이메일"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none"
         />
         <input
           type="password"
@@ -47,14 +41,9 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
           minLength={6}
-          className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-violet-400 focus:outline-none"
         />
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-1 rounded-lg bg-violet-600 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-        >
+        {error && <p>{error}</p>}
+        <button type="submit" disabled={loading}>
           {loading ? '로그인 중...' : '로그인'}
         </button>
       </form>

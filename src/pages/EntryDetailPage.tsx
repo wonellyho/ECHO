@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import type { EntryStructured, ExperienceTag, StarConversion } from '../types';
-import { TAG_COLORS } from '../lib/tagColors';
 
 const STRUCTURED_FIELDS: { key: keyof EntryStructured; label: string }[] = [
   { key: 'situation', label: '상황' },
@@ -104,101 +103,81 @@ export function EntryDetailPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-slate-900">기록 상세</h2>
+    <div>
+      <h2>기록 상세</h2>
 
-      <div className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <p className="text-sm text-slate-800">{rawText}</p>
+      <div>
+        <p>{rawText}</p>
         {tags.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div>
             {tags.map((tag) => (
-              <span
-                key={tag}
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${TAG_COLORS[tag]}`}
-              >
-                #{tag}
-              </span>
+              <span key={tag}>#{tag}</span>
             ))}
           </div>
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-900">구조화 결과</h3>
+      <div>
+        <div>
+          <h3>구조화 결과</h3>
           {structured &&
             (editing ? (
-              <button
-                type="button"
-                onClick={saveEdit}
-                disabled={savingEdit}
-                className="text-xs font-medium text-violet-700 disabled:opacity-50"
-              >
+              <button type="button" onClick={saveEdit} disabled={savingEdit}>
                 {savingEdit ? '저장 중...' : '저장'}
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={startEdit}
-                className="text-xs font-medium text-slate-500"
-              >
+              <button type="button" onClick={startEdit}>
                 수정
               </button>
             ))}
         </div>
 
         {structured ? (
-          <dl className="flex flex-col gap-3">
+          <dl>
             {STRUCTURED_FIELDS.map(({ key, label }) => (
               <div key={key}>
-                <dt className="text-xs font-semibold text-slate-500">{label}</dt>
+                <dt>{label}</dt>
                 {editing ? (
                   <textarea
                     value={draft[key] ?? ''}
                     onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
                     rows={2}
-                    className="mt-1 w-full resize-none rounded-lg border border-slate-200 p-2 text-sm focus:border-violet-400 focus:outline-none"
                   />
                 ) : (
-                  <dd className="mt-0.5 text-sm text-slate-800">{structured[key] ?? '-'}</dd>
+                  <dd>{structured[key] ?? '-'}</dd>
                 )}
               </div>
             ))}
           </dl>
         ) : (
-          <p className="text-sm text-slate-500">구조화 결과를 불러오는 중입니다...</p>
+          <p>구조화 결과를 불러오는 중입니다...</p>
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={handleStarConvert}
-        disabled={starLoading || !structured}
-        className="rounded-lg bg-violet-600 py-3 text-sm font-medium text-white disabled:opacity-50"
-      >
+      <button type="button" onClick={handleStarConvert} disabled={starLoading || !structured}>
         {starLoading ? '변환 중...' : star ? 'STAR로 다시 변환' : 'STAR로 변환'}
       </button>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p>{error}</p>}
 
       {star && (
-        <div className="rounded-xl border border-slate-200 p-4 shadow-sm">
-          <h3 className="mb-2 text-sm font-semibold text-slate-900">STAR</h3>
-          <dl className="flex flex-col gap-3">
+        <div>
+          <h3>STAR</h3>
+          <dl>
             <div>
-              <dt className="text-xs font-semibold text-slate-500">Situation</dt>
-              <dd className="mt-0.5 text-sm text-slate-800">{star.situation}</dd>
+              <dt>Situation</dt>
+              <dd>{star.situation}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold text-slate-500">Task</dt>
-              <dd className="mt-0.5 text-sm text-slate-800">{star.task}</dd>
+              <dt>Task</dt>
+              <dd>{star.task}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold text-slate-500">Action</dt>
-              <dd className="mt-0.5 text-sm text-slate-800">{star.action}</dd>
+              <dt>Action</dt>
+              <dd>{star.action}</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold text-slate-500">Result</dt>
-              <dd className="mt-0.5 text-sm text-slate-800">{star.result}</dd>
+              <dt>Result</dt>
+              <dd>{star.result}</dd>
             </div>
           </dl>
         </div>

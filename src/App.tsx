@@ -9,22 +9,18 @@ import { EntryDetailPage } from './pages/EntryDetailPage';
 function NavBar() {
   const location = useLocation();
 
-  const linkClass = (active: boolean) =>
-    `text-sm font-medium ${active ? 'text-violet-700' : 'text-slate-400'}`;
-
   return (
-    <nav className="fixed inset-x-0 bottom-0 mx-auto flex w-full max-w-[480px] items-center justify-around border-t border-slate-200 bg-white px-2 py-3">
-      <Link to="/" className={linkClass(location.pathname === '/')}>
+    <nav>
+      <Link to="/" aria-current={location.pathname === '/' ? 'page' : undefined}>
         기록
       </Link>
-      <Link to="/entries" className={linkClass(location.pathname.startsWith('/entries'))}>
+      <Link
+        to="/entries"
+        aria-current={location.pathname.startsWith('/entries') ? 'page' : undefined}
+      >
         내 경험
       </Link>
-      <button
-        type="button"
-        className="text-sm text-slate-400"
-        onClick={() => supabase.auth.signOut()}
-      >
+      <button type="button" onClick={() => supabase.auth.signOut()}>
         로그아웃
       </button>
     </nav>
@@ -35,11 +31,7 @@ export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center text-slate-500">
-        불러오는 중...
-      </div>
-    );
+    return <div>불러오는 중...</div>;
   }
 
   if (!user) {
@@ -51,8 +43,8 @@ export default function App() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-white">
-      <main className="flex-1 px-4 pt-6 pb-24">
+    <div>
+      <main>
         <Routes>
           <Route path="/" element={<RecordPage />} />
           <Route path="/entries" element={<EntriesPage />} />
