@@ -7,7 +7,7 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 
 // openrouter.ai/models 에서 max_price=0으로 필터링해 현재 사용 가능한 무료 모델을 확인하고
 // 필요하면 Vercel 환경변수 OPENROUTER_MODEL로 덮어쓸 것 (무료 모델 라인업은 자주 바뀜).
-const DEFAULT_OPENROUTER_MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
+const DEFAULT_OPENROUTER_MODEL = 'z-ai/glm-5.2:free';
 const CLAUDE_FALLBACK_MODEL = 'claude-haiku-4-5-20251001';
 
 interface LlmMessage {
@@ -26,11 +26,26 @@ interface CallLlmResult<T> {
   provider: 'openrouter' | 'anthropic';
 }
 
-/** 응답에서 ```json ... ``` 또는 순수 JSON을 안전하게 파싱 */
+/**
+ * 응답에서 JSON을 안전하게 파싱한다. 우선순위:
+ * 1. ```json ... ``` 코드펜스
+ * 2. 응답 전체가 순수 JSON인 경우
+ * 3. reasoning 모델이 JSON 앞뒤에 설명 텍스트를 붙이는 경우 — 첫 '{'부터 마지막 '}'까지를 잘라 파싱
+ */
 function extractJson<T>(raw: string): T {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const jsonText = fenced ? fenced[1] : raw;
-  return JSON.parse(jsonText.trim()) as T;
+  if (fenced) return JSON.parse(fenced[1].trim()) as T;
+
+  try {
+    return JSON.parse(raw.trim()) as T;
+  } catch {
+    const start = raw.indexOf('{');
+    const end = raw.lastIndexOf('}');
+    if (start === -1 || end === -1 || end < start) {
+      throw new Error('LLM 응답에서 JSON을 찾을 수 없습니다.');
+    }
+    return JSON.parse(raw.slice(start, end + 1)) as T;
+  }
 }
 
 async function callOpenRouter(params: CallLlmParams): Promise<string> {
