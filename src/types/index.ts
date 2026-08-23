@@ -18,6 +18,7 @@ export interface EntryStructured {
   result: string | null;
   emotion: string | null;
   emotion_reason: string | null;
+  realization: string | null;
   status: 'pending' | 'done' | 'failed';
 }
 

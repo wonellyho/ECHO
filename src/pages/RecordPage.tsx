@@ -13,6 +13,7 @@ interface StructureResponse {
   result: string | null;
   emotion: string | null;
   emotion_reason: string | null;
+  realization: string | null;
   tags: ExperienceTag[];
 }
 
@@ -68,6 +69,7 @@ export function RecordPage() {
         result: structured.result,
         emotion: structured.emotion,
         emotion_reason: structured.emotion_reason,
+        realization: structured.realization,
         status: 'done',
       });
       if (structuredError) throw structuredError;

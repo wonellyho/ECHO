@@ -11,6 +11,7 @@ interface StructureResult {
   result: string | null;
   emotion: string | null;
   emotion_reason: string | null;
+  realization: string | null;
   tags: string[];
 }
 
@@ -31,6 +32,7 @@ const SYSTEM_PROMPT = `너는 대학생의 활동 경험 기록을 분석하는 
   "result": "결과",
   "emotion": "느낀 감정",
   "emotion_reason": "그 감정을 느낀 이유",
+  "realization": "이 경험에서 깨달은 점이나 배운 점 (기록에 명시적으로 드러나지 않으면 null)",
   "tags": ["태그1", "태그2"]
 }`;
 
