@@ -72,10 +72,17 @@ export function InsightsPage() {
       if (!res.ok) throw new Error('인사이트 생성에 실패했습니다.');
       const result = await res.json();
 
+      const validEntryIds = new Set(structuredRows.map((row) => row.entry_id));
+      const rowsToInsert = buildInsightRows(result, user.id, validEntryIds);
+      if (rowsToInsert.length === 0) {
+        setError('인사이트 재생성에 실패했습니다. 다시 시도해주세요.');
+        setLoading(false);
+        return;
+      }
+
       const { error: deleteError } = await supabase.from('insights').delete().eq('user_id', user.id);
       if (deleteError) throw deleteError;
 
-      const rowsToInsert = buildInsightRows(result, user.id);
       const { data: insertedRows, error: insertError } = await supabase
         .from('insights')
         .insert(rowsToInsert)

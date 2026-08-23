@@ -17,13 +17,25 @@ function NavBar() {
 
   return (
     <nav className="flex items-center gap-2 border-t border-slate-200 bg-white p-2">
-      <Link to="/" className={linkClass(location.pathname === '/')}>
+      <Link
+        to="/"
+        className={linkClass(location.pathname === '/')}
+        aria-current={location.pathname === '/' ? 'page' : undefined}
+      >
         기록
       </Link>
-      <Link to="/entries" className={linkClass(location.pathname.startsWith('/entries'))}>
+      <Link
+        to="/entries"
+        className={linkClass(location.pathname.startsWith('/entries'))}
+        aria-current={location.pathname.startsWith('/entries') ? 'page' : undefined}
+      >
         내 경험
       </Link>
-      <Link to="/insights" className={linkClass(location.pathname === '/insights')}>
+      <Link
+        to="/insights"
+        className={linkClass(location.pathname === '/insights')}
+        aria-current={location.pathname === '/insights' ? 'page' : undefined}
+      >
         패턴
       </Link>
       <button
