@@ -22,13 +22,14 @@ export function InsightsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [{ data: structuredRows }, { data: insightRows, error: insightError }] = await Promise.all([
+      const [{ data: structuredRows, error: structuredError }, { data: insightRows, error: insightError }] = await Promise.all([
         supabase.from('entries_structured').select('entry_id').eq('status', 'done'),
         supabase
           .from('insights')
           .select('id, type, summary, evidence_entry_ids')
           .order('created_at', { ascending: false }),
       ]);
+      if (structuredError) throw structuredError;
       if (insightError) throw insightError;
 
       setEntryCount(structuredRows?.length ?? 0);
@@ -85,6 +86,8 @@ export function InsightsPage() {
       setEnergizers(rows.filter((r) => r.type === 'energizer'));
       setDrainers(rows.filter((r) => r.type === 'drainer'));
     } catch (err) {
+      setEnergizers([]);
+      setDrainers([]);
       setError(err instanceof Error ? err.message : '인사이트 재생성에 실패했습니다.');
     } finally {
       setLoading(false);
