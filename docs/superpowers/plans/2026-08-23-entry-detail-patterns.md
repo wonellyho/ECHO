@@ -22,6 +22,11 @@
 
 ### Task 1: 임시 진단 로그 제거
 
+> **실행 시점 참고:** 이 태스크가 대상으로 하던 진단 로그(`[llm][diag]`, `[structure][diag]`)는 커밋된 적 없는
+> 로컬 미커밋 변경사항이었고, 실행 전 정리 과정에서 이미 버려졌다(`git checkout -- api/_lib/llm.ts api/structure.ts`).
+> 즉 `api/_lib/llm.ts`, `api/structure.ts` 현재 커밋 상태에 진단 로그가 없다. 이 태스크는 완료된 것으로 간주하고
+> 구현 서브에이전트를 붙이지 않는다 — 아래 단계는 기록용으로만 남긴다.
+
 **Files:**
 - Modify: `api/_lib/llm.ts`
 - Modify: `api/structure.ts`
