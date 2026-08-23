@@ -23,6 +23,7 @@ create table if not exists entries_structured (
   result text,
   emotion text,
   emotion_reason text,
+  realization text,
   status text not null default 'pending' check (status in ('pending', 'done', 'failed')),
   created_at timestamptz not null default now()
 );
