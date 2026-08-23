@@ -89,14 +89,19 @@ export function RecordPage() {
   }
 
   return (
-    <div className="record-page">
-      <h2>오늘의 경험을 남겨보세요</h2>
+    <div className="flex flex-col gap-4">
+      <h2 className="text-lg font-semibold text-slate-900">오늘의 경험을 남겨보세요</h2>
 
       {speech.isSupported && (
         <button
           type="button"
           onClick={speech.isRecording ? speech.stop : speech.start}
           disabled={saving}
+          className={`self-start rounded-full px-4 py-2 text-sm font-medium ${
+            speech.isRecording
+              ? 'bg-red-100 text-red-700'
+              : 'bg-violet-100 text-violet-700'
+          } disabled:opacity-50`}
         >
           {speech.isRecording ? '녹음 중지' : '🎙️ 음성으로 기록'}
         </button>
@@ -108,13 +113,19 @@ export function RecordPage() {
         onChange={(e) => setText(e.target.value)}
         rows={6}
         disabled={saving}
+        className="w-full resize-none rounded-xl border border-slate-200 p-3 text-sm focus:border-violet-400 focus:outline-none disabled:opacity-50"
       />
 
-      {speech.error && <p className="error">{speech.error}</p>}
-      {error && <p className="error">{error}</p>}
-      {statusMessage && <p className="status">{statusMessage}</p>}
+      {speech.error && <p className="text-sm text-red-500">{speech.error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
+      {statusMessage && <p className="text-sm text-slate-500">{statusMessage}</p>}
 
-      <button type="button" onClick={handleSubmit} disabled={saving || !effectiveText.trim()}>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={saving || !effectiveText.trim()}
+        className="rounded-lg bg-violet-600 py-3 text-sm font-medium text-white disabled:opacity-50"
+      >
         기록하기
       </button>
     </div>
