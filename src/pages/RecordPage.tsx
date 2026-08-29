@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
 import { useMicLevel } from '../lib/useMicLevel';
 import { VoiceWaveform } from '../components/VoiceWaveform';
+import { MicIcon, StopIcon } from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
 import type { ExperienceTag } from '../types';
 
@@ -308,7 +309,7 @@ export function RecordPage() {
             className="flex h-28 w-28 items-center justify-center rounded-full border border-slate-300 disabled:opacity-40"
           >
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-900">
-              <span className="h-6 w-6 rounded-sm bg-white" />
+              <MicIcon className="h-7 w-7 text-white" />
             </span>
           </button>
         </div>
@@ -368,7 +369,7 @@ export function RecordPage() {
               aria-label="녹음 정지"
               className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 shadow-lg"
             >
-              <span className="h-7 w-7 rounded-sm bg-white" />
+              <StopIcon className="h-7 w-7 rounded-sm bg-white" />
             </button>
           ) : (
             <button
@@ -377,7 +378,7 @@ export function RecordPage() {
               aria-label="다시 녹음"
               className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 text-[10px] text-white shadow-lg"
             >
-              <span className="h-6 w-6 rounded-sm bg-white" />
+              <MicIcon className="h-6 w-6 text-white" />
               다시
             </button>
           )}
