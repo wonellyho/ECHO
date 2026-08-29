@@ -318,12 +318,12 @@ export function RecordPage() {
 
   if (step === 'voice') {
     return (
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col px-4 py-6">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-100 via-rose-100 to-pink-200 px-4 py-6">
         <div className="flex items-center justify-between text-sm">
           <button
             type="button"
             onClick={cancelVoice}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600 hover:bg-slate-100"
+            className="rounded-full border border-white/60 bg-white/50 px-3 py-1.5 text-slate-700 hover:bg-white/70"
           >
             ← 뒤로
           </button>
@@ -334,7 +334,7 @@ export function RecordPage() {
         </div>
 
         <div className="mt-6">
-          <VoiceWaveform history={micLevel.history} />
+          <VoiceWaveform history={micLevel.history} barClassName="bg-white/90" />
         </div>
 
         <p className="mt-6 min-h-[3.5rem] whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-700">
@@ -343,21 +343,21 @@ export function RecordPage() {
         </p>
 
         {speech.error && (
-          <div className="mt-4 rounded-md border border-slate-300 p-2.5 text-sm text-slate-800">
+          <div className="mt-4 rounded-2xl border border-white/60 bg-white/50 p-2.5 text-sm text-slate-800">
             <p>! 음성을 인식하지 못했습니다. 다시 시도하거나 타이핑으로 남겨주세요.</p>
             {speech.transcript && (
-              <p className="mt-1 text-xs text-slate-500">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
+              <p className="mt-1 text-xs text-slate-600">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
             )}
           </div>
         )}
-        {micLevel.error && <p className="mt-2 text-xs text-slate-500">{micLevel.error} (파형만 비활성됩니다)</p>}
+        {micLevel.error && <p className="mt-2 text-xs text-slate-600">{micLevel.error} (파형만 비활성됩니다)</p>}
 
         <div className="mt-auto flex items-center justify-between pt-8">
           <button
             type="button"
             onClick={switchVoiceToTyping}
             aria-label="타이핑으로 전환"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-600"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/50 text-[10px] text-slate-700 hover:bg-white/70"
           >
             키보드
           </button>
@@ -366,35 +366,31 @@ export function RecordPage() {
               type="button"
               onClick={stopVoiceAndContinue}
               aria-label="녹음 정지"
-              className="flex h-28 w-28 items-center justify-center rounded-full border border-slate-900"
+              className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 shadow-lg"
             >
-              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-900">
-                <span className="h-7 w-7 rounded-sm bg-white" />
-              </span>
+              <span className="h-7 w-7 rounded-sm bg-white" />
             </button>
           ) : (
             <button
               type="button"
               onClick={resumeVoiceRecording}
               aria-label="다시 녹음"
-              className="flex h-28 w-28 items-center justify-center rounded-full border border-slate-900"
+              className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 text-[10px] text-white shadow-lg"
             >
-              <span className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-full bg-slate-900 text-[10px] text-white">
-                <span className="h-6 w-6 rounded-sm bg-white" />
-                다시
-              </span>
+              <span className="h-6 w-6 rounded-sm bg-white" />
+              다시
             </button>
           )}
           <button
             type="button"
             onClick={cancelVoice}
             aria-label="취소"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 text-slate-600"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/50 text-slate-700 hover:bg-white/70"
           >
             ✕
           </button>
         </div>
-        <p className="mt-2 text-center text-xs text-slate-500">가운데 버튼 = 녹음 정지 · 정지하면 저장 정보 입력으로</p>
+        <p className="mt-2 text-center text-xs text-slate-600">가운데 버튼 = 녹음 정지 · 정지하면 저장 정보 입력으로</p>
       </div>
     );
   }
