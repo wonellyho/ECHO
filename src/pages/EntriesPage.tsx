@@ -4,11 +4,15 @@ import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, type GroupBy } from '../lib/entryGrouping';
 import { TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
+import { EntryCardStack } from '../components/EntryCardStack';
 import type { ExperienceTag } from '../types';
 
 const ALL_TAGS: ExperienceTag[] = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'];
 
-const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
+type SortMode = GroupBy | 'latest';
+
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: 'latest', label: '최신순' },
   { value: 'month', label: '월별' },
   { value: 'project', label: '프로젝트별' },
   { value: 'collection', label: '컬렉션별' },
@@ -36,8 +40,10 @@ export function EntriesPage() {
   const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<ExperienceTag | null>(null);
-  const [groupBy, setGroupBy] = useState<GroupBy>('month');
+  const [sortMode, setSortMode] = useState<SortMode>('latest');
+  const [sortOpen, setSortOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkCollectionChoice, setBulkCollectionChoice] = useState('');
@@ -52,8 +58,14 @@ export function EntriesPage() {
 
   async function loadEntries() {
     setLoading(true);
-    const [{ data: entryRows }, { data: tagRows }, { data: structuredRows }, { data: collectionRows }] =
-      await Promise.all([
+    setLoadError(null);
+    try {
+      const [
+        { data: entryRows, error: entryError },
+        { data: tagRows, error: tagError },
+        { data: structuredRows, error: structuredError },
+        { data: collectionRows, error: collectionError },
+      ] = await Promise.all([
         supabase
           .from('entries')
           .select('id, raw_text, created_at, project_title, collection_id')
@@ -62,28 +74,37 @@ export function EntriesPage() {
         supabase.from('entries_structured').select('entry_id, situation'),
         supabase.from('collections').select('id, name').order('created_at', { ascending: false }),
       ]);
+      if (entryError) throw entryError;
+      if (tagError) throw tagError;
+      if (structuredError) throw structuredError;
+      if (collectionError) throw collectionError;
 
-    const tagsByEntry = new Map<string, ExperienceTag[]>();
-    (tagRows ?? []).forEach((row) => {
-      const list = tagsByEntry.get(row.entry_id) ?? [];
-      list.push(row.tag as ExperienceTag);
-      tagsByEntry.set(row.entry_id, list);
-    });
+      const tagsByEntry = new Map<string, ExperienceTag[]>();
+      (tagRows ?? []).forEach((row) => {
+        const list = tagsByEntry.get(row.entry_id) ?? [];
+        list.push(row.tag as ExperienceTag);
+        tagsByEntry.set(row.entry_id, list);
+      });
 
-    const situationByEntry = new Map<string, string | null>();
-    (structuredRows ?? []).forEach((row) => {
-      situationByEntry.set(row.entry_id, row.situation);
-    });
+      const situationByEntry = new Map<string, string | null>();
+      (structuredRows ?? []).forEach((row) => {
+        situationByEntry.set(row.entry_id, row.situation);
+      });
 
-    setEntries(
-      (entryRows ?? []).map((e) => ({
-        ...e,
-        situation: situationByEntry.get(e.id) ?? null,
-        tags: tagsByEntry.get(e.id) ?? [],
-      })),
-    );
-    setCollections((collectionRows ?? []) as CollectionOption[]);
-    setLoading(false);
+      setEntries(
+        (entryRows ?? []).map((e) => ({
+          ...e,
+          situation: situationByEntry.get(e.id) ?? null,
+          tags: tagsByEntry.get(e.id) ?? [],
+        })),
+      );
+      setCollections((collectionRows ?? []) as CollectionOption[]);
+    } catch (err) {
+      setEntries([]);
+      setLoadError(err instanceof Error ? err.message : '기록을 불러오지 못했습니다.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function toggleSelectMode() {
@@ -152,7 +173,57 @@ export function EntriesPage() {
 
   // MVP 검색: 태그 필터 + 키워드 매칭. 추후 임베딩 기반 유사도 검색으로 고도화 예정 (CLAUDE.md 참고)
   const filtered = filterEntries(entries, activeTag, query);
-  const groups = groupEntries(filtered, groupBy, collections);
+  const groups = sortMode === 'latest' ? null : groupEntries(filtered, sortMode, collections);
+  // 카드 스택은 그룹 헤더 없이 하나의 스택으로 보여준다 — groups가 있으면 그 순서를 그대로 이어붙인다.
+  const stackEntries = groups === null ? filtered : groups.flatMap((group) => group.entries);
+
+  function renderCard(entry: EntryRow) {
+    const dividerClass = selectMode && selectedIds.has(entry.id) ? 'border-white/20' : 'border-slate-100';
+    const cardBody = (
+      <>
+        <div className={`border-b px-3 py-2 ${dividerClass}`}>
+          <p className="truncate text-base font-semibold">{entry.project_title || '제목 없음'}</p>
+        </div>
+        <div className={`flex-1 overflow-hidden border-b px-3 py-2 ${dividerClass}`}>
+          <p className="line-clamp-3 text-xs opacity-80">{entry.situation ?? entry.raw_text}</p>
+        </div>
+        <div className="px-3 py-1.5 text-right">
+          <p className="text-xs opacity-60">{new Date(entry.created_at).toLocaleDateString('ko-KR')}</p>
+        </div>
+      </>
+    );
+
+    if (selectMode) {
+      const selected = selectedIds.has(entry.id);
+      return (
+        <button
+          key={entry.id}
+          type="button"
+          onClick={() => toggleSelected(entry.id)}
+          className={`relative flex h-44 flex-col overflow-hidden rounded-lg text-left shadow-sm transition-colors ${
+            selected ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <span
+            className={`absolute right-2 top-2 h-4 w-4 rounded-full border-2 ${
+              selected ? 'border-white bg-white' : 'border-slate-300'
+            }`}
+          />
+          {cardBody}
+        </button>
+      );
+    }
+
+    return (
+      <Link
+        key={entry.id}
+        to={`/entries/${entry.id}`}
+        className="flex h-44 flex-col overflow-hidden rounded-lg bg-white text-slate-900 shadow-sm transition-shadow hover:shadow-md"
+      >
+        {cardBody}
+      </Link>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 pb-24">
@@ -191,76 +262,77 @@ export function EntriesPage() {
         ))}
       </div>
 
-      <div className="mt-3 flex gap-1.5">
-        {GROUP_BY_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            aria-pressed={groupBy === opt.value}
-            onClick={() => setGroupBy(opt.value)}
-            className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
-              groupBy === opt.value
-                ? 'border-slate-900 bg-slate-900 text-white'
-                : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setSortOpen((prev) => !prev)}
+          className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+        >
+          정렬 방식 {sortOpen ? '▲' : '▼'}
+        </button>
+        {sortOpen && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={sortMode === opt.value}
+                onClick={() => setSortMode(opt.value)}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  sortMode === opt.value
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading && <p className="mt-4 text-sm text-slate-500">불러오는 중...</p>}
-      {!loading && filtered.length === 0 && <p className="mt-4 text-sm text-slate-500">기록이 없습니다.</p>}
 
-      {groups.map((group) => (
-        <section key={group.key} className="mt-5">
-          <h3 className="text-sm font-semibold text-slate-700">{group.label}</h3>
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {group.entries.map((entry) => {
-              const cardBody = (
-                <>
-                  <div>
-                    <p className="text-xs font-medium text-slate-500">{entry.project_title || '제목 없음'}</p>
-                    <p className="mt-1 line-clamp-3 text-sm text-slate-800">{entry.situation ?? entry.raw_text}</p>
-                  </div>
-                  <p className="text-xs text-slate-400">{new Date(entry.created_at).toLocaleDateString('ko-KR')}</p>
-                </>
-              );
+      {!loading && loadError && (
+        <div className="mt-4 rounded-lg border border-slate-300 p-3 text-sm">
+          <p className="text-slate-700">기록을 불러오지 못했습니다.</p>
+          <button
+            type="button"
+            onClick={loadEntries}
+            className="mt-2 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+          >
+            다시 불러오기
+          </button>
+        </div>
+      )}
 
-              if (selectMode) {
-                const selected = selectedIds.has(entry.id);
-                return (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    onClick={() => toggleSelected(entry.id)}
-                    className={`relative flex h-36 flex-col justify-between rounded-lg p-3 text-left shadow-sm transition-colors ${
-                      selected ? 'bg-slate-900 text-white' : 'bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <span
-                      className={`absolute right-2 top-2 h-4 w-4 rounded-full border-2 ${
-                        selected ? 'border-white bg-white' : 'border-slate-300'
-                      }`}
-                    />
-                    {cardBody}
-                  </button>
-                );
-              }
+      {!loading && !loadError && filtered.length === 0 && (
+        <p className="mt-4 text-sm text-slate-500">기록이 없습니다.</p>
+      )}
 
-              return (
-                <Link
-                  key={entry.id}
-                  to={`/entries/${entry.id}`}
-                  className="flex h-36 flex-col justify-between rounded-lg bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
-                >
-                  {cardBody}
-                </Link>
-              );
-            })}
+      {!loading &&
+        !loadError &&
+        filtered.length > 0 &&
+        (selectMode ? (
+          groups === null ? (
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              {filtered.map((entry) => renderCard(entry))}
+            </div>
+          ) : (
+            groups.map((group) => (
+              <section key={group.key} className="mt-5">
+                <h3 className="text-sm font-semibold text-slate-700">{group.label}</h3>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {group.entries.map((entry) => renderCard(entry))}
+                </div>
+              </section>
+            ))
+          )
+        ) : (
+          <div className="mt-5">
+            <EntryCardStack entries={stackEntries} />
           </div>
-        </section>
-      ))}
+        ))}
 
       {selectMode && selectedIds.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 flex flex-col gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-1px_4px_rgba(0,0,0,0.05)]">
