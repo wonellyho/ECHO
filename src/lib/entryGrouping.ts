@@ -23,8 +23,8 @@ const UNASSIGNED_LABEL = '미분류';
 
 function monthKeyAndLabel(isoDate: string): { key: string; label: string } {
   const d = new Date(isoDate);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + 1;
   return { key: `${year}-${String(month).padStart(2, '0')}`, label: `${year}년 ${month}월` };
 }
 
