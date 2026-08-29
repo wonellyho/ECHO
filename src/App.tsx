@@ -16,7 +16,7 @@ function NavBar() {
     }`;
 
   return (
-    <nav className="flex items-center gap-2 border-t border-slate-200 bg-white p-2">
+    <nav className="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-200 bg-white p-2 shadow-[0_1px_4px_rgba(0,0,0,0.05)]">
       <Link
         to="/"
         className={linkClass(location.pathname === '/')}
@@ -65,7 +65,8 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-slate-50">
+      <NavBar />
       <main>
         <Routes>
           <Route path="/" element={<RecordPage />} />
@@ -75,7 +76,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <NavBar />
     </div>
   );
 }
