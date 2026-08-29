@@ -49,4 +49,12 @@ describe('groupEntries', () => {
     const groups = groupEntries(withRecentUnassigned, 'project', collections);
     expect(groups.map((g) => g.label)).toEqual(['ECHO', '미분류']);
   });
+
+  test('groups by local time, not UTC — entry just after midnight KST belongs to the next month', () => {
+    const boundaryEntries: Row[] = [
+      { id: '1', created_at: '2026-08-31T20:00:00Z', project_title: null, collection_id: null },
+    ];
+    const groups = groupEntries(boundaryEntries, 'month', collections);
+    expect(groups.map((g) => g.label)).toEqual(['2026년 9월']);
+  });
 });

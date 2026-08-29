@@ -63,6 +63,8 @@ export function RecordPage() {
         .select()
         .single();
       if (createError) throw createError;
+      setCollections((prev) => [{ id: created.id, name: created.name }, ...prev]);
+      setCollectionChoice(created.id);
       return created.id;
     }
     return collectionChoice || null;
