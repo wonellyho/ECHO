@@ -6,6 +6,15 @@ export interface Entry {
   raw_text: string;
   input_type: 'text' | 'voice';
   audio_url: string | null;
+  project_title: string | null;
+  collection_id: string | null;
+  created_at: string;
+}
+
+export interface Collection {
+  id: string;
+  user_id: string;
+  name: string;
   created_at: string;
 }
 
