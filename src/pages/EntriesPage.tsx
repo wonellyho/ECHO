@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, type GroupBy } from '../lib/entryGrouping';
-import { TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
+import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
 import { EntryCardStack } from '../components/EntryCardStack';
 import type { ExperienceTag } from '../types';
-
-const ALL_TAGS: ExperienceTag[] = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'];
 
 type SortMode = GroupBy | 'latest';
 
@@ -50,11 +48,24 @@ export function EntriesPage() {
   const [newBulkCollectionName, setNewBulkCollectionName] = useState('');
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
+  const sortRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadEntries();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 정렬 드롭다운 바깥을 클릭하면 닫는다.
+  useEffect(() => {
+    if (!sortOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [sortOpen]);
 
   async function loadEntries() {
     setLoading(true);
@@ -262,26 +273,30 @@ export function EntriesPage() {
         ))}
       </div>
 
-      <div className="mt-3">
+      <div className="relative mt-3" ref={sortRef}>
         <button
           type="button"
           onClick={() => setSortOpen((prev) => !prev)}
-          className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700"
+          aria-expanded={sortOpen}
+          className="flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
         >
-          정렬 방식 {sortOpen ? '▲' : '▼'}
+          {SORT_OPTIONS.find((opt) => opt.value === sortMode)?.label ?? '정렬 방식'} {sortOpen ? '▲' : '▼'}
         </button>
         {sortOpen && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="absolute left-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 aria-pressed={sortMode === opt.value}
-                onClick={() => setSortMode(opt.value)}
-                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                onClick={() => {
+                  setSortMode(opt.value);
+                  setSortOpen(false);
+                }}
+                className={`block w-full px-3 py-2 text-left text-sm transition-colors ${
                   sortMode === opt.value
-                    ? 'border-slate-900 bg-slate-900 text-white'
-                    : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                    ? 'bg-slate-900 font-medium text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 {opt.label}

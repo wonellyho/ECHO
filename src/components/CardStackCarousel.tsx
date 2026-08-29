@@ -32,8 +32,10 @@ export interface CardStackCarouselProps<T> {
 }
 
 const DEFAULT_MAX_VISIBLE = 6;
-const DEFAULT_CARD_HEIGHT = 108;
-const DEFAULT_OVERLAP = 0.52;
+// 본문 3줄이 들어갈 만큼 카드를 키우고(제목+3줄 본문+태그), overlap을 줄여서 컨테이너 자체도
+// 화면을 더 꽉 채우도록 함 (겹침은 유지하되 이전보다 카드 간 간격을 넉넉하게).
+const DEFAULT_CARD_HEIGHT = 200;
+const DEFAULT_OVERLAP = 0.4;
 // 활성 카드에서 이 칸 수 이상 떨어진 카드는 렌더링 자체를 하지 않는다 (가상화 — 카드가 아무리
 // 많아져도 DOM에는 항상 이 범위만큼만 떠 있다).
 const RENDER_WINDOW = 5;
@@ -165,7 +167,6 @@ export function CardStackCarousel<T>({
 
         const scale = clamp(1 - 0.04 * absDist, 0.72, 1);
         const opacity = clamp(1 - 0.22 * absDist, 0, 1);
-        const blur = clamp((absDist - 0.4) * 1.4, 0, 3);
 
         return (
           <div
@@ -187,8 +188,7 @@ export function CardStackCarousel<T>({
                   height: cardHeight,
                   transform: `scale(${scale})`,
                   opacity,
-                  filter: blur > 0.05 ? `blur(${blur}px)` : undefined,
-                  transition: 'transform 150ms ease-out, opacity 150ms ease-out, filter 150ms ease-out',
+                  transition: 'transform 150ms ease-out, opacity 150ms ease-out',
                 } satisfies CSSProperties
               }
               className="w-full"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { TAG_COLORS } from '../lib/tagColors';
+import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
 import type { EntryStructured, ExperienceTag, StarWlConversion } from '../types';
 
 const STRUCTURED_FIELDS: { key: keyof EntryStructured; label: string }[] = [
@@ -39,10 +39,12 @@ export function EntryDetailPage() {
   const [editing, setEditing] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [tags, setTags] = useState<ExperienceTag[]>([]);
+  const [tagSaving, setTagSaving] = useState<ExperienceTag | null>(null);
+  const [tagError, setTagError] = useState<string | null>(null);
   const [starwl, setStarwl] = useState<StarWlConversion | null>(null);
   const [starwlLoading, setStarwlLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'starwl' | 'pattern'>('starwl');
+  const [tab, setTab] = useState<'structure' | 'starwl' | 'pattern'>('structure');
   const [relatedInsights, setRelatedInsights] = useState<RelatedInsight[]>([]);
   const [patternLoaded, setPatternLoaded] = useState(false);
 
@@ -78,6 +80,34 @@ export function EntryDetailPage() {
       setPatternLoaded(true);
     })();
   }, [id, tab, patternLoaded]);
+
+  // AI가 자동 생성한 태그 외에 사람이 직접 추가/제거할 수 있게 한다. 클릭 즉시 저장(낙관적 업데이트),
+  // 실패하면 되돌리고 에러를 보여준다.
+  async function toggleTag(tag: ExperienceTag) {
+    if (!id || tagSaving) return;
+    const hasTag = tags.includes(tag);
+    setTagError(null);
+    setTagSaving(tag);
+    setTags((prev) => (hasTag ? prev.filter((t) => t !== tag) : [...prev, tag]));
+    try {
+      if (hasTag) {
+        const { error: deleteError } = await supabase
+          .from('entry_tags')
+          .delete()
+          .eq('entry_id', id)
+          .eq('tag', tag);
+        if (deleteError) throw deleteError;
+      } else {
+        const { error: insertError } = await supabase.from('entry_tags').insert({ entry_id: id, tag });
+        if (insertError) throw insertError;
+      }
+    } catch (err) {
+      setTags((prev) => (hasTag ? [...prev, tag] : prev.filter((t) => t !== tag)));
+      setTagError(err instanceof Error ? err.message : '태그를 변경하지 못했습니다.');
+    } finally {
+      setTagSaving(null);
+    }
+  }
 
   function startEdit() {
     if (!structured) return;
@@ -141,19 +171,46 @@ export function EntryDetailPage() {
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
         <div className="rounded-lg bg-slate-50 p-4 shadow-sm lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
           <p className="whitespace-pre-wrap text-sm text-slate-800">{rawText}</p>
-          {tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">
-              {tags.map((tag) => (
-                <span key={tag} className={`rounded-full px-2 py-0.5 text-xs font-medium ${TAG_COLORS[tag]}`}>
-                  #{tag}
-                </span>
-              ))}
+          <div className="mt-3">
+            <p className="text-xs font-medium text-slate-500">
+              태그 <span className="font-normal text-slate-400">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {ALL_TAGS.map((tag) => {
+                const active = tags.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleTag(tag)}
+                    disabled={tagSaving === tag}
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                      active ? TAG_COLORS_ACTIVE[tag] : TAG_COLORS[tag]
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                );
+              })}
             </div>
-          )}
+            {tagError && <p className="mt-1.5 text-xs text-red-600">{tagError}</p>}
+          </div>
         </div>
 
         <div>
           <div className="flex gap-2 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setTab('structure')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                tab === 'structure'
+                  ? 'border-b-2 border-slate-900 text-slate-900'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              구조화
+            </button>
             <button
               type="button"
               onClick={() => setTab('starwl')}
@@ -161,7 +218,7 @@ export function EntryDetailPage() {
                 tab === 'starwl' ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              구조화/STARWL
+              STARWL
             </button>
             <button
               type="button"
@@ -174,7 +231,7 @@ export function EntryDetailPage() {
             </button>
           </div>
 
-          {tab === 'starwl' && (
+          {tab === 'structure' && (
             <div className="mt-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-slate-700">구조화 결과</h3>
@@ -227,22 +284,25 @@ export function EntryDetailPage() {
                 disabled={starwlLoading || !structured}
                 className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
               >
-                {starwlLoading ? '변환 중...' : starwl ? 'STARWL로 다시 변환' : 'STARWL로 변환'}
+                {starwlLoading ? '추출 중...' : starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
               </button>
               {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            </div>
+          )}
 
-              {starwl && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-medium text-slate-700">STARWL</h3>
-                  <dl className="mt-2 space-y-2">
-                    {STARWL_FIELDS.map(({ key, label }) => (
-                      <div key={key} className="rounded-lg bg-white p-3 shadow-sm">
-                        <dt className="text-xs font-medium text-slate-500">{label}</dt>
-                        <dd className="mt-1 text-sm text-slate-800">{starwl[key] ?? '-'}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
+          {tab === 'starwl' && (
+            <div className="mt-4">
+              {starwl ? (
+                <dl className="space-y-2">
+                  {STARWL_FIELDS.map(({ key, label }) => (
+                    <div key={key} className="rounded-lg bg-white p-3 shadow-sm">
+                      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+                      <dd className="mt-1 text-sm text-slate-800">{starwl[key] ?? '-'}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="text-sm text-slate-500">아직 추출한 STARWL이 없습니다.</p>
               )}
             </div>
           )}

@@ -1,5 +1,8 @@
 import type { ExperienceTag } from '../types';
 
+// 고정된 6종 태그 — 목록 필터, 상세 화면 수동 선택 등에서 공용으로 쓴다 (DB CHECK 제약과 동일).
+export const ALL_TAGS: ExperienceTag[] = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'];
+
 // 태그별 고정 색상 매핑. 목록/상세 화면에서 동일하게 사용해 일관성을 유지한다.
 export const TAG_COLORS: Record<ExperienceTag, string> = {
   협업: 'bg-blue-100 text-blue-700',
