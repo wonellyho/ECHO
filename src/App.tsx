@@ -16,7 +16,7 @@ function NavBar() {
     }`;
 
   return (
-    <nav className="flex items-center gap-2 border-t border-slate-200 bg-white p-2">
+    <nav className="fixed inset-x-0 bottom-0 flex items-center gap-2 border-t border-slate-200 bg-white p-2 shadow-[0_-1px_4px_rgba(0,0,0,0.05)]">
       <Link
         to="/"
         className={linkClass(location.pathname === '/')}
@@ -53,7 +53,7 @@ export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>불러오는 중...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sm text-slate-500">불러오는 중...</div>;
   }
 
   if (!user) {
@@ -65,7 +65,7 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-slate-50 pb-16">
       <main>
         <Routes>
           <Route path="/" element={<RecordPage />} />

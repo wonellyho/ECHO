@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
+import { TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
 import type { ExperienceTag } from '../types';
 
 const ALL_TAGS: ExperienceTag[] = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'];
@@ -50,42 +51,51 @@ export function EntriesPage() {
   const filtered = filterEntries(entries, activeTag, query);
 
   return (
-    <div>
-      <h2>내 경험 기록</h2>
+    <div className="mx-auto max-w-2xl px-4 py-6">
+      <h2 className="text-xl font-semibold text-slate-900">내 경험 기록</h2>
 
       <input
         type="text"
         placeholder="키워드로 검색 (예: 갈등)"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
       />
 
-      <div>
+      <div className="mt-3 flex flex-wrap gap-1.5">
         {ALL_TAGS.map((tag) => (
           <button
             key={tag}
             type="button"
             aria-pressed={activeTag === tag}
             onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              activeTag === tag ? TAG_COLORS_ACTIVE[tag] : TAG_COLORS[tag]
+            }`}
           >
             #{tag}
           </button>
         ))}
       </div>
 
-      {loading && <p>불러오는 중...</p>}
-      {!loading && filtered.length === 0 && <p>기록이 없습니다.</p>}
+      {loading && <p className="mt-4 text-sm text-slate-500">불러오는 중...</p>}
+      {!loading && filtered.length === 0 && <p className="mt-4 text-sm text-slate-500">기록이 없습니다.</p>}
 
-      <ul>
+      <ul className="mt-4 space-y-2">
         {filtered.map((entry) => (
           <li key={entry.id}>
-            <Link to={`/entries/${entry.id}`}>
-              <p>{new Date(entry.created_at).toLocaleDateString('ko-KR')}</p>
-              <p>{entry.raw_text.slice(0, 60)}</p>
+            <Link
+              to={`/entries/${entry.id}`}
+              className="block rounded-lg bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+            >
+              <p className="text-xs text-slate-500">{new Date(entry.created_at).toLocaleDateString('ko-KR')}</p>
+              <p className="mt-1 text-sm text-slate-800">{entry.raw_text.slice(0, 60)}</p>
               {entry.tags.length > 0 && (
-                <div>
+                <div className="mt-2 flex flex-wrap gap-1">
                   {entry.tags.map((t) => (
-                    <span key={t}>#{t}</span>
+                    <span key={t} className={`rounded-full px-2 py-0.5 text-xs font-medium ${TAG_COLORS[t]}`}>
+                      #{t}
+                    </span>
                   ))}
                 </div>
               )}
