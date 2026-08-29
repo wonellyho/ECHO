@@ -1,4 +1,41 @@
-# ECHO 디자인 시스템 (v1 — 카드 스택 + 음성 녹음 화면)
+# ECHO 디자인 시스템 (v2 — 폰트 + 카드 캐러셀 + 음성 녹음 화면)
+
+## 타이포그래피
+
+- **Pretendard v1.3.9** ([orioncactus/pretendard](https://github.com/orioncactus/pretendard/releases/tag/v1.3.9))를
+  앱 전체 기본 폰트로 적용. `public/fonts/pretendard/`에 dynamic-subset 빌드(`woff2-dynamic-subset` +
+  `pretendardvariable-dynamic-subset.css`)를 그대로 복사해두고 `index.html`에서 `<link>`로 로드한다 —
+  실제 쓰는 글자의 유니코드 서브셋만 내려받아서(체감상 몇십 KB 단위) 무거운 로케일 미포함 파일을
+  통째로 받지 않는다.
+- `src/index.css`의 Tailwind v4 `@theme` 블록에서 `--font-sans`를 `'Pretendard Variable', Pretendard, ...`로
+  재정의하고 `body`에 명시적으로 적용 — Tailwind v4의 프리플라이트가 `--font-sans`를 기본값으로 쓰는
+  동작에 기대는 동시에, 명시적으로도 한 번 더 못박아둔다.
+
+## 카드 캐러셀 (Vertical Stacked Card Carousel)
+
+`ref.jpg`/`cardscroll.jpg` 스타일의 "화면 중앙에 가까운 카드가 확대·선명해지고 멀어질수록 작아지며
+겹쳐 보이는" cover-flow 인터랙션. 이전 버전(탭하면 그 카드만 펼쳐지는 방식)은 폐기하고, 스크롤 위치
+기반의 연속적인 scale/opacity/blur 애니메이션으로 교체했다.
+
+- **범용 컴포넌트**: `src/components/CardStackCarousel.tsx` — `items`/`renderItem`/`getKey`/`maxVisible`/
+  `activeIndex`/`onActiveChange`/`cardHeight`/`overlap` props를 받는 제네릭 컴포넌트. 엔트리에 종속되지
+  않아 다른 데이터로도 재사용 가능.
+- **엔트리 어댑터**: `src/components/EntryCardStack.tsx` — 위 컴포넌트를 감싸서 그라디언트 카드
+  렌더링(`TAG_GRADIENTS`)만 얹는다. `EntriesPage`는 이 어댑터를 그대로 쓴다.
+- **스크롤/스냅**: 커스텀 물리 엔진 대신 실제 `overflow-y: auto` + 네이티브 CSS
+  `scroll-snap-type: y mandatory`를 쓴다 — 마우스 휠/터치 스와이프/모멘텀이 전부 브라우저가
+  기본 제공하는 것이라 별도 구현이 필요 없고, 가볍고 안정적이다. 스크롤바는 숨김.
+- **activeIndex 계산**: DOM을 매 프레임 읽는 대신, `스크롤 위치 → 카드 간격(step)으로 나눈 순수 산술`로
+  각 카드의 "중앙까지의 거리"를 구한다(요청된 "IntersectionObserver 또는 거리 계산" 중 후자 방식).
+  카드가 수백 개로 늘어나도 계산 비용이 늘지 않는다.
+- **가상화**: 활성 카드 기준 ±5칸 밖의 카드는 아예 렌더링하지 않고, 위아래에 빈 스페이서로 스크롤
+  높이만 유지한다 — 카드 개수가 아무리 많아져도 DOM 노드 수는 항상 일정하다.
+- **거리별 스타일**: `scale = 1 - 0.04*|d|`, `opacity = 1 - 0.22*|d|`, `blur = max(0, (|d|-0.4)*1.4)px`,
+  `z-index = 1000 - round(|d|*10)` (요청된 예시 수치와 동일한 계단: 1칸 0.96, 2칸 0.92, 3칸 0.88).
+- **탭 동작**: active가 아닌 카드를 탭하면 캡처 단계에서 클릭을 가로채 "그 카드를 중앙으로 스크롤"만
+  하고 내부 링크 이동은 막는다. 이미 중앙(active)인 카드를 탭하면 정상적으로 상세 화면으로 이동한다.
+
+## 컬러 토큰
 
 참고 이미지: `ref.jpg`(iOS 위젯형 카드 스택), `녹화탭.jpg`(따뜻한 그라디언트 음성 녹음 화면).
 전체 앱 리디자인이 아니라 **아래 두 화면에만** 이 토큰을 적용한다. 로그인/기록 선택·타이핑/저장정보/
