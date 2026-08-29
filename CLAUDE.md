@@ -30,7 +30,7 @@
   (예정) insights.ts     반복 기록 → 에너지원/소진요인 요약(근거 entry_id 포함)
 /src
   /lib/supabaseClient.ts  프론트에서 쓰는 Supabase 클라이언트 (anon key)
-  /types/index.ts         공용 타입 (Entry, EntryStructured, Insight, StarConversion 등)
+  /types/index.ts         공용 타입 (Entry, EntryStructured, Insight, StarWlConversion 등)
   /pages                  화면 단위 컴포넌트
   /components             재사용 UI 컴포넌트
 /supabase/schema.sql   DB 스키마 + RLS 정책 (Supabase SQL Editor에서 직접 실행)

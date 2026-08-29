@@ -139,7 +139,7 @@ export function EntryDetailPage() {
       <h2 className="text-xl font-semibold text-slate-900">기록 상세</h2>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="rounded-lg bg-slate-50 p-4 shadow-sm lg:sticky lg:top-16 lg:self-start">
+        <div className="rounded-lg bg-slate-50 p-4 shadow-sm lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
           <p className="whitespace-pre-wrap text-sm text-slate-800">{rawText}</p>
           {tags.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">

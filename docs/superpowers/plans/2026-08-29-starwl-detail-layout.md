@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> ⚠️ **배포 전 필수**: Task 1 Step 3의 Supabase 라이브 마이그레이션(SQL Editor에서 직접 실행)이 아직 적용되지 않았다면, `starwl_conversions` 테이블이 없어 STARWL 조회·저장이 전부 실패합니다. 반드시 먼저 실행하세요.
+
 **Goal:** 기록 상세 화면을 좌(원문)/우(구조화·STARWL/패턴 탭) 2단 레이아웃으로 바꾸고, STAR를 Why·Learning까지 포함한 동일 레벨의 STARWL로 확장한다.
 
 **Architecture:** `star_conversions` 테이블/타입/API 라우트를 `starwl_conversions`/`StarWlConversion`/`/api/starwl`로 완전히 리네임하고 `why`, `learning` 컬럼을 추가한다. `api/starwl.ts`의 시스템 프롬프트는 `why`를 역할·갈등·감정 이유에서, `learning`을 기존 `realization`(깨달음) 값에서 도출하도록 지시한다(근거성 원칙 동일 적용). `EntryDetailPage`는 넓은 화면에서 CSS grid로 좌우 분할하고, 좁은 화면에서는 기존처럼 세로로 쌓인다.
@@ -146,7 +148,7 @@ const SYSTEM_PROMPT = `너는 대학생의 구조화된 경험 기록을 STARWL(
 - 입력으로 주어진 구조화 데이터에 없는 사실을 지어내지 마라. 문장을 다듬고 연결하는 것은 괜찮지만 새로운 사실을 추가하지 마라.
 - situation/task/action/result는 각각 2~4문장 정도로, 면접에서 바로 말할 수 있는 자연스러운 한국어 문장으로 작성하라.
 - why는 입력된 역할(role)·갈등(conflict)·감정의 이유(emotion_reason)에 근거해서만, 그 행동을 왜 그렇게 선택했는지 설명하라. 근거가 부족하면 null로 남겨라.
-- learning은 입력에 realization(깨달음)이 있으면 그 내용을 자연스러운 문장으로 다듬어 사용하고, 없다면 결과(result)나 감정에서 합리적으로 도출 가능한 범위에서만 작성하라. 그마저 근거가 없으면 null로 남겨라.
+- learning은 입력에 realization(깨달음)이 있으면 그 내용을 자연스러운 문장으로 다듬어 사용하라. realization이 없으면 근거가 부족한 것이므로 null로 남겨라. result나 emotion에서 유추해서 지어내지 마라.
 - 반드시 아래 JSON 형식으로만 응답하라. JSON 객체 앞뒤에 설명, 추론 과정, 다른 텍스트를 절대 붙이지 마라.
 
 {
