@@ -59,14 +59,16 @@ create table if not exists insights (
   created_at timestamptz not null default now()
 );
 
--- STAR 변환 결과 (entry 1:N, 재생성 가능하므로 1:1 강제하지 않음)
-create table if not exists star_conversions (
+-- STARWL 변환 결과 (entry 1:N, 재생성 가능하므로 1:1 강제하지 않음)
+create table if not exists starwl_conversions (
   id uuid primary key default gen_random_uuid(),
   entry_id uuid not null references entries(id) on delete cascade,
   situation text,
   task text,
   action text,
   result text,
+  why text,
+  learning text,
   created_at timestamptz not null default now()
 );
 
@@ -76,7 +78,7 @@ alter table collections enable row level security;
 alter table entries_structured enable row level security;
 alter table entry_tags enable row level security;
 alter table insights enable row level security;
-alter table star_conversions enable row level security;
+alter table starwl_conversions enable row level security;
 
 create policy "entries_owner" on entries
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -95,6 +97,6 @@ create policy "entry_tags_owner" on entry_tags
 create policy "insights_owner" on insights
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
-create policy "star_conversions_owner" on star_conversions
+create policy "starwl_conversions_owner" on starwl_conversions
   for all using (exists (select 1 from entries e where e.id = entry_id and e.user_id = auth.uid()))
   with check (exists (select 1 from entries e where e.id = entry_id and e.user_id = auth.uid()));
