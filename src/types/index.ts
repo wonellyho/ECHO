@@ -45,12 +45,14 @@ export interface Insight {
   created_at: string;
 }
 
-export interface StarConversion {
+export interface StarWlConversion {
   id: string;
   entry_id: string;
   situation: string;
   task: string;
   action: string;
   result: string;
+  why: string | null;
+  learning: string | null;
   created_at: string;
 }
