@@ -26,7 +26,7 @@
 /api                  Vercel 서버리스 함수 (LLM 호출 등 키가 필요한 로직만)
   /_lib/llm.ts         LLM 호출 공통 헬퍼 (OpenRouter 무료 모델 → Claude Haiku 폴백)
   structure.ts         기록 → 상황/역할/갈등/행동/결과/감정/이유 + 태그 구조화
-  star.ts               구조화 데이터 → STAR 변환
+  starwl.ts             구조화 데이터 → STARWL(Why/Learning 포함) 변환
   (예정) insights.ts     반복 기록 → 에너지원/소진요인 요약(근거 entry_id 포함)
 /src
   /lib/supabaseClient.ts  프론트에서 쓰는 Supabase 클라이언트 (anon key)
