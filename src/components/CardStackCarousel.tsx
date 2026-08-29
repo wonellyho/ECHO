@@ -32,10 +32,10 @@ export interface CardStackCarouselProps<T> {
 }
 
 const DEFAULT_MAX_VISIBLE = 6;
-// 본문 3줄이 들어갈 만큼 카드를 키우고(제목+3줄 본문+태그), overlap을 줄여서 컨테이너 자체도
-// 화면을 더 꽉 채우도록 함 (겹침은 유지하되 이전보다 카드 간 간격을 넉넉하게).
-const DEFAULT_CARD_HEIGHT = 200;
-const DEFAULT_OVERLAP = 0.4;
+// 본문 3줄은 들어가되, 컨테이너 전체 높이(step * maxVisible)가 모바일 화면 안에 넉넉히 들어오도록
+// 이전보다 낮춤 — 컨테이너가 뷰포트보다 커지면 "중앙"이 화면상 중앙과 어긋나 보이는 문제가 있었다.
+const DEFAULT_CARD_HEIGHT = 160;
+const DEFAULT_OVERLAP = 0.45;
 // 활성 카드에서 이 칸 수 이상 떨어진 카드는 렌더링 자체를 하지 않는다 (가상화 — 카드가 아무리
 // 많아져도 DOM에는 항상 이 범위만큼만 떠 있다).
 const RENDER_WINDOW = 5;
@@ -112,9 +112,17 @@ export function CardStackCarousel<T>({
   }, [recompute]);
 
   // 마운트 시 초기 activeIndex가 중앙에 오도록 즉시(애니메이션 없이) 위치를 잡는다.
+  // 폰트 스왑 등으로 마운트 직후 한 프레임 뒤에 레이아웃이 미세하게 바뀌는 경우를 대비해,
+  // 다음 프레임에 한 번 더 같은 위치로 보정한다 (모바일에서 포커스 카드가 중앙을 벗어나는 문제 방지).
   useLayoutEffect(() => {
-    scrollToIndex(clamp(activeIndex ?? 0, 0, lastCount), 'auto');
+    const target = clamp(activeIndex ?? 0, 0, lastCount);
+    scrollToIndex(target, 'auto');
     recompute();
+    const raf = requestAnimationFrame(() => {
+      scrollToIndex(target, 'auto');
+      recompute();
+    });
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

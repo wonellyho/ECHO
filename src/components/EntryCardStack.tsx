@@ -33,7 +33,7 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
             // 시키므로, 여기 도달했다는 건 이미 active 상태에서 눌렀다는 뜻 — 정상적으로 이동시킨다.
             if (!isActive) e.preventDefault();
           }}
-          className={`flex h-full flex-col justify-between gap-3 overflow-hidden rounded-3xl bg-gradient-to-br px-5 py-5 shadow-lg shadow-black/10 ${cardGradient(
+          className={`flex h-full flex-col justify-between gap-1.5 overflow-hidden rounded-3xl bg-gradient-to-br px-5 py-4 shadow-lg shadow-black/10 ${cardGradient(
             entry.tags,
           )}`}
         >
@@ -43,7 +43,7 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
               {new Date(entry.created_at).toLocaleDateString('ko-KR')}
             </p>
           </div>
-          <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-white/90">
+          <p className="line-clamp-3 flex-1 text-sm leading-snug text-white/90">
             {entry.situation ?? entry.raw_text}
           </p>
           {entry.tags.length > 0 && (
