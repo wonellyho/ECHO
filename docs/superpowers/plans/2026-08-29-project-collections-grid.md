@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> ⚠️ **배포 전 필수**: Task 1 Step 3의 Supabase 라이브 마이그레이션(SQL Editor에서 직접 실행)이 아직 적용되지 않았다면, 이 기능은 프로덕션에서 기록 저장이 실패합니다. 반드시 먼저 실행하세요.
+
 **Goal:** 기록 작성 시 프로젝트 제목과 컬렉션을 지정할 수 있게 하고, 내 경험 목록을 프로젝트별/월별/컬렉션별로 그룹핑된 반응형 카드 그리드로 보여주며, 네비게이션을 화면 상단 고정으로 바꾼다.
 
 **Architecture:** `entries`에 `project_title`(자유 텍스트, 선택)과 `collection_id`(사용자별 `collections` 테이블 FK, 기록당 최대 1개)를 추가한다. 그룹핑 판단 로직은 `src/lib/entryGrouping.ts` 순수 함수로 분리해 테스트한다. 컬렉션은 기록 작성 시(RecordPage)와 사후에 목록에서 여러 개를 골라(EntriesPage 선택 모드) 둘 다 지정 가능하다.

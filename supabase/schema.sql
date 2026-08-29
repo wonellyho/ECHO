@@ -13,6 +13,18 @@ create table if not exists entries (
   created_at timestamptz not null default now()
 );
 
+-- 사용자가 직접 만드는 폴더/컬렉션 (기록은 최대 1개 컬렉션에만 속함)
+create table if not exists collections (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+-- 프로젝트 제목(선택) + 컬렉션 소속
+alter table entries add column if not exists project_title text;
+alter table entries add column if not exists collection_id uuid references collections(id) on delete set null;
+
 -- LLM 구조화 결과 (entry 1:1)
 create table if not exists entries_structured (
   entry_id uuid primary key references entries(id) on delete cascade,
@@ -60,12 +72,16 @@ create table if not exists star_conversions (
 
 -- RLS: 각 사용자는 자기 데이터만
 alter table entries enable row level security;
+alter table collections enable row level security;
 alter table entries_structured enable row level security;
 alter table entry_tags enable row level security;
 alter table insights enable row level security;
 alter table star_conversions enable row level security;
 
 create policy "entries_owner" on entries
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "collections_owner" on collections
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "entries_structured_owner" on entries_structured
