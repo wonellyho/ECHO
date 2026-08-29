@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 // 브라우저 내장 Web Speech API 래퍼 (무료, 정확도는 낮을 수 있음).
 // 지원 브라우저: Chrome 계열. 미지원 시 isSupported=false로 텍스트 입력만 안내.
@@ -23,6 +23,13 @@ export function useSpeechInput() {
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  // 정지/에러 이후 재시작해도 기존 받아쓰기 내용을 지우지 않고 이어붙이기 위한 기준값.
+  const baseTranscriptRef = useRef('');
+  const transcriptRef = useRef('');
+
+  useEffect(() => {
+    transcriptRef.current = transcript;
+  }, [transcript]);
 
   const isSupported = getRecognitionCtor() !== null;
 
@@ -33,7 +40,7 @@ export function useSpeechInput() {
       return;
     }
     setError(null);
-    setTranscript('');
+    baseTranscriptRef.current = transcriptRef.current;
 
     const recognition = new Ctor();
     recognition.lang = 'ko-KR';
@@ -45,7 +52,8 @@ export function useSpeechInput() {
       for (let i = 0; i < event.results.length; i += 1) {
         combined += event.results[i][0].transcript;
       }
-      setTranscript(combined);
+      const base = baseTranscriptRef.current;
+      setTranscript(base && combined ? `${base} ${combined}` : base + combined);
     };
     recognition.onerror = (event: any) => {
       setError(event.error ?? '음성 인식 중 오류가 발생했습니다.');
