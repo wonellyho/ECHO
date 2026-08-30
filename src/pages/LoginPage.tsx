@@ -81,21 +81,21 @@ export function LoginPage() {
 
   if (signupPendingEmail) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-6">
+      <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center bg-slate-950 px-4 py-6">
         <Logo />
-        <p className="mt-1 text-sm text-slate-500">경험을 기록하고, 나를 발견하다.</p>
+        <p className="mt-1 text-sm text-slate-400">경험을 기록하고, 나를 발견하다.</p>
 
-        <div className="mt-6 rounded-md border border-slate-300 p-3 text-sm text-slate-700">
+        <div className="mt-6 rounded-md border border-slate-700 p-3 text-sm text-slate-200">
           <p>
             <span className="font-medium">{signupPendingEmail}</span>로 확인 메일을 보냈습니다.
           </p>
-          <p className="mt-1 text-slate-500">메일의 링크를 눌러 인증을 완료하면 로그인할 수 있어요.</p>
+          <p className="mt-1 text-slate-400">메일의 링크를 눌러 인증을 완료하면 로그인할 수 있어요.</p>
         </div>
 
         <button
           type="button"
           onClick={() => switchMode('login')}
-          className="mt-4 w-full rounded-md border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          className="mt-4 w-full rounded-md border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-800"
         >
           로그인 화면으로
         </button>
@@ -104,17 +104,17 @@ export function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-6">
+    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center bg-slate-950 px-4 py-6">
       <Logo />
-      <p className="mt-1 text-sm text-slate-500">경험을 기록하고, 나를 발견하다.</p>
+      <p className="mt-1 text-sm text-slate-400">경험을 기록하고, 나를 발견하다.</p>
 
-      <div className="mt-6 inline-flex rounded-full bg-slate-100 p-1 text-sm font-medium">
+      <div className="mt-6 inline-flex rounded-full bg-slate-800 p-1 text-sm font-medium">
         <button
           type="button"
           onClick={() => switchMode('login')}
           aria-pressed={mode === 'login'}
           className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
-            mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+            mode === 'login' ? 'bg-slate-950 text-slate-50 shadow-sm' : 'text-slate-400'
           }`}
         >
           로그인
@@ -124,7 +124,7 @@ export function LoginPage() {
           onClick={() => switchMode('signup')}
           aria-pressed={mode === 'signup'}
           className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
-            mode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+            mode === 'signup' ? 'bg-slate-950 text-slate-50 shadow-sm' : 'text-slate-400'
           }`}
         >
           회원가입
@@ -138,7 +138,7 @@ export function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
         />
         <input
           type="password"
@@ -148,7 +148,7 @@ export function LoginPage() {
           required
           minLength={6}
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
         />
         {mode === 'signup' && (
           <input
@@ -159,10 +159,10 @@ export function LoginPage() {
             required
             minLength={6}
             autoComplete="new-password"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
           />
         )}
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
         <button
           type="submit"
           disabled={loading}
@@ -173,9 +173,9 @@ export function LoginPage() {
       </form>
 
       <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
-        <div className="h-px flex-1 bg-slate-200" />
+        <div className="h-px flex-1 bg-slate-800" />
         또는
-        <div className="h-px flex-1 bg-slate-200" />
+        <div className="h-px flex-1 bg-slate-800" />
       </div>
 
       <div className="mt-4 space-y-2">
@@ -183,7 +183,7 @@ export function LoginPage() {
           type="button"
           onClick={() => handleSocialLogin('google')}
           disabled={socialLoading !== null}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800 disabled:opacity-50"
         >
           <GoogleIcon />
           {socialLoading === 'google' ? '연결 중...' : 'Google로 계속하기'}
@@ -203,7 +203,7 @@ export function LoginPage() {
       <button
         type="button"
         onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-        className="mt-4 text-center text-sm text-slate-500 hover:text-slate-700"
+        className="mt-4 text-center text-sm text-slate-400 hover:text-slate-200"
       >
         {mode === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
       </button>
