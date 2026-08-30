@@ -46,7 +46,7 @@ export function Logo({
   return (
     <span className="inline-flex items-center gap-2">
       {icon}
-      <span className="text-2xl font-bold tracking-tight text-slate-900">ECHO</span>
+      <span className="text-2xl font-bold tracking-tight text-slate-50">ECHO</span>
     </span>
   );
 }
