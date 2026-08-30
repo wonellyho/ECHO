@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabaseClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
 import { useMicLevel } from '../lib/useMicLevel';
 import { VoiceWaveform } from '../components/VoiceWaveform';
-import { MicIcon, StopIcon } from '../components/icons';
+import { Logo } from '../components/Logo';
+import { MicIcon, StopIcon, TypingIcon } from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
 import type { ExperienceTag } from '../types';
 
@@ -268,7 +269,8 @@ export function RecordPage() {
   if (step === 'choice') {
     return (
       <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col px-4 py-6">
-        <h2 className="text-xl font-semibold text-slate-900">오늘의 경험을 남겨보세요</h2>
+        <Logo />
+        <h2 className="mt-6 text-xl font-semibold text-slate-900">오늘의 경험을 남겨보세요</h2>
         <p className="mt-2 text-sm text-slate-500">말하거나 적으면 AI가 구조화해 둡니다.</p>
 
         <div className="mt-6 flex flex-col gap-3">
@@ -276,20 +278,30 @@ export function RecordPage() {
             type="button"
             onClick={goToVoice}
             disabled={!speech.isSupported}
-            className="rounded-lg border border-slate-300 bg-slate-50 px-4 py-3.5 text-left transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <p className="text-sm font-semibold text-slate-900">음성으로 기록</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {speech.isSupported ? '말하면 자동으로 글로 옮깁니다' : '사용 불가'}
-            </p>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500">
+              <MicIcon className="h-5 w-5 text-white" />
+            </span>
+            <span>
+              <p className="text-sm font-semibold text-slate-900">음성으로 기록</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {speech.isSupported ? '말하면 자동으로 글로 옮깁니다' : '사용 불가'}
+              </p>
+            </span>
           </button>
           <button
             type="button"
             onClick={goToTyping}
-            className="rounded-lg border border-slate-300 px-4 py-3.5 text-left transition-colors hover:bg-slate-100"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left shadow-sm transition-colors hover:bg-slate-50"
           >
-            <p className="text-sm font-semibold text-slate-900">타이핑으로 기록</p>
-            <p className="mt-0.5 text-xs text-slate-500">직접 입력합니다</p>
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-700">
+              <TypingIcon className="h-5 w-5 text-white" />
+            </span>
+            <span>
+              <p className="text-sm font-semibold text-slate-900">타이핑으로 기록</p>
+              <p className="mt-0.5 text-xs text-slate-500">직접 입력합니다</p>
+            </span>
           </button>
         </div>
 
@@ -306,9 +318,9 @@ export function RecordPage() {
             onClick={goToVoice}
             disabled={!speech.isSupported}
             aria-label="음성으로 기록 시작"
-            className="flex h-28 w-28 items-center justify-center rounded-full border border-slate-300 disabled:opacity-40"
+            className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 p-1 disabled:opacity-40"
           >
-            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-900">
+            <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-900">
               <MicIcon className="h-7 w-7 text-white" />
             </span>
           </button>

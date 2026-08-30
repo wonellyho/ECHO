@@ -24,6 +24,25 @@ export function StopIcon({ className = 'h-7 w-7 rounded-sm bg-white' }: { classN
   return <span className={className} aria-hidden="true" />;
 }
 
+// 타이핑 기록 카드용 아이콘 (연필/텍스트 라인).
+export function TypingIcon({ className = 'h-6 w-6 text-white' }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
 // 소셜 로그인 버튼용 브랜드 아이콘. 공식 브랜드 색을 그대로 사용한다(그라디언트 팔레트 아님).
 export function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
