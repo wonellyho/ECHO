@@ -5,12 +5,12 @@ export const ALL_TAGS: ExperienceTag[] = ['협업', '갈등', '주도성', '실�
 
 // 태그별 고정 색상 매핑. 목록/상세 화면에서 동일하게 사용해 일관성을 유지한다.
 export const TAG_COLORS: Record<ExperienceTag, string> = {
-  협업: 'bg-blue-100 text-blue-700',
-  갈등: 'bg-red-100 text-red-700',
-  주도성: 'bg-amber-100 text-amber-700',
-  실패: 'bg-slate-200 text-slate-700',
-  성취: 'bg-green-100 text-green-700',
-  문제해결: 'bg-violet-100 text-violet-700',
+  협업: 'bg-blue-500/15 text-blue-300',
+  갈등: 'bg-red-500/15 text-red-300',
+  주도성: 'bg-amber-500/15 text-amber-300',
+  실패: 'bg-slate-500/20 text-slate-300',
+  성취: 'bg-green-500/15 text-green-300',
+  문제해결: 'bg-violet-500/15 text-violet-300',
 };
 
 export const TAG_COLORS_ACTIVE: Record<ExperienceTag, string> = {
