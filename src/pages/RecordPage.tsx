@@ -411,13 +411,13 @@ export function RecordPage() {
   if (step === 'typing') {
     return (
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <h2 className="text-xl font-semibold text-slate-900">오늘의 경험을 남겨보세요</h2>
+        <h2 className="text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
         <textarea
           placeholder="예: 오늘 팀 발표에서 갑자기 자료가 안 열려서 당황했는데, 즉석에서 화면 공유 없이 설명해서 넘겼다. 발표 끝나고 뿌듯했다."
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={8}
-          className="mt-4 w-full rounded-md border border-slate-300 p-3 text-sm focus:border-slate-500 focus:outline-none"
+          className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 p-3 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
         />
         <button
           type="button"
@@ -439,37 +439,37 @@ export function RecordPage() {
           type="button"
           onClick={backToSource}
           disabled={saving}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+          className="rounded-md border border-slate-700 px-3 py-1.5 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
         >
           ← {source === 'voice' ? '다시 녹음' : '다시 입력'}
         </button>
-        <p className="font-medium text-slate-900">2 / 2 · 저장 정보</p>
+        <p className="font-medium text-slate-50">2 / 2 · 저장 정보</p>
         <span className="w-16" />
       </div>
 
-      <div className="mt-4 rounded-md border border-slate-300 p-3">
-        <p className="text-xs text-slate-500">{source === 'voice' ? '녹음한 내용' : '입력한 내용'}</p>
+      <div className="mt-4 rounded-md border border-slate-700 bg-slate-900 p-3">
+        <p className="text-xs text-slate-400">{source === 'voice' ? '녹음한 내용' : '입력한 내용'}</p>
         {editingContent ? (
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={4}
-            className="mt-2 w-full rounded-md border border-slate-300 p-2 text-sm"
+            className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50"
           />
         ) : (
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{content}</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{content}</p>
         )}
         <button
           type="button"
           onClick={() => setEditingContent((prev) => !prev)}
-          className="mt-2 rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100"
+          className="mt-2 rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800"
         >
           {editingContent ? '수정 완료' : '내용 수정'}
         </button>
       </div>
 
       <div className="mt-4">
-        <p className="text-sm font-semibold text-slate-900">프로젝트 제목</p>
+        <p className="text-sm font-semibold text-slate-50">프로젝트 제목</p>
         <input
           type="text"
           list="project-title-options"
@@ -477,7 +477,7 @@ export function RecordPage() {
           value={projectTitle}
           onChange={(e) => setProjectTitle(e.target.value)}
           disabled={saving}
-          className="mt-1.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none disabled:opacity-50"
+          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none disabled:opacity-50"
         />
         <datalist id="project-title-options">
           {projectTitleOptions.map((title) => (
@@ -485,14 +485,14 @@ export function RecordPage() {
           ))}
         </datalist>
         {projectTitleOptions.length === 0 && (
-          <p className="mt-1.5 text-xs text-slate-500">추천할 기존 제목이 없습니다</p>
+          <p className="mt-1.5 text-xs text-slate-400">추천할 기존 제목이 없습니다</p>
         )}
       </div>
 
       <div className="mt-4">
-        <p className="text-sm font-semibold text-slate-900">컬렉션</p>
+        <p className="text-sm font-semibold text-slate-50">컬렉션</p>
         {collections.length === 0 ? (
-          <p className="mt-1.5 rounded-md border border-dashed border-slate-300 p-3 text-center text-xs text-slate-500">
+          <p className="mt-1.5 rounded-md border border-dashed border-slate-700 p-3 text-center text-xs text-slate-400">
             만든 컬렉션이 없습니다.
           </p>
         ) : null}
@@ -500,7 +500,7 @@ export function RecordPage() {
           value={collectionChoice}
           onChange={(e) => setCollectionChoice(e.target.value)}
           disabled={saving}
-          className="mt-1.5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none disabled:opacity-50"
+          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 focus:border-slate-500 focus:outline-none disabled:opacity-50"
         >
           <option value="">컬렉션 없음</option>
           {collections.map((c) => (
@@ -517,16 +517,16 @@ export function RecordPage() {
             value={newCollectionName}
             onChange={(e) => setNewCollectionName(e.target.value)}
             disabled={saving}
-            className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none disabled:opacity-50"
+            className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none disabled:opacity-50"
           />
         )}
       </div>
 
-      {statusMessage && <p className="mt-4 text-sm text-slate-500">{statusMessage}</p>}
+      {statusMessage && <p className="mt-4 text-sm text-slate-400">{statusMessage}</p>}
       {error && (
-        <div className="mt-4 rounded-md border border-slate-300 p-2.5 text-sm text-slate-800">
+        <div className="mt-4 rounded-md border border-slate-700 bg-slate-900 p-2.5 text-sm text-slate-100">
           <p>! {error}</p>
-          {structureFailed && <p className="mt-1 text-xs text-slate-500">기록 자체는 저장됨 · 구조화만 재시도</p>}
+          {structureFailed && <p className="mt-1 text-xs text-slate-400">기록 자체는 저장됨 · 구조화만 재시도</p>}
         </div>
       )}
 
@@ -543,7 +543,7 @@ export function RecordPage() {
           <button
             type="button"
             onClick={handleSkipStructuring}
-            className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+            className="rounded-md border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800"
           >
             구조화 없이 저장만 하고 나가기
           </button>
