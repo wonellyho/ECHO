@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // 에러를 반환하는데, 그 에러를 그대로 호출부에 돌려줘서 기존 에러 배너에 표시하게 한다.
 export type SocialProvider = 'google' | 'kakao';
 
-type AuthOnlyClient = Pick<SupabaseClient, 'auth'>;
+export type AuthOnlyClient = Pick<SupabaseClient, 'auth'>;
 
 export async function signInWithProvider(
   client: AuthOnlyClient,

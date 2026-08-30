@@ -1,12 +1,13 @@
 import { describe, expect, test, vi } from 'vitest';
 import { signInWithProvider } from './oauthProviders';
+import type { AuthOnlyClient } from './oauthProviders';
 
 function makeFakeClient(signInWithOAuthImpl: (args: unknown) => Promise<{ error: Error | null }>) {
   return {
     auth: {
       signInWithOAuth: vi.fn(signInWithOAuthImpl),
     },
-  };
+  } as unknown as AuthOnlyClient;
 }
 
 describe('signInWithProvider', () => {
