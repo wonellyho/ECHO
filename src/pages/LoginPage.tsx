@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { signInWithProvider, type SocialProvider } from '../lib/oauthProviders';
+import { Logo } from '../components/Logo';
+import { GoogleIcon, KakaoIcon } from '../components/icons';
 
 type Mode = 'login' | 'signup';
 
@@ -10,6 +13,7 @@ export function LoginPage() {
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
   // 프로젝트의 이메일 확인(confirm) 설정이 켜져 있으면 가입 직후 세션이 바로 생기지 않는다 —
   // 그 경우 로그인 화면으로 돌아가지 않고 "메일함을 확인해주세요" 안내만 보여준다.
   const [signupPendingEmail, setSignupPendingEmail] = useState<string | null>(null);
@@ -35,11 +39,8 @@ export function LoginPage() {
     if (error) throw error;
 
     if (!data.session) {
-      // 이메일 확인이 필요한 프로젝트 설정 — 가입은 됐지만 로그인은 메일 인증 후 가능.
       setSignupPendingEmail(email);
     }
-    // data.session이 바로 있으면(이메일 확인 비활성) useAuth의 onAuthStateChange가 감지해서
-    // 자동으로 로그인 상태로 전환된다 — 여기서 별도 네비게이션은 필요 없다.
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -61,10 +62,20 @@ export function LoginPage() {
     }
   }
 
+  async function handleSocialLogin(provider: SocialProvider) {
+    setError(null);
+    setSocialLoading(provider);
+    const { error } = await signInWithProvider(supabase, provider);
+    if (error) {
+      setError(error.message);
+    }
+    setSocialLoading(null);
+  }
+
   if (signupPendingEmail) {
     return (
       <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-6">
-        <h1 className="text-2xl font-semibold text-slate-900">ECHO</h1>
+        <Logo />
         <p className="mt-1 text-sm text-slate-500">경험을 기록하고, 나를 발견하다.</p>
 
         <div className="mt-6 rounded-md border border-slate-300 p-3 text-sm text-slate-700">
@@ -87,10 +98,31 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-6">
-      <h1 className="text-2xl font-semibold text-slate-900">ECHO</h1>
+      <Logo />
       <p className="mt-1 text-sm text-slate-500">경험을 기록하고, 나를 발견하다.</p>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+      <div className="mt-6 inline-flex rounded-full bg-slate-100 p-1 text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => switchMode('login')}
+          className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
+            mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+          }`}
+        >
+          로그인
+        </button>
+        <button
+          type="button"
+          onClick={() => switchMode('signup')}
+          className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
+            mode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+          }`}
+        >
+          회원가입
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <input
           type="email"
           placeholder="이메일"
@@ -125,11 +157,39 @@ export function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+          className="w-full rounded-full bg-gradient-to-r from-orange-400 to-pink-500 px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading ? (mode === 'login' ? '로그인 중...' : '가입 중...') : mode === 'login' ? '로그인' : '회원가입'}
         </button>
       </form>
+
+      <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
+        <div className="h-px flex-1 bg-slate-200" />
+        또는
+        <div className="h-px flex-1 bg-slate-200" />
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <button
+          type="button"
+          onClick={() => handleSocialLogin('google')}
+          disabled={socialLoading !== null}
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+        >
+          <GoogleIcon />
+          {socialLoading === 'google' ? '연결 중...' : 'Google로 계속하기'}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSocialLogin('kakao')}
+          disabled={socialLoading !== null}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-2.5 text-sm font-medium text-black/85 transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          <KakaoIcon />
+          {socialLoading === 'kakao' ? '연결 중...' : '카카오로 계속하기'}
+        </button>
+      </div>
+      <p className="mt-2 text-center text-xs text-slate-400">소셜 로그인은 설정 완료 후 사용할 수 있어요.</p>
 
       <button
         type="button"
