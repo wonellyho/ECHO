@@ -41,6 +41,8 @@ export function LoginPage() {
     if (!data.session) {
       setSignupPendingEmail(email);
     }
+    // data.session이 바로 존재하면(이메일 확인이 꺼져 있는 프로젝트 설정) 여기서 따로 화면을 전환할
+    // 필요가 없다 — useAuth 훅의 onAuthStateChange 리스너가 세션 생성을 감지해서 알아서 처리한다.
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -65,11 +67,16 @@ export function LoginPage() {
   async function handleSocialLogin(provider: SocialProvider) {
     setError(null);
     setSocialLoading(provider);
-    const { error } = await signInWithProvider(supabase, provider);
-    if (error) {
-      setError(error.message);
+    try {
+      const { error } = await signInWithProvider(supabase, provider);
+      if (error) {
+        setError(error.message);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '소셜 로그인에 실패했습니다.');
+    } finally {
+      setSocialLoading(null);
     }
-    setSocialLoading(null);
   }
 
   if (signupPendingEmail) {
@@ -105,6 +112,7 @@ export function LoginPage() {
         <button
           type="button"
           onClick={() => switchMode('login')}
+          aria-pressed={mode === 'login'}
           className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
             mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
           }`}
@@ -114,6 +122,7 @@ export function LoginPage() {
         <button
           type="button"
           onClick={() => switchMode('signup')}
+          aria-pressed={mode === 'signup'}
           className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
             mode === 'signup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
           }`}

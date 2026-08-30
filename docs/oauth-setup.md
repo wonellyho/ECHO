@@ -1,6 +1,6 @@
 # Google / Kakao 소셜 로그인 설정 가이드
 
-Task 1~4에서 만든 로그인 화면의 Google/Kakao 버튼은 이미 `supabase.auth.signInWithOAuth`를
+로그인 화면의 Google/Kakao 버튼은 이미 `supabase.auth.signInWithOAuth`를
 호출하는 실제 코드로 연결돼 있다. 아래 절차대로 Supabase 프로젝트에 provider를 등록하면
 **코드 수정 없이 바로 동작한다.**
 
