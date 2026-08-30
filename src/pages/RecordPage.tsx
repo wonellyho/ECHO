@@ -270,22 +270,22 @@ export function RecordPage() {
     return (
       <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col px-4 py-6">
         <Logo />
-        <h2 className="mt-6 text-xl font-semibold text-slate-900">오늘의 경험을 남겨보세요</h2>
-        <p className="mt-2 text-sm text-slate-500">말하거나 적으면 AI가 구조화해 둡니다.</p>
+        <h2 className="mt-6 text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
+        <p className="mt-2 text-sm text-slate-400">말하거나 적으면 AI가 구조화해 둡니다.</p>
 
         <div className="mt-6 flex flex-col gap-3">
           <button
             type="button"
             onClick={goToVoice}
             disabled={!speech.isSupported}
-            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500">
               <MicIcon className="h-5 w-5 text-white" />
             </span>
             <span>
-              <p className="text-sm font-semibold text-slate-900">음성으로 기록</p>
-              <p className="mt-0.5 text-xs text-slate-500">
+              <p className="text-sm font-semibold text-slate-50">음성으로 기록</p>
+              <p className="mt-0.5 text-xs text-slate-400">
                 {speech.isSupported ? '말하면 자동으로 글로 옮깁니다' : '사용 불가'}
               </p>
             </span>
@@ -293,26 +293,26 @@ export function RecordPage() {
           <button
             type="button"
             onClick={goToTyping}
-            className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left shadow-sm transition-colors hover:bg-slate-50"
+            className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-700">
               <TypingIcon className="h-5 w-5 text-white" />
             </span>
             <span>
-              <p className="text-sm font-semibold text-slate-900">타이핑으로 기록</p>
-              <p className="mt-0.5 text-xs text-slate-500">직접 입력합니다</p>
+              <p className="text-sm font-semibold text-slate-50">타이핑으로 기록</p>
+              <p className="mt-0.5 text-xs text-slate-400">직접 입력합니다</p>
             </span>
           </button>
         </div>
 
         {!speech.isSupported && (
-          <p className="mt-3 rounded-md border border-slate-300 p-2.5 text-xs text-slate-700">
+          <p className="mt-3 rounded-md border border-slate-700 p-2.5 text-xs text-slate-200">
             이 브라우저에서는 음성 입력을 쓸 수 없습니다. 타이핑으로 기록해주세요.
           </p>
         )}
 
         <div className="mt-auto flex flex-col items-center gap-2 pt-8">
-          <p className="text-xs text-slate-500">눌러서 바로 녹음 시작</p>
+          <p className="text-xs text-slate-400">눌러서 바로 녹음 시작</p>
           <button
             type="button"
             onClick={goToVoice}
