@@ -331,7 +331,7 @@ export function RecordPage() {
 
   if (step === 'voice') {
     return (
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-100 via-rose-100 to-pink-200 px-4 py-6">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-500 via-rose-500 to-pink-600 px-4 py-6">
         <div className="flex items-center justify-between text-sm">
           <button
             type="button"
@@ -340,7 +340,7 @@ export function RecordPage() {
           >
             ← 뒤로
           </button>
-          <p className="font-medium text-slate-900">
+          <p className="font-medium text-white">
             {speech.isRecording ? '듣고 있습니다...' : '음성으로 기록'}
           </p>
           <span className="w-16" />
@@ -350,7 +350,7 @@ export function RecordPage() {
           <VoiceWaveform history={micLevel.history} barClassName="bg-white/90" />
         </div>
 
-        <p className="mt-6 min-h-[3.5rem] whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-700">
+        <p className="mt-6 min-h-[3.5rem] whitespace-pre-wrap text-center text-sm leading-relaxed text-white/90">
           {speech.transcript ||
             (speech.isRecording ? '' : '아래 버튼을 눌러 시작하세요. 말한 내용이 이 자리에 실시간으로 표시됩니다.')}
         </p>
@@ -363,7 +363,7 @@ export function RecordPage() {
             )}
           </div>
         )}
-        {micLevel.error && <p className="mt-2 text-xs text-slate-600">{micLevel.error} (파형만 비활성됩니다)</p>}
+        {micLevel.error && <p className="mt-2 text-xs text-white/80">{micLevel.error} (파형만 비활성됩니다)</p>}
 
         <div className="mt-auto flex items-center justify-between pt-8">
           <button
@@ -403,7 +403,7 @@ export function RecordPage() {
             ✕
           </button>
         </div>
-        <p className="mt-2 text-center text-xs text-slate-600">가운데 버튼 = 녹음 정지 · 정지하면 저장 정보 입력으로</p>
+        <p className="mt-2 text-center text-xs text-white/70">가운데 버튼 = 녹음 정지 · 정지하면 저장 정보 입력으로</p>
       </div>
     );
   }
