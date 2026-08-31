@@ -312,7 +312,7 @@ export function EntryDetailPage() {
           {tab === 'pattern' && (
             <div className="mt-4">
               {relatedInsights.length === 0 ? (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-400">
                   이 기록과 관련된 패턴이 아직 없어요.{' '}
                   <Link to="/insights" className="font-medium text-slate-50 underline">
                     전체 패턴 분석 보러가기
