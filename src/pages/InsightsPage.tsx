@@ -108,25 +108,25 @@ export function InsightsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
-      <h2 className="text-xl font-semibold text-slate-900">나의 에너지 패턴</h2>
+      <h2 className="text-xl font-semibold text-slate-50">나의 에너지 패턴</h2>
 
       {entryCount < MIN_ENTRIES_FOR_INSIGHTS && (
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="mt-2 text-sm text-slate-400">
           기록이 {MIN_ENTRIES_FOR_INSIGHTS}개 이상 쌓이면 패턴을 분석해드려요. (현재 {entryCount}개)
         </p>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-      {loading && <p className="mt-2 text-sm text-slate-500">분석 중...</p>}
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      {loading && <p className="mt-2 text-sm text-slate-400">분석 중...</p>}
 
       {energizers.length > 0 && (
         <section className="mt-6">
-          <h3 className="text-sm font-medium text-slate-700">⚡ 에너지를 얻는 조건</h3>
+          <h3 className="text-sm font-medium text-slate-300">⚡ 에너지를 얻는 조건</h3>
           <ul className="mt-2 space-y-2">
             {energizers.map((item) => (
-              <li key={item.id} className="rounded-lg border-l-4 border-amber-400 bg-amber-50 p-3 shadow-sm">
-                <p className="text-sm text-slate-800">{item.summary}</p>
-                <p className="mt-1 text-xs text-slate-500">근거 기록 {item.evidence_entry_ids.length}건</p>
+              <li key={item.id} className="rounded-lg border-l-4 border-amber-400 bg-amber-500/10 p-3">
+                <p className="text-sm text-slate-100">{item.summary}</p>
+                <p className="mt-1 text-xs text-slate-400">근거 기록 {item.evidence_entry_ids.length}건</p>
               </li>
             ))}
           </ul>
@@ -135,12 +135,12 @@ export function InsightsPage() {
 
       {drainers.length > 0 && (
         <section className="mt-6">
-          <h3 className="text-sm font-medium text-slate-700">🔋 소진되는 조건</h3>
+          <h3 className="text-sm font-medium text-slate-300">🔋 소진되는 조건</h3>
           <ul className="mt-2 space-y-2">
             {drainers.map((item) => (
-              <li key={item.id} className="rounded-lg border-l-4 border-slate-400 bg-slate-50 p-3 shadow-sm">
-                <p className="text-sm text-slate-800">{item.summary}</p>
-                <p className="mt-1 text-xs text-slate-500">근거 기록 {item.evidence_entry_ids.length}건</p>
+              <li key={item.id} className="rounded-lg border-l-4 border-slate-400 bg-slate-500/10 p-3">
+                <p className="text-sm text-slate-100">{item.summary}</p>
+                <p className="mt-1 text-xs text-slate-400">근거 기록 {item.evidence_entry_ids.length}건</p>
               </li>
             ))}
           </ul>
