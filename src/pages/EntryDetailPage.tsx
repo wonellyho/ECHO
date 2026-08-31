@@ -166,13 +166,13 @@ export function EntryDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <h2 className="text-xl font-semibold text-slate-900">기록 상세</h2>
+      <h2 className="text-xl font-semibold text-slate-50">기록 상세</h2>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="rounded-lg bg-slate-50 p-4 shadow-sm lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
-          <p className="whitespace-pre-wrap text-sm text-slate-800">{rawText}</p>
+        <div className="rounded-lg bg-slate-900 p-4 lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
+          <p className="whitespace-pre-wrap text-sm text-slate-100">{rawText}</p>
           <div className="mt-3">
-            <p className="text-xs font-medium text-slate-500">
+            <p className="text-xs font-medium text-slate-400">
               태그 <span className="font-normal text-slate-400">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -194,19 +194,19 @@ export function EntryDetailPage() {
                 );
               })}
             </div>
-            {tagError && <p className="mt-1.5 text-xs text-red-600">{tagError}</p>}
+            {tagError && <p className="mt-1.5 text-xs text-red-400">{tagError}</p>}
           </div>
         </div>
 
         <div>
-          <div className="flex gap-2 border-b border-slate-200">
+          <div className="flex gap-2 border-b border-slate-800">
             <button
               type="button"
               onClick={() => setTab('structure')}
               className={`px-3 py-2 text-sm font-medium transition-colors ${
                 tab === 'structure'
-                  ? 'border-b-2 border-slate-900 text-slate-900'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'border-b-2 border-slate-50 text-slate-50'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               구조화
@@ -215,7 +215,7 @@ export function EntryDetailPage() {
               type="button"
               onClick={() => setTab('starwl')}
               className={`px-3 py-2 text-sm font-medium transition-colors ${
-                tab === 'starwl' ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700'
+                tab === 'starwl' ? 'border-b-2 border-slate-50 text-slate-50' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               STARWL
@@ -224,7 +224,9 @@ export function EntryDetailPage() {
               type="button"
               onClick={() => setTab('pattern')}
               className={`px-3 py-2 text-sm font-medium transition-colors ${
-                tab === 'pattern' ? 'border-b-2 border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700'
+                tab === 'pattern'
+                  ? 'border-b-2 border-slate-50 text-slate-50'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               패턴
@@ -234,7 +236,7 @@ export function EntryDetailPage() {
           {tab === 'structure' && (
             <div className="mt-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-slate-700">구조화 결과</h3>
+                <h3 className="text-sm font-medium text-slate-300">구조화 결과</h3>
                 {structured &&
                   (editing ? (
                     <button
@@ -249,7 +251,7 @@ export function EntryDetailPage() {
                     <button
                       type="button"
                       onClick={startEdit}
-                      className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+                      className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
                     >
                       수정
                     </button>
@@ -259,23 +261,23 @@ export function EntryDetailPage() {
               {structured ? (
                 <dl className="mt-2 space-y-2">
                   {STRUCTURED_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="rounded-lg bg-white p-3 shadow-sm">
-                      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+                    <div key={key} className="rounded-lg bg-slate-900 p-3">
+                      <dt className="text-xs font-medium text-slate-400">{label}</dt>
                       {editing ? (
                         <textarea
                           value={draft[key] ?? ''}
                           onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
                           rows={2}
-                          className="mt-1 w-full rounded-md border border-slate-300 p-2 text-sm"
+                          className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50"
                         />
                       ) : (
-                        <dd className="mt-1 text-sm text-slate-800">{structured[key] ?? '-'}</dd>
+                        <dd className="mt-1 text-sm text-slate-100">{structured[key] ?? '-'}</dd>
                       )}
                     </div>
                   ))}
                 </dl>
               ) : (
-                <p className="mt-2 text-sm text-slate-500">구조화 결과를 불러오는 중입니다...</p>
+                <p className="mt-2 text-sm text-slate-400">구조화 결과를 불러오는 중입니다...</p>
               )}
 
               <button
@@ -286,7 +288,7 @@ export function EntryDetailPage() {
               >
                 {starwlLoading ? '추출 중...' : starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
               </button>
-              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+              {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
             </div>
           )}
 
@@ -295,14 +297,14 @@ export function EntryDetailPage() {
               {starwl ? (
                 <dl className="space-y-2">
                   {STARWL_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="rounded-lg bg-white p-3 shadow-sm">
-                      <dt className="text-xs font-medium text-slate-500">{label}</dt>
-                      <dd className="mt-1 text-sm text-slate-800">{starwl[key] ?? '-'}</dd>
+                    <div key={key} className="rounded-lg bg-slate-900 p-3">
+                      <dt className="text-xs font-medium text-slate-400">{label}</dt>
+                      <dd className="mt-1 text-sm text-slate-100">{starwl[key] ?? '-'}</dd>
                     </div>
                   ))}
                 </dl>
               ) : (
-                <p className="text-sm text-slate-500">아직 추출한 STARWL이 없습니다.</p>
+                <p className="text-sm text-slate-400">아직 추출한 STARWL이 없습니다.</p>
               )}
             </div>
           )}
@@ -312,7 +314,7 @@ export function EntryDetailPage() {
               {relatedInsights.length === 0 ? (
                 <p className="text-sm text-slate-500">
                   이 기록과 관련된 패턴이 아직 없어요.{' '}
-                  <Link to="/insights" className="font-medium text-slate-900 underline">
+                  <Link to="/insights" className="font-medium text-slate-50 underline">
                     전체 패턴 분석 보러가기
                   </Link>
                 </p>
@@ -321,14 +323,14 @@ export function EntryDetailPage() {
                   {relatedInsights.map((item) => (
                     <li
                       key={item.id}
-                      className={`rounded-lg border-l-4 p-3 shadow-sm ${
-                        item.type === 'energizer' ? 'border-amber-400 bg-amber-50' : 'border-slate-400 bg-slate-50'
+                      className={`rounded-lg border-l-4 p-3 ${
+                        item.type === 'energizer' ? 'border-amber-400 bg-amber-500/10' : 'border-slate-400 bg-slate-500/10'
                       }`}
                     >
-                      <p className="text-xs font-medium text-slate-500">
+                      <p className="text-xs font-medium text-slate-400">
                         {item.type === 'energizer' ? '⚡ 에너지를 얻는 조건' : '🔋 소진되는 조건'}
                       </p>
-                      <p className="mt-1 text-sm text-slate-800">{item.summary}</p>
+                      <p className="mt-1 text-sm text-slate-100">{item.summary}</p>
                     </li>
                   ))}
                 </ul>
