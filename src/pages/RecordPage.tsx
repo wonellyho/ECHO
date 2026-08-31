@@ -278,7 +278,7 @@ export function RecordPage() {
             type="button"
             onClick={goToVoice}
             disabled={!speech.isSupported}
-            className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500">
               <MicIcon className="h-5 w-5 text-white" />
@@ -293,7 +293,7 @@ export function RecordPage() {
           <button
             type="button"
             onClick={goToTyping}
-            className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800"
+            className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-700">
               <TypingIcon className="h-5 w-5 text-white" />
@@ -331,7 +331,7 @@ export function RecordPage() {
 
   if (step === 'voice') {
     return (
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-500 via-rose-500 to-pink-600 px-4 py-6">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-600 via-rose-600 to-pink-700 px-4 py-6">
         <div className="flex items-center justify-between text-sm">
           <button
             type="button"
@@ -417,13 +417,13 @@ export function RecordPage() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={8}
-          className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 p-3 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+          className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 p-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
         />
         <button
           type="button"
           onClick={goToDetailsFromTyping}
           disabled={!canSubmitRecord(text)}
-          className="mt-4 w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+          className="mt-4 w-full rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
         >
           다음
         </button>
@@ -477,7 +477,7 @@ export function RecordPage() {
           value={projectTitle}
           onChange={(e) => setProjectTitle(e.target.value)}
           disabled={saving}
-          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:opacity-50"
         />
         <datalist id="project-title-options">
           {projectTitleOptions.map((title) => (
@@ -517,7 +517,7 @@ export function RecordPage() {
             value={newCollectionName}
             onChange={(e) => setNewCollectionName(e.target.value)}
             disabled={saving}
-            className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+            className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:opacity-50"
           />
         )}
       </div>
@@ -536,7 +536,7 @@ export function RecordPage() {
             type="button"
             onClick={handleRetryStructuring}
             disabled={saving}
-            className="rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
           >
             {saving ? '다시 시도 중...' : '다시 시도'}
           </button>
@@ -553,7 +553,7 @@ export function RecordPage() {
           type="button"
           onClick={handleSave}
           disabled={saving || !canSubmitRecord(content)}
-          className="mt-4 w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+          className="mt-4 w-full rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
         >
           {saving ? '저장 중...' : '기록 저장하기'}
         </button>

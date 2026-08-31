@@ -151,7 +151,7 @@ export function InsightsPage() {
         type="button"
         onClick={regenerate}
         disabled={loading}
-        className="mt-6 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+        className="mt-6 rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
       >
         다시 분석하기
       </button>

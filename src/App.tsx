@@ -12,7 +12,7 @@ function NavBar() {
 
   const linkClass = (active: boolean) =>
     `rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-      active ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-900'
+      active ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-800'
     }`;
 
   return (

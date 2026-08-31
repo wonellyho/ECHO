@@ -114,7 +114,7 @@ export function LoginPage() {
           onClick={() => switchMode('login')}
           aria-pressed={mode === 'login'}
           className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
-            mode === 'login' ? 'bg-slate-950 text-slate-50 shadow-sm' : 'text-slate-400'
+            mode === 'login' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400'
           }`}
         >
           로그인
@@ -124,7 +124,7 @@ export function LoginPage() {
           onClick={() => switchMode('signup')}
           aria-pressed={mode === 'signup'}
           className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
-            mode === 'signup' ? 'bg-slate-950 text-slate-50 shadow-sm' : 'text-slate-400'
+            mode === 'signup' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400'
           }`}
         >
           회원가입
@@ -138,7 +138,7 @@ export function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
         />
         <input
           type="password"
@@ -148,7 +148,7 @@ export function LoginPage() {
           required
           minLength={6}
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
         />
         {mode === 'signup' && (
           <input
@@ -159,7 +159,7 @@ export function LoginPage() {
             required
             minLength={6}
             autoComplete="new-password"
-            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
           />
         )}
         {error && <p className="text-sm text-red-400">{error}</p>}

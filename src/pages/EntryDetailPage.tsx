@@ -169,11 +169,11 @@ export function EntryDetailPage() {
       <h2 className="text-xl font-semibold text-slate-50">기록 상세</h2>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="rounded-lg bg-slate-900 p-4 lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
+        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
           <p className="whitespace-pre-wrap text-sm text-slate-100">{rawText}</p>
           <div className="mt-3">
             <p className="text-xs font-medium text-slate-400">
-              태그 <span className="font-normal text-slate-400">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
+              태그 <span className="font-normal text-slate-500">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1">
               {ALL_TAGS.map((tag) => {
@@ -243,7 +243,7 @@ export function EntryDetailPage() {
                       type="button"
                       onClick={saveEdit}
                       disabled={savingEdit}
-                      className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                      className="rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-600 disabled:opacity-50"
                     >
                       {savingEdit ? '저장 중...' : '저장'}
                     </button>
@@ -261,7 +261,7 @@ export function EntryDetailPage() {
               {structured ? (
                 <dl className="mt-2 space-y-2">
                   {STRUCTURED_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="rounded-lg bg-slate-900 p-3">
+                    <div key={key} className="rounded-lg border border-slate-800 bg-slate-900 p-3">
                       <dt className="text-xs font-medium text-slate-400">{label}</dt>
                       {editing ? (
                         <textarea
@@ -284,7 +284,7 @@ export function EntryDetailPage() {
                 type="button"
                 onClick={handleStarwlConvert}
                 disabled={starwlLoading || !structured}
-                className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 disabled:opacity-50"
+                className="mt-4 rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
               >
                 {starwlLoading ? '추출 중...' : starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
               </button>
@@ -297,7 +297,7 @@ export function EntryDetailPage() {
               {starwl ? (
                 <dl className="space-y-2">
                   {STARWL_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="rounded-lg bg-slate-900 p-3">
+                    <div key={key} className="rounded-lg border border-slate-800 bg-slate-900 p-3">
                       <dt className="text-xs font-medium text-slate-400">{label}</dt>
                       <dd className="mt-1 text-sm text-slate-100">{starwl[key] ?? '-'}</dd>
                     </div>

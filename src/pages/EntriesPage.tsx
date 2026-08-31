@@ -214,7 +214,7 @@ export function EntriesPage() {
           className={`relative flex h-44 flex-col overflow-hidden rounded-lg text-left transition-colors ${
             selected
               ? 'bg-gradient-to-br from-orange-500 to-pink-600 text-white'
-              : 'bg-slate-900 text-slate-100 hover:bg-slate-800'
+              : 'border border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800'
           }`}
         >
           <span
@@ -256,7 +256,7 @@ export function EntriesPage() {
         placeholder="키워드로 검색 (예: 갈등)"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+        className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
       />
 
       <div className="mt-3 flex flex-wrap gap-1.5">
