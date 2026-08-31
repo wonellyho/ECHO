@@ -189,7 +189,7 @@ export function EntriesPage() {
   const stackEntries = groups === null ? filtered : groups.flatMap((group) => group.entries);
 
   function renderCard(entry: EntryRow) {
-    const dividerClass = selectMode && selectedIds.has(entry.id) ? 'border-white/20' : 'border-slate-100';
+    const dividerClass = selectMode && selectedIds.has(entry.id) ? 'border-white/20' : 'border-slate-800';
     const cardBody = (
       <>
         <div className={`border-b px-3 py-2 ${dividerClass}`}>
@@ -211,13 +211,15 @@ export function EntriesPage() {
           key={entry.id}
           type="button"
           onClick={() => toggleSelected(entry.id)}
-          className={`relative flex h-44 flex-col overflow-hidden rounded-lg text-left shadow-sm transition-colors ${
-            selected ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 hover:bg-slate-50'
+          className={`relative flex h-44 flex-col overflow-hidden rounded-lg text-left transition-colors ${
+            selected
+              ? 'bg-gradient-to-br from-orange-500 to-pink-600 text-white'
+              : 'bg-slate-900 text-slate-100 hover:bg-slate-800'
           }`}
         >
           <span
             className={`absolute right-2 top-2 h-4 w-4 rounded-full border-2 ${
-              selected ? 'border-white bg-white' : 'border-slate-300'
+              selected ? 'border-white bg-white' : 'border-slate-600'
             }`}
           />
           {cardBody}
@@ -229,7 +231,7 @@ export function EntriesPage() {
       <Link
         key={entry.id}
         to={`/entries/${entry.id}`}
-        className="flex h-44 flex-col overflow-hidden rounded-lg bg-white text-slate-900 shadow-sm transition-shadow hover:shadow-md"
+        className="flex h-44 flex-col overflow-hidden rounded-lg bg-slate-900 text-slate-100 transition-shadow hover:shadow-md"
       >
         {cardBody}
       </Link>
@@ -239,11 +241,11 @@ export function EntriesPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 pb-24">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-900">내 경험 기록</h2>
+        <h2 className="text-xl font-semibold text-slate-50">내 경험 기록</h2>
         <button
           type="button"
           onClick={toggleSelectMode}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+          className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
         >
           {selectMode ? '선택 취소' : '선택'}
         </button>
@@ -254,7 +256,7 @@ export function EntriesPage() {
         placeholder="키워드로 검색 (예: 갈등)"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="mt-4 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
       />
 
       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -278,12 +280,12 @@ export function EntriesPage() {
           type="button"
           onClick={() => setSortOpen((prev) => !prev)}
           aria-expanded={sortOpen}
-          className="flex items-center gap-1 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+          className="flex items-center gap-1 rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
         >
           {SORT_OPTIONS.find((opt) => opt.value === sortMode)?.label ?? '정렬 방식'} {sortOpen ? '▲' : '▼'}
         </button>
         {sortOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div className="absolute left-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-800 bg-slate-900 py-1 shadow-lg">
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
@@ -295,8 +297,8 @@ export function EntriesPage() {
                 }}
                 className={`block w-full px-3 py-2 text-left text-sm transition-colors ${
                   sortMode === opt.value
-                    ? 'bg-slate-900 font-medium text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-slate-700 font-medium text-white'
+                    : 'text-slate-300 hover:bg-slate-800'
                 }`}
               >
                 {opt.label}
@@ -306,15 +308,15 @@ export function EntriesPage() {
         )}
       </div>
 
-      {loading && <p className="mt-4 text-sm text-slate-500">불러오는 중...</p>}
+      {loading && <p className="mt-4 text-sm text-slate-400">불러오는 중...</p>}
 
       {!loading && loadError && (
-        <div className="mt-4 rounded-lg border border-slate-300 p-3 text-sm">
-          <p className="text-slate-700">기록을 불러오지 못했습니다.</p>
+        <div className="mt-4 rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
+          <p className="text-slate-200">기록을 불러오지 못했습니다.</p>
           <button
             type="button"
             onClick={loadEntries}
-            className="mt-2 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+            className="mt-2 rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
           >
             다시 불러오기
           </button>
@@ -322,7 +324,7 @@ export function EntriesPage() {
       )}
 
       {!loading && !loadError && filtered.length === 0 && (
-        <p className="mt-4 text-sm text-slate-500">기록이 없습니다.</p>
+        <p className="mt-4 text-sm text-slate-400">기록이 없습니다.</p>
       )}
 
       {!loading &&
@@ -336,7 +338,7 @@ export function EntriesPage() {
           ) : (
             groups.map((group) => (
               <section key={group.key} className="mt-5">
-                <h3 className="text-sm font-semibold text-slate-700">{group.label}</h3>
+                <h3 className="text-sm font-semibold text-slate-300">{group.label}</h3>
                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                   {group.entries.map((entry) => renderCard(entry))}
                 </div>
@@ -350,13 +352,13 @@ export function EntriesPage() {
         ))}
 
       {selectMode && selectedIds.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 flex flex-col gap-2 border-t border-slate-200 bg-white p-3 shadow-[0_-1px_4px_rgba(0,0,0,0.05)]">
-          <p className="text-xs text-slate-500">{selectedIds.size}개 선택됨</p>
+        <div className="fixed inset-x-0 bottom-0 flex flex-col gap-2 border-t border-slate-800 bg-slate-900 p-3">
+          <p className="text-xs text-slate-400">{selectedIds.size}개 선택됨</p>
           <div className="flex gap-2">
             <select
               value={bulkCollectionChoice}
               onChange={(e) => setBulkCollectionChoice(e.target.value)}
-              className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-50"
             >
               <option value="">컬렉션 선택</option>
               {collections.map((c) => (
@@ -370,7 +372,7 @@ export function EntriesPage() {
               type="button"
               onClick={handleBulkAddToCollection}
               disabled={bulkSaving || !bulkCollectionChoice}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-md bg-gradient-to-r from-orange-400 to-pink-500 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
               추가
             </button>
@@ -381,10 +383,10 @@ export function EntriesPage() {
               placeholder="새 컬렉션 이름"
               value={newBulkCollectionName}
               onChange={(e) => setNewBulkCollectionName(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-50"
             />
           )}
-          {bulkError && <p className="text-xs text-red-600">{bulkError}</p>}
+          {bulkError && <p className="text-xs text-red-400">{bulkError}</p>}
         </div>
       )}
     </div>
