@@ -5,8 +5,9 @@ import { useSpeechInput } from '../lib/useSpeechInput';
 import { useMicLevel } from '../lib/useMicLevel';
 import { VoiceWaveform } from '../components/VoiceWaveform';
 import { Logo } from '../components/Logo';
-import { MicIcon, StopIcon, TypingIcon } from '../components/icons';
+import { CheckIcon, KeyboardIcon, MicIcon, PauseIcon, PlayIcon, TrashIcon, TypingIcon } from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
+import { formatDuration } from '../lib/formatDuration';
 import type { ExperienceTag } from '../types';
 
 interface StructureResponse {
@@ -43,6 +44,17 @@ export function RecordPage() {
   const [text, setText] = useState('');
   const [editingContent, setEditingContent] = useState(false);
 
+  // 녹화 화면 경과 시간. 녹음 중일 때만 흐르고, 일시정지하면 멈췄다가 이어 녹음하면
+  // 리셋하지 않고 멈춘 지점부터 계속된다 — 받아쓰기 내용이 이어붙는 동작과 일관되게.
+  // 틱마다 고정값을 더하면 브라우저가 백그라운드 탭의 interval을 1초로 묶을 때 시간이 어긋나므로,
+  // 실제 벽시계(Date.now)로 계산하고 일시정지 시점의 누적분만 ref에 접어둔다.
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const elapsedBaseRef = useRef(0);
+  const recordingStartedAtRef = useRef<number | null>(null);
+  // 사용자가 ✓(완료)를 눌렀는지. 단순 일시정지(⏸)와 구분하기 위한 값 —
+  // 완료 상태에서만 가운데 버튼이 "넘어가기"가 된다.
+  const [voiceDone, setVoiceDone] = useState(false);
+
   const [projectTitle, setProjectTitle] = useState('');
   const [projectTitleOptions, setProjectTitleOptions] = useState<string[]>([]);
   const [collections, setCollections] = useState<CollectionOption[]>([]);
@@ -78,19 +90,38 @@ export function RecordPage() {
     })();
   }, []);
 
-  // 화면을 떠날 때 마이크가 계속 켜져 있지 않도록 정리.
+  // 녹음 중일 때만 경과 시간이 흐른다. 멈추면 그때까지의 실제 경과를 누적분에 접어두고,
+  // 화면을 떠날 때도 같은 정리 경로로 interval이 해제된다.
   useEffect(() => {
-    return () => {
-      micLevel.stop();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!speech.isRecording) {
+      if (recordingStartedAtRef.current !== null) {
+        elapsedBaseRef.current += Date.now() - recordingStartedAtRef.current;
+        recordingStartedAtRef.current = null;
+        setElapsedMs(elapsedBaseRef.current);
+      }
+      return;
+    }
+    const startedAt = Date.now();
+    recordingStartedAtRef.current = startedAt;
+    const id = setInterval(() => {
+      setElapsedMs(elapsedBaseRef.current + (Date.now() - startedAt));
+    }, 200);
+    return () => clearInterval(id);
+  }, [speech.isRecording]);
+
+  function resetVoiceTimer() {
+    elapsedBaseRef.current = 0;
+    recordingStartedAtRef.current = null;
+    setElapsedMs(0);
+  }
 
   function goToVoice() {
     if (!speech.isSupported) return;
     setSource('voice');
     setStep('voice');
     setError(null);
+    resetVoiceTimer();
+    setVoiceDone(false);
     speech.start();
     micLevel.start();
   }
@@ -100,14 +131,27 @@ export function RecordPage() {
     setStep('typing');
   }
 
-  function stopVoiceAndContinue() {
+  // ⏸ 일시정지 — 녹음만 멈춘다. 가운데 버튼은 아직 ✓(완료) 상태로 남는다.
+  function pauseVoiceRecording() {
     speech.stop();
     micLevel.stop();
+  }
+
+  // ✓ 완료 — 녹음을 멈추고 "넘어갈 준비가 됐다" 상태로 바꾼다. 화면 전환은 하지 않는다.
+  function finishVoiceRecording() {
+    speech.stop();
+    micLevel.stop();
+    setVoiceDone(true);
+  }
+
+  // "넘어가기" — 실제로 저장 정보 입력 단계로 넘어간다.
+  function goToDetailsFromVoice() {
     if (!canSubmitRecord(speech.transcript)) return;
     setStep('details');
   }
 
   function resumeVoiceRecording() {
+    setVoiceDone(false);
     speech.start();
     micLevel.start();
   }
@@ -124,6 +168,8 @@ export function RecordPage() {
     speech.stop();
     micLevel.stop();
     speech.setTranscript('');
+    resetVoiceTimer();
+    setVoiceDone(false);
     setStep('choice');
   }
 
@@ -137,6 +183,7 @@ export function RecordPage() {
     setError(null);
     if (source === 'voice') {
       setStep('voice');
+      setVoiceDone(false);
       speech.start();
       micLevel.start();
     } else {
@@ -331,79 +378,117 @@ export function RecordPage() {
 
   if (step === 'voice') {
     return (
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-600 via-rose-600 to-pink-700 px-4 py-6">
+      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-100 via-orange-400 to-orange-700 px-4 py-6">
         <div className="flex items-center justify-between text-sm">
           <button
             type="button"
             onClick={cancelVoice}
-            className="rounded-full border border-white/60 bg-white/50 px-3 py-1.5 text-slate-700 hover:bg-white/70"
+            className="rounded-full border border-white/80 bg-white/60 px-3 py-1.5 text-slate-800 hover:bg-white/80"
           >
             ← 뒤로
           </button>
-          <p className="font-medium text-white">
-            {speech.isRecording ? '듣고 있습니다...' : '음성으로 기록'}
-          </p>
-          <span className="w-16" />
+          <button
+            type="button"
+            onClick={switchVoiceToTyping}
+            aria-label="타이핑으로 전환"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/60 text-slate-800 hover:bg-white/80"
+          >
+            <KeyboardIcon className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="mt-6">
-          <VoiceWaveform history={micLevel.history} barClassName="bg-white/90" />
+        <p className="mt-4 text-center text-sm font-medium text-slate-800" aria-live="polite">
+          {speech.isRecording ? '듣고 있습니다...' : voiceDone ? '녹음을 마쳤습니다' : '일시정지됨'}
+        </p>
+
+        <div className="mt-4">
+          <VoiceWaveform history={micLevel.history} />
         </div>
 
-        <p className="mt-6 min-h-[3.5rem] whitespace-pre-wrap text-center text-sm leading-relaxed text-white/90">
+        {/* 타이머·대본·마이크 오류는 그라디언트의 밝은 절반(대략 orange-300~400) 위에 앉으므로
+            흰 글씨는 대비가 2:1 남짓밖에 안 나온다. 아래 힌트와 달리 어두운 글씨를 쓴다. */}
+        <p className="text-center text-4xl font-semibold tabular-nums text-slate-800" role="timer">
+          {formatDuration(elapsedMs)}
+        </p>
+
+        <p className="mt-5 min-h-[3.5rem] whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-800">
           {speech.transcript ||
             (speech.isRecording ? '' : '아래 버튼을 눌러 시작하세요. 말한 내용이 이 자리에 실시간으로 표시됩니다.')}
         </p>
 
         {speech.error && (
-          <div className="mt-4 rounded-2xl border border-white/60 bg-white/50 p-2.5 text-sm text-slate-800">
-            <p>! 음성을 인식하지 못했습니다. 다시 시도하거나 타이핑으로 남겨주세요.</p>
+          <div className="mt-4 rounded-2xl border border-white/80 bg-white/60 p-2.5 text-sm text-slate-800">
+            {/* 훅이 침묵 같은 정상 상황과 실제 오류(마이크 끊김, 권한 거부 등)를 이미 구분해서
+                올려주므로, 원인을 뭉뚱그리지 않고 그대로 보여준다. */}
+            <p>! {speech.error}</p>
+            <p className="mt-1 text-xs text-slate-600">다시 시도하거나 타이핑으로 남겨주세요.</p>
             {speech.transcript && (
               <p className="mt-1 text-xs text-slate-600">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
             )}
           </div>
         )}
-        {micLevel.error && <p className="mt-2 text-xs text-white/80">{micLevel.error} (파형만 비활성됩니다)</p>}
+        {/* 대본 길이에 따라 세로 위치가 밀리므로, 그라디언트 위에 직접 얹지 않고 흰 박스에 담아
+            위치와 무관하게 대비를 고정한다 (speech.error 박스와 동일한 처리). */}
+        {micLevel.error && (
+          <p className="mt-2 rounded-xl bg-white/60 px-2.5 py-1.5 text-xs text-slate-800">
+            {micLevel.error} (파형만 비활성됩니다)
+          </p>
+        )}
 
         <div className="mt-auto flex items-center justify-between pt-8">
-          <button
-            type="button"
-            onClick={switchVoiceToTyping}
-            aria-label="타이핑으로 전환"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/50 text-[10px] text-slate-700 hover:bg-white/70"
-          >
-            키보드
-          </button>
           {speech.isRecording ? (
             <button
               type="button"
-              onClick={stopVoiceAndContinue}
-              aria-label="녹음 정지"
-              className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 shadow-lg"
+              onClick={pauseVoiceRecording}
+              aria-label="일시정지"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-orange-700 shadow-md hover:bg-orange-50"
             >
-              <StopIcon className="h-7 w-7 rounded-sm bg-white" />
+              <PauseIcon className="h-5 w-5" />
             </button>
           ) : (
             <button
               type="button"
               onClick={resumeVoiceRecording}
-              aria-label="다시 녹음"
-              className="flex h-28 w-28 flex-col items-center justify-center gap-1 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 text-[10px] text-white shadow-lg"
+              aria-label="이어 녹음"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-orange-700 shadow-md hover:bg-orange-50"
             >
-              <MicIcon className="h-6 w-6 text-white" />
-              다시
+              <PlayIcon className="h-5 w-5" />
             </button>
           )}
+
+          {voiceDone ? (
+            <button
+              type="button"
+              onClick={goToDetailsFromVoice}
+              disabled={!canSubmitRecord(speech.transcript)}
+              className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-base font-semibold text-orange-700 shadow-lg disabled:opacity-50"
+            >
+              넘어가기
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={finishVoiceRecording}
+              aria-label="녹음 완료"
+              className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-orange-700 shadow-lg"
+            >
+              <CheckIcon className="h-9 w-9" />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={cancelVoice}
-            aria-label="취소"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/60 bg-white/50 text-slate-700 hover:bg-white/70"
+            aria-label="삭제"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-orange-700 shadow-md hover:bg-orange-50"
           >
-            ✕
+            <TrashIcon className="h-5 w-5" />
           </button>
         </div>
-        <p className="mt-2 text-center text-xs text-white/70">가운데 버튼 = 녹음 정지 · 정지하면 저장 정보 입력으로</p>
+
+        {voiceDone && !canSubmitRecord(speech.transcript) && (
+          <p className="mt-3 text-center text-xs text-white">먼저 녹음해주세요</p>
+        )}
       </div>
     );
   }
