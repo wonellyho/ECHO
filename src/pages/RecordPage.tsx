@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
-import { useMicLevel } from '../lib/useMicLevel';
-import { VoiceWaveform } from '../components/VoiceWaveform';
+import { useMicAnalyser } from '../lib/useMicAnalyser';
+import { AmbientVoiceField } from '../components/AmbientVoiceField';
 import { Logo } from '../components/Logo';
 import { CheckIcon, KeyboardIcon, MicIcon, PauseIcon, PlayIcon, TrashIcon, TypingIcon } from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
@@ -34,10 +34,55 @@ const NEW_COLLECTION_VALUE = '__new__';
 type Step = 'choice' | 'voice' | 'typing' | 'details';
 type Source = 'voice' | 'typing';
 
+// nav "기록"으로 나가려 할 때 작성 중인 내용이 사라지는 걸 알리는 확인창.
+// 3분짜리 녹음을 실수로 날리지 않게 하기 위한 것이라, 내용이 있을 때만 띄운다.
+function LeaveConfirmDialog({
+  alreadySaved,
+  onCancel,
+  onConfirm,
+}: {
+  /** 저장은 됐고 구조화만 실패한 상태인지 — 이 경우 "사라진다"는 안내는 사실이 아니다. */
+  alreadySaved: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6">
+      <div className="w-full max-w-xs rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <p className="text-sm font-medium text-slate-50">
+          {alreadySaved ? '구조화를 마치지 않고 나갑니다' : '작성 중인 내용이 사라집니다'}
+        </p>
+        <p className="mt-1.5 text-xs text-slate-400">
+          {alreadySaved
+            ? '기록 자체는 이미 저장되어 있고, AI 구조화만 아직 안 된 상태입니다. 나중에 기록 상세에서 다시 시도할 수 있어요.'
+            : '지금까지 기록한 내용은 저장되지 않았습니다. 첫 화면으로 나갈까요?'}
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
+          >
+            계속 작성
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-md bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600"
+          >
+            나가기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RecordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const speech = useSpeechInput();
-  const micLevel = useMicLevel();
+  const mic = useMicAnalyser();
 
   const [step, setStep] = useState<Step>('choice');
   const [source, setSource] = useState<Source>('typing');
@@ -54,6 +99,8 @@ export function RecordPage() {
   // 사용자가 ✓(완료)를 눌렀는지. 단순 일시정지(⏸)와 구분하기 위한 값 —
   // 완료 상태에서만 가운데 버튼이 "넘어가기"가 된다.
   const [voiceDone, setVoiceDone] = useState(false);
+  // nav "기록"으로 나가려는데 작성 중인 내용이 있어 확인을 띄운 상태.
+  const [confirmLeave, setConfirmLeave] = useState(false);
 
   const [projectTitle, setProjectTitle] = useState('');
   const [projectTitleOptions, setProjectTitleOptions] = useState<string[]>([]);
@@ -109,6 +156,18 @@ export function RecordPage() {
     return () => clearInterval(id);
   }, [speech.isRecording]);
 
+  // 녹음 중 실시간 대본이 길어지면 새로 인식된 말이 접힌 부분 아래로 들어가, 말하는 사람이
+  // 첫 문장만 계속 보게 된다. 새 내용이 붙을 때마다 바닥으로 따라 내린다.
+  // 다만 사용자가 위로 올려 앞부분을 읽는 중이면 끌어내리지 않는다.
+  const liveTranscriptRef = useRef<HTMLParagraphElement | null>(null);
+  useEffect(() => {
+    const el = liveTranscriptRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom > 48) return;
+    el.scrollTop = el.scrollHeight;
+  }, [speech.transcript]);
+
   function resetVoiceTimer() {
     elapsedBaseRef.current = 0;
     recordingStartedAtRef.current = null;
@@ -123,7 +182,7 @@ export function RecordPage() {
     resetVoiceTimer();
     setVoiceDone(false);
     speech.start();
-    micLevel.start();
+    mic.start();
   }
 
   function goToTyping() {
@@ -134,13 +193,13 @@ export function RecordPage() {
   // ⏸ 일시정지 — 녹음만 멈춘다. 가운데 버튼은 아직 ✓(완료) 상태로 남는다.
   function pauseVoiceRecording() {
     speech.stop();
-    micLevel.stop();
+    mic.stop();
   }
 
   // ✓ 완료 — 녹음을 멈추고 "넘어갈 준비가 됐다" 상태로 바꾼다. 화면 전환은 하지 않는다.
   function finishVoiceRecording() {
     speech.stop();
-    micLevel.stop();
+    mic.stop();
     setVoiceDone(true);
   }
 
@@ -153,23 +212,31 @@ export function RecordPage() {
   function resumeVoiceRecording() {
     setVoiceDone(false);
     speech.start();
-    micLevel.start();
+    mic.start();
   }
 
   function switchVoiceToTyping() {
     speech.stop();
-    micLevel.stop();
+    mic.stop();
     setText(speech.transcript);
     setSource('typing');
     setStep('typing');
   }
 
-  function cancelVoice() {
-    speech.stop();
-    micLevel.stop();
-    speech.setTranscript('');
-    resetVoiceTimer();
+  // 타이핑 화면에서 다시 음성으로. 지금까지 친 글을 받아쓰기 기준값으로 옮겨두면
+  // 이어서 말한 내용이 그 뒤에 붙는다.
+  function switchTypingToVoice() {
+    if (!speech.isSupported) return;
+    speech.setTranscript(text);
+    setSource('voice');
+    setStep('voice');
     setVoiceDone(false);
+    speech.start();
+    mic.start();
+  }
+
+  function cancelVoice() {
+    resetRecordState();
     setStep('choice');
   }
 
@@ -178,6 +245,64 @@ export function RecordPage() {
     setStep('details');
   }
 
+  // 기록 플로우의 모든 상태를 처음으로 되돌린다.
+  // 일부만 지우면 이전 시도의 잔재(특히 structureFailed와 savedEntryIdRef)가 남아,
+  // 새로 녹음한 내용이 details 단계에서 저장 버튼 대신 "이전 기록 구조화 재시도" 화면을
+  // 만나 영영 저장할 수 없게 된다. 그래서 리셋 지점을 한 곳으로 모은다.
+  function resetRecordState() {
+    speech.stop();
+    mic.stop();
+    speech.setTranscript('');
+    setText('');
+    resetVoiceTimer();
+    setVoiceDone(false);
+    setEditingContent(false);
+    setError(null);
+    setStatusMessage(null);
+    setStructureFailed(false);
+    savedEntryIdRef.current = null;
+    savedRawTextRef.current = '';
+    setProjectTitle('');
+    setCollectionChoice('');
+    setNewCollectionName('');
+  }
+
+  // nav의 "기록" 탭 — 어느 단계에 있든 첫 화면(선택)으로 돌아간다.
+  // 작성 중인 내용이 있으면 곧바로 버리지 않고 한 번 확인한다.
+  function returnToChoice() {
+    resetRecordState();
+    setStep('choice');
+    setConfirmLeave(false);
+  }
+
+  function requestReturnToChoice() {
+    if (step === 'choice') return;
+    // 저장이 진행 중이면 끼어들지 않는다 — 중간에 화면을 되돌려도 저장 요청은 계속 날아가고,
+    // 성공하면 몇 초 뒤 갑자기 상세 화면으로 튕겨 나간다.
+    // 다만 아무 반응 없이 무시하면 탭이 먹힌 것처럼 보이므로 이유를 알려준다.
+    if (saving) {
+      setStatusMessage('저장 중입니다. 잠시만 기다려주세요.');
+      return;
+    }
+    if (canSubmitRecord(content)) {
+      setConfirmLeave(true);
+      return;
+    }
+    returnToChoice();
+  }
+
+  // nav에서 "기록"을 누르면 같은 경로라도 새 location.key가 생긴다. 그걸 신호로 삼아
+  // 첫 화면으로 되돌린다 (최초 마운트 때의 key는 무시).
+  // "마지막으로 처리한 key"를 들고 있어야 한다. 마운트 시점의 key로만 비교하면, 확인창에서
+  // "계속 작성"을 고른 뒤 브라우저 뒤로가기로 원래 key에 돌아왔을 때 아무 반응도 하지 않는다.
+  const handledLocationKeyRef = useRef(location.key);
+  useEffect(() => {
+    if (location.key === handledLocationKeyRef.current) return;
+    handledLocationKeyRef.current = location.key;
+    requestReturnToChoice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
   // "다시 녹음" / "다시 입력" — 이전 단계로 돌아가되 지금까지의 내용은 유지한다.
   function backToSource() {
     setError(null);
@@ -185,7 +310,7 @@ export function RecordPage() {
       setStep('voice');
       setVoiceDone(false);
       speech.start();
-      micLevel.start();
+      mic.start();
     } else {
       setStep('typing');
     }
@@ -377,117 +502,149 @@ export function RecordPage() {
   }
 
   if (step === 'voice') {
+    // 높이를 고정하되 100vh가 아니라 100dvh를 쓴다 — iOS Safari의 100vh는 주소창을 무시한
+    // "큰 뷰포트" 기준이라, 고정 높이로 잡으면 하단 컨트롤이 툴바 아래에 깔려 손이 닿지 않는다.
+    // 그리고 본문은 스크롤되게 두고 컨트롤 줄은 sticky로 바닥에 붙여, 화면이 아무리 낮아도
+    // (가로 모드 등) 녹음을 멈출 수단이 사라지지 않게 한다.
     return (
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col bg-gradient-to-b from-orange-100 via-orange-400 to-orange-700 px-4 py-6">
-        <div className="flex items-center justify-between text-sm">
-          <button
-            type="button"
-            onClick={cancelVoice}
-            className="rounded-full border border-white/80 bg-white/60 px-3 py-1.5 text-slate-800 hover:bg-white/80"
+      <div className="relative isolate mx-auto flex h-[calc(100dvh-3.5rem)] max-w-md flex-col overflow-hidden bg-[#fdf4ec]">
+        <AmbientVoiceField analyserRef={mic.analyserRef} />
+
+        {/* 시각화는 배경 레이어이고 조작 요소는 전부 그 위에 얹는다. */}
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
+          <div className="flex items-center justify-between text-sm">
+            <button
+              type="button"
+              onClick={requestReturnToChoice}
+              className="rounded-full bg-white/70 px-3 py-1.5 text-slate-700 ring-1 ring-slate-900/10 backdrop-blur-sm hover:bg-white/90"
+            >
+              ← 뒤로
+            </button>
+            <button
+              type="button"
+              onClick={switchVoiceToTyping}
+              aria-label="타이핑으로 전환"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-slate-700 ring-1 ring-slate-900/10 backdrop-blur-sm hover:bg-white/90"
+            >
+              <KeyboardIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          <p
+            className="mt-6 text-center text-sm font-medium tracking-wide text-slate-700"
+            aria-live="polite"
           >
-            ← 뒤로
-          </button>
-          <button
-            type="button"
-            onClick={switchVoiceToTyping}
-            aria-label="타이핑으로 전환"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 bg-white/60 text-slate-800 hover:bg-white/80"
+            {speech.isRecording ? '듣고 있어요' : voiceDone ? '녹음을 마쳤어요' : '잠시 멈췄어요'}
+          </p>
+
+          <p
+            className="mt-2 text-center text-5xl font-light tabular-nums text-slate-800"
+            role="timer"
           >
-            <KeyboardIcon className="h-4 w-4" />
-          </button>
-        </div>
+            {formatDuration(elapsedMs)}
+          </p>
 
-        <p className="mt-4 text-center text-sm font-medium text-slate-800" aria-live="polite">
-          {speech.isRecording ? '듣고 있습니다...' : voiceDone ? '녹음을 마쳤습니다' : '일시정지됨'}
-        </p>
-
-        <div className="mt-4">
-          <VoiceWaveform history={micLevel.history} />
-        </div>
-
-        {/* 타이머·대본·마이크 오류는 그라디언트의 밝은 절반(대략 orange-300~400) 위에 앉으므로
-            흰 글씨는 대비가 2:1 남짓밖에 안 나온다. 아래 힌트와 달리 어두운 글씨를 쓴다. */}
-        <p className="text-center text-4xl font-semibold tabular-nums text-slate-800" role="timer">
-          {formatDuration(elapsedMs)}
-        </p>
-
-        <p className="mt-5 min-h-[3.5rem] whitespace-pre-wrap text-center text-sm leading-relaxed text-slate-800">
-          {speech.transcript ||
-            (speech.isRecording ? '' : '아래 버튼을 눌러 시작하세요. 말한 내용이 이 자리에 실시간으로 표시됩니다.')}
-        </p>
-
-        {speech.error && (
-          <div className="mt-4 rounded-2xl border border-white/80 bg-white/60 p-2.5 text-sm text-slate-800">
-            {/* 훅이 침묵 같은 정상 상황과 실제 오류(마이크 끊김, 권한 거부 등)를 이미 구분해서
-                올려주므로, 원인을 뭉뚱그리지 않고 그대로 보여준다. */}
-            <p>! {speech.error}</p>
-            <p className="mt-1 text-xs text-slate-600">다시 시도하거나 타이핑으로 남겨주세요.</p>
-            {speech.transcript && (
-              <p className="mt-1 text-xs text-slate-600">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
+          {/* 녹음 중에는 실시간 표시(읽기 전용), 멈추면 그 자리에서 바로 고칠 수 있는 입력이 된다.
+              커서를 올린 곳부터 수정 가능하도록 textarea를 그대로 노출한다. */}
+          <div className="mt-8 min-h-0 flex-1">
+            {speech.isRecording ? (
+              <p
+                ref={liveTranscriptRef}
+                className="h-full overflow-y-auto whitespace-pre-wrap text-center text-lg leading-relaxed text-slate-800"
+              >
+                {speech.transcript || '말씀하시면 이 자리에 실시간으로 옮겨 적어요.'}
+              </p>
+            ) : (
+              <textarea
+                value={speech.transcript}
+                onChange={(e) => speech.setTranscript(e.target.value)}
+                placeholder="여기에 직접 입력하거나, 녹음한 내용을 고칠 수 있어요."
+                aria-label="녹음한 내용 (수정 가능)"
+                className="h-full min-h-[6rem] w-full resize-none rounded-2xl bg-white/60 p-4 text-lg leading-relaxed text-slate-800 placeholder:text-slate-600 focus:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/60"
+              />
             )}
           </div>
-        )}
-        {/* 대본 길이에 따라 세로 위치가 밀리므로, 그라디언트 위에 직접 얹지 않고 흰 박스에 담아
-            위치와 무관하게 대비를 고정한다 (speech.error 박스와 동일한 처리). */}
-        {micLevel.error && (
-          <p className="mt-2 rounded-xl bg-white/60 px-2.5 py-1.5 text-xs text-slate-800">
-            {micLevel.error} (파형만 비활성됩니다)
-          </p>
-        )}
 
-        <div className="mt-auto flex items-center justify-between pt-8">
-          {speech.isRecording ? (
-            <button
-              type="button"
-              onClick={pauseVoiceRecording}
-              aria-label="일시정지"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-orange-700 shadow-md hover:bg-orange-50"
-            >
-              <PauseIcon className="h-5 w-5" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={resumeVoiceRecording}
-              aria-label="이어 녹음"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-orange-700 shadow-md hover:bg-orange-50"
-            >
-              <PlayIcon className="h-5 w-5" />
-            </button>
+          {speech.error && (
+            <div className="mt-4 rounded-2xl bg-white/75 p-2.5 text-sm text-slate-800 backdrop-blur-sm">
+              {/* 훅이 침묵 같은 정상 상황과 실제 오류(마이크 끊김, 권한 거부 등)를 이미 구분해서
+                  올려주므로, 원인을 뭉뚱그리지 않고 그대로 보여준다. */}
+              <p>! {speech.error}</p>
+              <p className="mt-1 text-xs text-slate-600">다시 시도하거나 타이핑으로 남겨주세요.</p>
+              {speech.transcript && (
+                <p className="mt-1 text-xs text-slate-600">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
+              )}
+            </div>
+          )}
+          {mic.error && (
+            <p className="mt-2 rounded-xl bg-white/75 px-2.5 py-1.5 text-xs text-slate-800 backdrop-blur-sm">
+              {mic.error} (배경 시각화만 비활성됩니다)
+            </p>
           )}
 
-          {voiceDone ? (
-            <button
-              type="button"
-              onClick={goToDetailsFromVoice}
-              disabled={!canSubmitRecord(speech.transcript)}
-              className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-base font-semibold text-orange-700 shadow-lg disabled:opacity-50"
-            >
-              넘어가기
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={finishVoiceRecording}
-              aria-label="녹음 완료"
-              className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-orange-700 shadow-lg"
-            >
-              <CheckIcon className="h-9 w-9" />
-            </button>
-          )}
+          {/* 본문이 길어져 스크롤되더라도 컨트롤은 항상 바닥에 붙어 있어야 한다. */}
+          <div className="sticky bottom-0 mt-8 flex items-center justify-between pb-1">
+            {speech.isRecording ? (
+              <button
+                type="button"
+                onClick={pauseVoiceRecording}
+                aria-label="일시정지"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
+              >
+                <PauseIcon className="h-5 w-5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={resumeVoiceRecording}
+                aria-label="이어 녹음"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
+              >
+                <PlayIcon className="h-5 w-5" />
+              </button>
+            )}
 
-          <button
-            type="button"
-            onClick={cancelVoice}
-            aria-label="삭제"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-orange-700 shadow-md hover:bg-orange-50"
-          >
-            <TrashIcon className="h-5 w-5" />
-          </button>
+            {voiceDone ? (
+              <button
+                type="button"
+                onClick={goToDetailsFromVoice}
+                disabled={!canSubmitRecord(speech.transcript)}
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-lg font-medium text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15 disabled:opacity-50"
+              >
+                저장
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={finishVoiceRecording}
+                aria-label="녹음 완료"
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15"
+              >
+                <CheckIcon className="h-9 w-9" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={cancelVoice}
+              aria-label="삭제"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          {voiceDone && !canSubmitRecord(speech.transcript) && (
+            <p className="mt-3 text-center text-xs text-slate-700">먼저 녹음해주세요</p>
+          )}
         </div>
 
-        {voiceDone && !canSubmitRecord(speech.transcript) && (
-          <p className="mt-3 text-center text-xs text-white">먼저 녹음해주세요</p>
+        {confirmLeave && (
+          <LeaveConfirmDialog
+            alreadySaved={savedEntryIdRef.current !== null}
+            onCancel={() => setConfirmLeave(false)}
+            onConfirm={returnToChoice}
+          />
         )}
       </div>
     );
@@ -496,7 +653,19 @@ export function RecordPage() {
   if (step === 'typing') {
     return (
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <h2 className="text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
+          {speech.isSupported && (
+            <button
+              type="button"
+              onClick={switchTypingToVoice}
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
+            >
+              <MicIcon className="h-3.5 w-3.5 text-slate-300" />
+              음성으로
+            </button>
+          )}
+        </div>
         <textarea
           placeholder="예: 오늘 팀 발표에서 갑자기 자료가 안 열려서 당황했는데, 즉석에서 화면 공유 없이 설명해서 넘겼다. 발표 끝나고 뿌듯했다."
           value={text}
@@ -512,6 +681,14 @@ export function RecordPage() {
         >
           다음
         </button>
+
+        {confirmLeave && (
+          <LeaveConfirmDialog
+            alreadySaved={savedEntryIdRef.current !== null}
+            onCancel={() => setConfirmLeave(false)}
+            onConfirm={returnToChoice}
+          />
+        )}
       </div>
     );
   }
@@ -642,6 +819,14 @@ export function RecordPage() {
         >
           {saving ? '저장 중...' : '기록 저장하기'}
         </button>
+      )}
+
+      {confirmLeave && (
+        <LeaveConfirmDialog
+            alreadySaved={savedEntryIdRef.current !== null}
+            onCancel={() => setConfirmLeave(false)}
+            onConfirm={returnToChoice}
+          />
       )}
     </div>
   );

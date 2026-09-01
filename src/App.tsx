@@ -17,6 +17,9 @@ function NavBar() {
 
   return (
     <nav className="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-800 bg-slate-950 p-2">
+      {/* 이미 "/"에 있을 때 이 링크를 누르면 react-router가 같은 경로로의 이동을 replace로
+          처리하면서 새 location.key를 발급한다. RecordPage는 그 key 변화를 "첫 화면으로
+          돌아가라"는 신호로 쓴다 (RecordPage의 handledLocationKeyRef 참고). */}
       <Link
         to="/"
         className={linkClass(location.pathname === '/')}
