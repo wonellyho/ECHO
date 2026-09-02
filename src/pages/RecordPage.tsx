@@ -450,7 +450,7 @@ export function RecordPage() {
 
   if (step === 'choice') {
     return (
-      <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] max-w-md flex-col px-4 py-6">
+      <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
         <Logo />
         <h2 className="mt-6 text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
         <p className="mt-2 text-sm text-slate-400">말하거나 적으면 AI가 구조화해 둡니다.</p>
@@ -518,7 +518,7 @@ export function RecordPage() {
     // (가로 모드 등) 녹음을 멈출 수단이 사라지지 않게 한다.
     return (
       <div
-        className="relative isolate mx-auto flex h-[calc(100dvh-3.5rem)] max-w-md flex-col overflow-hidden"
+        className="relative isolate mx-auto flex h-[calc(100dvh-var(--bottom-nav-total))] max-w-md flex-col overflow-hidden"
         style={{
           // Figma 프레임의 대각선 그라디언트 — 위쪽 옅은 살구에서 아래로 갈수록 진한 주황,
           // 맨 아래는 노란빛이 돈다. 가장 진한 지점(#e5811f)조차 slate-800 텍스트와
@@ -682,7 +682,7 @@ export function RecordPage() {
 
   if (step === 'typing') {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-6">
+      <div className="mx-auto max-w-2xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
           {speech.isSupported && (
@@ -725,7 +725,7 @@ export function RecordPage() {
 
   // step === 'details'
   return (
-    <div className="mx-auto max-w-md px-4 py-6">
+    <div className="mx-auto max-w-md px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
       <div className="flex items-center justify-between text-sm">
         <button
           type="button"

@@ -6,6 +6,16 @@
     'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 }
 
+:root {
+  /* 하단 네비게이션(BottomNav) 자체의 높이. */
+  --bottom-nav-height: 4rem;
+  /* 네비게이션이 실제로 가리는 총 높이 — iOS 홈 인디케이터 영역까지 포함한다.
+     각 화면은 이 값만큼 아래 여백을 두거나(스크롤형) 높이에서 빼서(전체화면형) 쓴다.
+     값을 화면마다 하드코딩하면 어느 한 곳에서 콘텐츠가 가려도 눈치채기 어려우므로
+     여기 한 곳에서만 정의한다. */
+  --bottom-nav-total: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #020617; /* slate-950 */

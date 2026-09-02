@@ -49,6 +49,10 @@ export function EntriesPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const sortRef = useRef<HTMLDivElement | null>(null);
+  // 일괄 추가 바가 실제로 차지하는 높이. 이만큼 목록 아래 여백을 더 줘야 마지막 카드 줄이
+  // 바 뒤에 가리지 않는다 ("새 컬렉션 만들기" 선택 시 입력칸이 늘어 높이가 변한다).
+  const [bulkBarHeight, setBulkBarHeight] = useState(0);
+  const bulkBarRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadEntries();
@@ -66,6 +70,22 @@ export function EntriesPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [sortOpen]);
+
+  // 바가 나타나거나 내용이 바뀌어 높이가 변하면 목록 아래 여백도 따라 바뀌어야 한다.
+  const showBulkBar = selectMode && selectedIds.size > 0;
+  useEffect(() => {
+    const el = bulkBarRef.current;
+    if (!el) {
+      setBulkBarHeight(0);
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      setBulkBarHeight(entry.contentRect.height);
+    });
+    observer.observe(el);
+    setBulkBarHeight(el.getBoundingClientRect().height);
+    return () => observer.disconnect();
+  }, [showBulkBar, bulkCollectionChoice]);
 
   async function loadEntries() {
     setLoading(true);
@@ -239,7 +259,15 @@ export function EntriesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 pb-24">
+    <div
+      className="mx-auto max-w-2xl px-4 py-6"
+      // 아래 여백은 네비게이션 + (떠 있다면) 일괄 추가 바를 모두 비켜야 한다.
+      // 바 높이는 "새 컬렉션 만들기"를 고르면 입력칸이 하나 더 생겨 달라지므로,
+      // 고정값 대신 실제 높이를 재서 더한다.
+      style={{
+        paddingBottom: `calc(var(--bottom-nav-total) + 1.5rem + ${bulkBarHeight}px)`,
+      }}
+    >
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-slate-50">내 경험 기록</h2>
         <button
@@ -351,8 +379,11 @@ export function EntriesPage() {
           </div>
         ))}
 
-      {selectMode && selectedIds.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 flex flex-col gap-2 border-t border-slate-800 bg-slate-900 p-3">
+      {showBulkBar && (
+        <div
+          ref={bulkBarRef}
+          className="fixed inset-x-0 bottom-[var(--bottom-nav-total)] z-30 flex flex-col gap-2 border-t border-slate-800 bg-slate-900 p-3"
+        >
           <p className="text-xs text-slate-400">{selectedIds.size}개 선택됨</p>
           <div className="flex gap-2">
             <select

@@ -107,7 +107,7 @@ export function InsightsPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="mx-auto max-w-2xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
       <h2 className="text-xl font-semibold text-slate-50">나의 에너지 패턴</h2>
 
       {entryCount < MIN_ENTRIES_FOR_INSIGHTS && (

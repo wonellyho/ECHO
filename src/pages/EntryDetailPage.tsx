@@ -165,11 +165,13 @@ export function EntryDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
       <h2 className="text-xl font-semibold text-slate-50">기록 상세</h2>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
+        {/* sticky 위치와 높이는 사라진 상단 nav 기준으로 잡혀 있었다. 이제 위쪽은 여백만 두고,
+            높이는 하단 네비게이션을 비켜야 패널 아래쪽이 nav에 깔리지 않는다. */}
+        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100dvh-var(--bottom-nav-total)-3rem)] lg:overflow-y-auto">
           <p className="whitespace-pre-wrap text-sm text-slate-100">{rawText}</p>
           <div className="mt-3">
             <p className="text-xs font-medium text-slate-400">
