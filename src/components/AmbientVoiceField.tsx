@@ -15,8 +15,10 @@ import {
 // - 말하지 않을 때도 아주 느리게 숨 쉰다 (breathe) — 화면이 죽어 보이지 않게
 // - 말하면 해당 대역의 덩어리가 부푼다 (실제 AnalyserNode 데이터, 가짜 루프 애니메이션 아님)
 // - 어택은 빠르고 릴리즈는 느려서(followEnvelope) 이퀄라이저처럼 튀지 않는다
-// - 모든 색이 밝은 파스텔이라 어떤 조합으로 겹쳐도 배경이 밝게 유지된다
-//   → 위에 얹히는 어두운 본문 텍스트의 대비가 덩어리 위치와 무관하게 보장된다
+// - **모든 덩어리 색은 바탕보다 밝아야 한다.** 덩어리가 배경을 밝히기만 하므로, 합성 결과의
+//   가장 어두운 지점은 항상 바탕 그라디언트 자체가 된다 → 그 한 곳만 대비를 확인하면
+//   덩어리가 어디로 움직이든 위에 얹힌 어두운 텍스트의 가독성이 보장된다.
+//   여기에 어두운 색을 넣으면 이 보장이 깨진다.
 
 // 어택(차오름)은 빠르게, 릴리즈(잦아듦)는 훨씬 느리게. 60fps 한 프레임 기준값이며,
 // 실제 적용 시엔 envelopeCoefficient로 주사율에 맞춰 환산한다.
@@ -58,7 +60,7 @@ const BLOBS: BlobSpec[] = [
     periodScale: 8.9,
     phase: 0,
     gain: 0.5,
-    color: 'rgba(251, 146, 60, 0.5)',
+    color: 'rgba(255, 236, 210, 0.55)',
     baseOpacity: 0.85,
   },
   {
@@ -73,7 +75,7 @@ const BLOBS: BlobSpec[] = [
     periodScale: 12.3,
     phase: 1.7,
     gain: 0.42,
-    color: 'rgba(244, 114, 182, 0.42)',
+    color: 'rgba(255, 246, 232, 0.45)',
     baseOpacity: 0.8,
   },
   {
@@ -88,7 +90,7 @@ const BLOBS: BlobSpec[] = [
     periodScale: 10.3,
     phase: 3.2,
     gain: 0.34,
-    color: 'rgba(253, 186, 116, 0.45)',
+    color: 'rgba(255, 228, 178, 0.5)',
     baseOpacity: 0.75,
   },
   {
@@ -103,7 +105,7 @@ const BLOBS: BlobSpec[] = [
     periodScale: 14.9,
     phase: 4.8,
     gain: 0.28,
-    color: 'rgba(196, 181, 253, 0.34)',
+    color: 'rgba(255, 240, 245, 0.36)',
     baseOpacity: 0.7,
   },
 ];

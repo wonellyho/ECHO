@@ -1,30 +1,56 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { smoothPath } from '../lib/smoothPath';
+import { wavePeaks } from '../lib/standingWave';
+import { envelopeCoefficient, followEnvelope } from '../lib/voiceEnergy';
 
-// ambient 배경 위에 겹쳐 얹는 음량 곡선. AmbientVoiceField가 "지금 이 순간의 소리"를 공간으로
-// 표현한다면, 이쪽은 최근 몇 초의 흐름을 곡선으로 보여준다 (Figma 메모의 "음량곡선" 요구).
+// Figma `녹화화면` 프레임의 음량 곡선. 얇은 가로선이 화면을 가로지르고, 그 위로 좁은 봉우리가
+// 솟으며, 선 아래로는 희미하게 반사된다. 선 아래를 통째로 채우지 않는다 —
+// 채우면 화면에 큰 네모 덩어리가 얹힌 것처럼 보인다.
 //
-// AmbientVoiceField와 같은 원칙을 따른다:
-// - 실제 마이크 데이터 기반이며 장식용 고정 애니메이션이 아니다
-// - React 상태를 거치지 않고 rAF 루프에서 path의 d 속성만 직접 쓴다
-// - 색은 밝은 계열만 써서, 어떤 순간에도 위에 얹힌 어두운 텍스트의 대비를 해치지 않는다
+// 형태 계산은 standingWave.ts가 맡고(흐르지 않는 정상파), 여기서는 마이크 음량으로 진폭만
+// 밀어준다. React 상태를 거치지 않고 rAF 루프에서 path의 d 속성만 직접 쓴다.
 
-const HISTORY_LENGTH = 48;
-// 표본을 고정 간격으로 밀어 넣는다. 매 프레임 밀면 120Hz 화면에서 곡선이 두 배 빨리 흘러가
-// 주사율마다 다른 속도로 보인다.
-const SAMPLE_INTERVAL_MS = 1000 / 30;
+// 기준선의 세로 위치 (viewBox 0~100). 봉우리가 위로 솟을 공간을 넉넉히 남긴다.
+const LINE_Y = 62;
+// 봉우리가 선 위로 솟는 최대 높이.
+const PEAK_HEIGHT = 58;
+// 선 아래 반사의 높이 비율 — 물에 비친 것처럼 훨씬 낮고 흐리게.
+const REFLECTION_RATIO = 0.34;
+// 무음일 때도 남겨두는 아주 작은 일렁임 — 화면이 죽어 보이지 않게.
+const IDLE_DRIVE = 0.1;
 // 평범한 말소리에서도 곡선이 눈에 띄게 움직이도록 하는 게인.
 const LEVEL_GAIN = 4;
+// 어택은 빠르고 릴리즈는 느리게 (60fps 한 프레임 기준값 — envelopeCoefficient로 환산해서 쓴다).
+const ATTACK = 0.16;
+const RELEASE = 0.04;
 
-// 같은 이력을 진폭과 시간 지연만 달리해 3겹으로 겹친다. 지연은 반드시 오래된 쪽으로 clamp해야
-// 한다 — 나머지 연산으로 감으면 가장 오래된 표본이 최신 쪽 끝에 붙어 오른쪽 가장자리가 튄다.
+// 같은 정상파를 위상만 달리해 3겹으로 겹친다.
 const LAYERS = [
-  { amplitude: 1, delay: 0, fill: 'rgba(251, 146, 60, 0.20)' },
-  { amplitude: 0.7, delay: 2, fill: 'rgba(244, 114, 182, 0.14)' },
-  { amplitude: 0.45, delay: 4, fill: 'rgba(253, 186, 116, 0.09)' },
+  { amplitude: 1, phase: 0, fill: 'rgba(255, 255, 255, 0.5)' },
+  { amplitude: 0.72, phase: 1.9, fill: 'rgba(255, 255, 255, 0.34)' },
+  { amplitude: 0.46, phase: 3.7, fill: 'rgba(255, 252, 240, 0.24)' },
 ];
 
-const FLAT_PATH = `${smoothPath(new Array(HISTORY_LENGTH).fill(0))} L 100 100 L 0 100 Z`;
+// 봉우리 높이 배열을 선 기준의 닫힌 path로 바꾼다.
+// `direction`이 -1이면 위로 솟고, +1이면 아래로 반사된다.
+function peakPath(
+  seconds: number,
+  drive: number,
+  amplitude: number,
+  phase: number,
+  direction: -1 | 1,
+): string {
+  const peaks = wavePeaks(seconds, drive, amplitude, phase);
+  const reach = direction === -1 ? PEAK_HEIGHT : PEAK_HEIGHT * REFLECTION_RATIO;
+  // smoothPath는 0~1 값을 y = 100 - v*100으로 매핑하므로, 원하는 y를 역산해서 넘긴다.
+  const values = peaks.map((peak) => (100 - (LINE_Y + direction * peak * reach)) / 100);
+  const lineValue = (100 - LINE_Y) / 100;
+  const lineY = 100 - lineValue * 100;
+  // 곡선의 양 끝을 기준선으로 닫는다 — 화면 바닥까지 내려가 채우지 않는다.
+  return `${smoothPath(values)} L 100 ${lineY} L 0 ${lineY} Z`;
+}
+
+const FLAT_PATH = peakPath(0, 0, 1, 0, -1);
 
 export function VoiceWaveform({
   analyserRef,
@@ -33,25 +59,28 @@ export function VoiceWaveform({
   analyserRef: RefObject<AnalyserNode | null>;
   className?: string;
 }) {
-  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+  const upperRefs = useRef<(SVGPathElement | null)[]>([]);
+  const lowerRefs = useRef<(SVGPathElement | null)[]>([]);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const paths = pathRefs.current;
-    const history = new Array<number>(HISTORY_LENGTH).fill(0);
+    const upper = upperRefs.current;
+    const lower = lowerRefs.current;
     // getByteTimeDomainData의 타입 정의가 ArrayBuffer 기반 Uint8Array를 요구하므로 명시한다.
     let samples: Uint8Array<ArrayBuffer> | null = null;
-    let lastSampleAt = 0;
+    let level = 0;
     let raf = 0;
+    const startedAt = performance.now();
+    let lastNow = startedAt;
 
     const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
-      if (now - lastSampleAt < SAMPLE_INTERVAL_MS) return;
-      lastSampleAt = now;
+      const seconds = (now - startedAt) / 1000;
+      const deltaSeconds = (now - lastNow) / 1000;
+      lastNow = now;
 
       const analyser = analyserRef.current;
-      let level = 0;
+      let target = 0;
       if (analyser) {
         if (!samples || samples.length !== analyser.fftSize) {
           samples = new Uint8Array(analyser.fftSize);
@@ -62,22 +91,23 @@ export function VoiceWaveform({
           const centered = (samples[i] - 128) / 128;
           sumSquares += centered * centered;
         }
-        level = Math.min(1, Math.sqrt(sumSquares / samples.length) * LEVEL_GAIN);
+        target = Math.min(1, Math.sqrt(sumSquares / samples.length) * LEVEL_GAIN);
       }
-
-      history.shift();
-      history.push(level);
+      level = followEnvelope(
+        level,
+        target,
+        envelopeCoefficient(ATTACK, deltaSeconds),
+        envelopeCoefficient(RELEASE, deltaSeconds),
+      );
+      const drive = IDLE_DRIVE + level * (1 - IDLE_DRIVE);
 
       for (let i = 0; i < LAYERS.length; i += 1) {
-        const path = paths[i];
-        if (!path) continue;
         const layer = LAYERS[i];
-        const values = history.map(
-          (_, index) => history[Math.max(0, index - layer.delay)] * layer.amplitude,
-        );
-        // 곡선 아래를 채우기 위해 우하단 → 좌하단으로 닫는다.
-        path.setAttribute('d', `${smoothPath(values)} L 100 100 L 0 100 Z`);
+        upper[i]?.setAttribute('d', peakPath(seconds, drive, layer.amplitude, layer.phase, -1));
+        lower[i]?.setAttribute('d', peakPath(seconds, drive, layer.amplitude, layer.phase, 1));
       }
+
+      raf = requestAnimationFrame(frame);
     };
 
     raf = requestAnimationFrame(frame);
@@ -85,22 +115,40 @@ export function VoiceWaveform({
   }, [analyserRef]);
 
   return (
-    <svg
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
-      className={className}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={className} aria-hidden="true">
+      {/* 선 아래 반사 — 위쪽 봉우리보다 훨씬 흐리게. */}
       {LAYERS.map((layer, index) => (
         <path
-          key={layer.delay}
+          key={`reflection-${layer.phase}`}
           ref={(el) => {
-            pathRefs.current[index] = el;
+            lowerRefs.current[index] = el;
+          }}
+          d={FLAT_PATH}
+          fill={layer.fill}
+          opacity={0.4}
+        />
+      ))}
+      {LAYERS.map((layer, index) => (
+        <path
+          key={`peak-${layer.phase}`}
+          ref={(el) => {
+            upperRefs.current[index] = el;
           }}
           d={FLAT_PATH}
           fill={layer.fill}
         />
       ))}
+      {/* 항상 깔려 있는 얇은 가로선. preserveAspectRatio="none"이라 세로로 늘어나므로
+          vector-effect로 두께를 고정한다. */}
+      <line
+        x1="0"
+        y1={LINE_Y}
+        x2="100"
+        y2={LINE_Y}
+        stroke="rgba(255, 255, 255, 0.75)"
+        strokeWidth={1}
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }

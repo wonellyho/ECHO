@@ -6,7 +6,15 @@ import { useMicAnalyser } from '../lib/useMicAnalyser';
 import { AmbientVoiceField } from '../components/AmbientVoiceField';
 import { VoiceWaveform } from '../components/VoiceWaveform';
 import { Logo } from '../components/Logo';
-import { CheckIcon, KeyboardIcon, MicIcon, StopIcon, TrashIcon, TypingIcon } from '../components/icons';
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  KeyboardIcon,
+  MicIcon,
+  StopIcon,
+  TrashIcon,
+  TypingIcon,
+} from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
 import { formatDuration } from '../lib/formatDuration';
 import type { ExperienceTag } from '../types';
@@ -509,14 +517,17 @@ export function RecordPage() {
     // 그리고 본문은 스크롤되게 두고 컨트롤 줄은 sticky로 바닥에 붙여, 화면이 아무리 낮아도
     // (가로 모드 등) 녹음을 멈출 수단이 사라지지 않게 한다.
     return (
-      <div className="relative isolate mx-auto flex h-[calc(100dvh-3.5rem)] max-w-md flex-col overflow-hidden bg-[#fdf4ec]">
+      <div
+        className="relative isolate mx-auto flex h-[calc(100dvh-3.5rem)] max-w-md flex-col overflow-hidden"
+        style={{
+          // Figma 프레임의 대각선 그라디언트 — 위쪽 옅은 살구에서 아래로 갈수록 진한 주황,
+          // 맨 아래는 노란빛이 돈다. 가장 진한 지점(#e5811f)조차 slate-800 텍스트와
+          // 5.2:1을 유지하도록 고른 값이라, 여기보다 더 어둡게 하면 대비가 깨진다.
+          background:
+            'linear-gradient(168deg, #fbe6d4 0%, #f7cba4 26%, #f0a561 48%, #e88a2c 68%, #e5811f 84%, #dcae3f 100%)',
+        }}
+      >
         <AmbientVoiceField analyserRef={mic.analyserRef} />
-        {/* 음량 곡선도 배경 레이어에 함께 깔린다 — 화면 중간을 가로지르되 텍스트를 가리지 않도록
-            옅은 채움만 쓴다. */}
-        <VoiceWaveform
-          analyserRef={mic.analyserRef}
-          className="pointer-events-none absolute inset-x-0 top-[26%] h-40 w-full"
-        />
 
         {/* 시각화는 배경 레이어이고 조작 요소는 전부 그 위에 얹는다. */}
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
@@ -524,37 +535,44 @@ export function RecordPage() {
             <button
               type="button"
               onClick={requestReturnToChoice}
-              className="rounded-full bg-white/70 px-3 py-1.5 text-slate-700 ring-1 ring-slate-900/10 backdrop-blur-sm hover:bg-white/90"
+              aria-label="뒤로"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
             >
-              ← 뒤로
+              <ChevronLeftIcon className="h-5 w-5" />
             </button>
             <button
               type="button"
               onClick={switchVoiceToTyping}
               aria-label="타이핑으로 전환"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70 text-slate-700 ring-1 ring-slate-900/10 backdrop-blur-sm hover:bg-white/90"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
             >
               <KeyboardIcon className="h-4 w-4" />
             </button>
           </div>
 
           <p
-            className="mt-6 text-center text-sm font-medium tracking-wide text-slate-700"
+            className="mt-4 text-center text-sm font-medium tracking-wide text-slate-700"
             aria-live="polite"
           >
             {speech.isRecording ? '듣고 있어요' : voiceDone ? '녹음을 마쳤어요' : '잠시 멈췄어요'}
           </p>
 
           <p
-            className="mt-2 text-center text-5xl font-light tabular-nums text-slate-800"
+            className="mt-1 text-center text-5xl font-light tabular-nums text-slate-800"
             role="timer"
           >
             {formatDuration(elapsedMs)}
           </p>
 
+          {/* 파형은 대본 위에 놓는다 — 흐름 안에 두어야 대본이 항상 그 아래로 간다. */}
+          <VoiceWaveform
+            analyserRef={mic.analyserRef}
+            className="pointer-events-none mt-4 h-20 w-full shrink-0"
+          />
+
           {/* 녹음 중에는 실시간 표시(읽기 전용), 멈추면 그 자리에서 바로 고칠 수 있는 입력이 된다.
               커서를 올린 곳부터 수정 가능하도록 textarea를 그대로 노출한다. */}
-          <div className="mt-8 min-h-0 flex-1">
+          <div className="mt-3 min-h-0 flex-1">
             {speech.isRecording ? (
               <p
                 ref={liveTranscriptRef}
@@ -568,7 +586,7 @@ export function RecordPage() {
                 onChange={(e) => speech.setTranscript(e.target.value)}
                 placeholder="여기에 직접 입력하거나, 녹음한 내용을 고칠 수 있어요."
                 aria-label="녹음한 내용 (수정 가능)"
-                className="h-full min-h-[6rem] w-full resize-none rounded-2xl bg-white/60 p-4 text-lg leading-relaxed text-slate-800 placeholder:text-slate-600 focus:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-700/60"
+                className="h-full min-h-[6rem] w-full resize-none rounded-2xl bg-white/25 p-4 text-lg leading-relaxed text-slate-800 ring-1 ring-white/40 backdrop-blur-md placeholder:text-slate-700 focus:bg-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-800/50"
               />
             )}
           </div>
@@ -592,13 +610,16 @@ export function RecordPage() {
 
           {/* 본문이 길어져 스크롤되더라도 컨트롤은 항상 바닥에 붙어 있어야 한다. */}
           {/* 왼쪽 삭제 · 가운데 녹음 토글(마이크 ↔ 정지, 완료 후엔 저장) · 오른쪽 완료.
-              가운데 큰 버튼이 녹음 시작/정지를 전담하므로 별도의 ⏸/▶ 버튼은 두지 않는다. */}
-          <div className="sticky bottom-0 mt-8 flex items-center justify-between pb-1">
+              가운데 큰 버튼이 녹음 시작/정지를 전담하므로 별도의 ⏸/▶ 버튼은 두지 않는다.
+              Figma처럼 양옆 버튼을 위로 올려 가운데를 기점으로 완만한 호를 그린다.
+              버튼은 전부 반투명이라 뒤의 그라디언트가 그대로 비친다 — 아이콘은 어두운 색을
+              써야 대비가 나온다(반투명 흰 원 위의 흰 아이콘은 2:1대로 떨어진다). */}
+          <div className="sticky bottom-0 mt-8 flex items-end justify-between pb-1">
             <button
               type="button"
               onClick={cancelVoice}
               aria-label="삭제"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
+              className="mb-16 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
             >
               <TrashIcon className="h-5 w-5" />
             </button>
@@ -608,7 +629,7 @@ export function RecordPage() {
                 type="button"
                 onClick={goToDetailsFromVoice}
                 disabled={!canSubmitRecord(speech.transcript)}
-                className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-lg font-medium text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15 disabled:opacity-50"
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-white/25 text-lg font-medium text-slate-800 ring-1 ring-white/50 backdrop-blur-md disabled:opacity-50"
               >
                 저장
               </button>
@@ -617,7 +638,7 @@ export function RecordPage() {
                 type="button"
                 onClick={pauseVoiceRecording}
                 aria-label="녹음 정지"
-                className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15"
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
               >
                 <StopIcon className="h-8 w-8" />
               </button>
@@ -626,9 +647,9 @@ export function RecordPage() {
                 type="button"
                 onClick={resumeVoiceRecording}
                 aria-label={canSubmitRecord(speech.transcript) ? '이어 녹음' : '녹음 시작'}
-                className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15"
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
               >
-                <MicIcon className="h-9 w-9 text-slate-800" />
+                <MicIcon className="h-9 w-9" />
               </button>
             )}
 
@@ -637,14 +658,14 @@ export function RecordPage() {
               onClick={finishVoiceRecording}
               disabled={voiceDone || !canSubmitRecord(speech.transcript)}
               aria-label="녹음 완료"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white disabled:opacity-40"
+              className="mb-16 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35 disabled:opacity-40"
             >
               <CheckIcon className="h-5 w-5" />
             </button>
           </div>
 
           {voiceDone && !canSubmitRecord(speech.transcript) && (
-            <p className="mt-3 text-center text-xs text-slate-700">먼저 녹음해주세요</p>
+            <p className="mt-3 text-center text-xs text-slate-800">먼저 녹음해주세요</p>
           )}
         </div>
 
