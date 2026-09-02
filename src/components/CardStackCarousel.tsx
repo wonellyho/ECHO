@@ -46,6 +46,11 @@ const DEFAULT_CARD_HEIGHT = 160;
 const DEFAULT_OVERLAP = 0.45;
 // 활성 카드에서 이 칸 수 이상 떨어진 카드는 렌더링 자체를 하지 않는다 (가상화 — 카드가 아무리
 // 많아져도 DOM에는 항상 이 범위만큼만 떠 있다).
+//
+// **fadeFalloff의 기본 계수와 묶여 있다**: 이 값은 반드시 `1 / base`(현재 1/0.22 ≈ 4.55) 이상이어야
+// 한다. 그래야 카드가 DOM에 들어오고 나가는 순간의 불투명도가 이미 0이다. 계수를 낮추면
+// (예: 0.2 → 경계가 정확히 5.0, 0.15 → 6.7) 카드가 창 경계에서 눈에 띄게 튀어나온다.
+// circularStack.test.ts가 이 관계를 검증한다.
 const RENDER_WINDOW = 5;
 
 function clamp(value: number, min: number, max: number) {
@@ -91,6 +96,8 @@ export function CardStackCarousel<T>({
   const recenterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 손가락이 화면에 닿아 있는 동안에는 스크롤 위치를 건드리지 않는다 (아래 scheduleRecenter 참고).
   const pointerDownRef = useRef(false);
+  // 마운트 직후의 목록 이펙트는 건너뛴다 (마운트 이펙트가 이미 위치를 잡는다).
+  const isFirstLayoutRef = useRef(true);
   // 항목 목록이 바뀌어도 보고 있던 카드를 유지하기 위한 키.
   const centeredKeyRef = useRef<string | null>(null);
   // 타이머와 스크롤 콜백이 오래된 값을 클로저로 붙잡지 않도록 최신 값을 ref로 읽는다.
@@ -206,8 +213,10 @@ export function CardStackCarousel<T>({
   // 한 프레임 동안 빈 스페이서만 보인다.
   // 길이와 첫 항목만 보면 정렬 방식 변경(월별/프로젝트별 등)을 놓친다 — 그 경우 길이도
   // 첫 항목도 그대로인 채 가운데 카드만 슬그머니 다른 기록으로 바뀐다.
-  const listSignature = items.map((item, i) => getKey(item, i)).join('|');
-  const isFirstLayoutRef = useRef(true);
+  // 스크롤 프레임마다 재계산되지 않도록 items 정체성에 묶는다 — 300개 기준으로 매 프레임
+  // 배열 하나와 10KB짜리 문자열을 새로 만드는 건 스크롤 경로에서 무시할 수 없는 비용이다.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const listSignature = useMemo(() => items.map((item, i) => getKey(item, i)).join('|'), [items]);
   useLayoutEffect(() => {
     if (isFirstLayoutRef.current) {
       isFirstLayoutRef.current = false;
@@ -277,6 +286,11 @@ export function CardStackCarousel<T>({
       onPointerUp={() => {
         pointerDownRef.current = false;
         scheduleRecenter();
+      }}
+      // 마우스로 카드를 드래그하면 네이티브 드래그가 시작되며 pointerup 없이 pointercancel만
+      // 온다. 이걸 처리하지 않으면 플래그가 true로 남아 되돌리기가 영영 멈춘다.
+      onPointerCancel={() => {
+        pointerDownRef.current = false;
       }}
       onTouchStart={() => {
         pointerDownRef.current = true;

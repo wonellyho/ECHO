@@ -20,11 +20,14 @@ function cardGradient(tags: ExperienceTag[]): string {
 
 // 내 경험 탭의 카드 스택 — 범용 CardStackCarousel 위에 엔트리 카드 렌더링/그라디언트만 얹은 어댑터.
 // entries는 이미 원하는 정렬 순서로 정렬돼 들어온다고 가정한다 (EntriesPage 참고).
+// 인라인 화살표로 두면 렌더마다 정체성이 바뀌어 스택 쪽 메모이제이션이 무효가 된다.
+const entryKey = (entry: StackEntry) => entry.id;
+
 export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
   return (
     <CardStackCarousel
       items={entries}
-      getKey={(entry) => entry.id}
+      getKey={entryKey}
       renderItem={(entry, { isActive }: CardStackCarouselMeta) => (
         <Link
           to={`/entries/${entry.id}`}

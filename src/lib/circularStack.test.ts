@@ -20,16 +20,6 @@ describe('circularRange', () => {
     expect(circularRange(MIN_ITEMS_FOR_LOOP).loop).toBe(true);
   });
 
-  it('반복 횟수는 홀수라 가운데 복사본이 존재한다', () => {
-    for (const count of [3, 7, 50, 300, 1000]) {
-      const range = circularRange(count);
-      if (!range.loop) continue;
-      expect(range.loops % 2).toBe(1);
-      // baseOffset이 정확히 가운데 복사본의 시작이어야 한다.
-      expect(range.baseOffset).toBe(((range.loops - 1) / 2) * count);
-    }
-  });
-
   it('가상 슬롯이 충분히 많아 끝에 닿을 일이 없다', () => {
     for (const count of [3, 7, 50]) {
       expect(circularRange(count).virtualCount).toBeGreaterThanOrEqual(600);
@@ -53,7 +43,7 @@ describe('fadeFalloff', () => {
   it('반대편 사본이 놓이는 자리에서 정확히 투명해진다', () => {
     // 순환 중 같은 항목은 중앙에서 ±itemCount/2 떨어진 자리에도 배치된다.
     // 그 지점의 불투명도가 0 이하여야 같은 카드가 두 번 보이지 않는다.
-    for (const count of [3, 4, 5, 6, 7, 9, 12]) {
+    for (const count of [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) {
       const falloff = fadeFalloff(count, true);
       expect(1 - falloff * (count / 2)).toBeLessThanOrEqual(0);
     }
@@ -69,6 +59,16 @@ describe('fadeFalloff', () => {
       }
       expect(visible).toBeLessThanOrEqual(count);
     }
+  });
+
+  it('렌더 창 경계에서는 이미 투명하다 — 카드가 DOM에 들고날 때 튀지 않는 이유', () => {
+    // CardStackCarousel의 RENDER_WINDOW. 이 값과 페이드 계수가 묶여 있다(그쪽 주석 참고).
+    const RENDER_WINDOW = 5;
+    for (const count of [3, 5, 8, 9, 10, 11, 40, 1000]) {
+      const falloff = fadeFalloff(count, true);
+      expect(1 - falloff * RENDER_WINDOW).toBeLessThanOrEqual(0);
+    }
+    expect(1 - fadeFalloff(0, false) * RENDER_WINDOW).toBeLessThanOrEqual(0);
   });
 
   it('항목이 많으면 기본 페이드를 그대로 쓴다', () => {

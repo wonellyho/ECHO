@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
@@ -205,10 +205,21 @@ export function EntriesPage() {
   }
 
   // MVP 검색: 태그 필터 + 키워드 매칭. 추후 임베딩 기반 유사도 검색으로 고도화 예정 (CLAUDE.md 참고)
-  const filtered = filterEntries(entries, activeTag, query);
-  const groups = sortMode === 'latest' ? null : groupEntries(filtered, sortMode, collections);
+  // useMemo로 배열 정체성을 안정화한다 — 카드 스택이 스크롤 중 매 프레임 리렌더되는데,
+  // 매번 새 배열이 내려가면 스택 쪽의 메모이제이션이 전부 무효가 된다.
+  const filtered = useMemo(
+    () => filterEntries(entries, activeTag, query),
+    [entries, activeTag, query],
+  );
+  const groups = useMemo(
+    () => (sortMode === 'latest' ? null : groupEntries(filtered, sortMode, collections)),
+    [filtered, sortMode, collections],
+  );
   // 카드 스택은 그룹 헤더 없이 하나의 스택으로 보여준다 — groups가 있으면 그 순서를 그대로 이어붙인다.
-  const stackEntries = groups === null ? filtered : groups.flatMap((group) => group.entries);
+  const stackEntries = useMemo(
+    () => (groups === null ? filtered : groups.flatMap((group) => group.entries)),
+    [groups, filtered],
+  );
 
   function renderCard(entry: EntryRow) {
     const dividerClass = selectMode && selectedIds.has(entry.id) ? 'border-white/20' : 'border-slate-800';
