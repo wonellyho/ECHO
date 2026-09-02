@@ -328,7 +328,8 @@ export function EntriesPage() {
           {SORT_OPTIONS.find((opt) => opt.value === sortMode)?.label ?? '정렬 방식'} {sortOpen ? '▲' : '▼'}
         </button>
         {sortOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-800 bg-slate-900 py-1 shadow-lg">
+          // z-30: 카드 스택 위, 하단 네비게이션(z-40) 아래.
+          <div className="absolute left-0 top-full z-30 mt-1 w-36 overflow-hidden rounded-lg border border-slate-800 bg-slate-900 py-1 shadow-lg">
             {SORT_OPTIONS.map((opt) => (
               <button
                 key={opt.value}

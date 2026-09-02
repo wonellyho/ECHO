@@ -302,7 +302,10 @@ export function CardStackCarousel<T>({
       onTouchCancel={() => {
         pointerDownRef.current = false;
       }}
-      className={`relative overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ''}`}
+      // isolate로 쌓임 맥락을 만든다. 아래 슬롯들이 겹침 순서를 위해 z-index를 1000까지 쓰는데,
+      // 맥락이 없으면 그 값이 페이지 전체와 경쟁해 바깥의 드롭다운·오버레이를 전부 덮어버린다
+      // (정렬 드롭다운이 카드 뒤로 숨어 선택할 수 없던 원인).
+      className={`relative isolate overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ''}`}
       style={{
         height: containerHeight,
         scrollSnapType: 'y mandatory',
