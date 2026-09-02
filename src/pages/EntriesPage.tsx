@@ -5,6 +5,7 @@ import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, type GroupBy } from '../lib/entryGrouping';
 import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
 import { EntryCardStack } from '../components/EntryCardStack';
+import { useNickname, withNickname } from '../lib/useNickname';
 import type { ExperienceTag } from '../types';
 
 type SortMode = GroupBy | 'latest';
@@ -49,6 +50,7 @@ export function EntriesPage() {
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
   const sortRef = useRef<HTMLDivElement | null>(null);
+  const nickname = useNickname();
   // 일괄 추가 바가 실제로 차지하는 높이. 이만큼 목록 아래 여백을 더 줘야 마지막 카드 줄이
   // 바 뒤에 가리지 않는다 ("새 컬렉션 만들기" 선택 시 입력칸이 늘어 높이가 변한다).
   const [bulkBarHeight, setBulkBarHeight] = useState(0);
@@ -269,7 +271,9 @@ export function EntriesPage() {
       }}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-50">내 경험 기록</h2>
+        <h2 className="text-xl font-semibold text-slate-50">
+          {withNickname(nickname, (n) => `${n}의 경험 기록`, '내 경험 기록')}
+        </h2>
         <button
           type="button"
           onClick={toggleSelectMode}

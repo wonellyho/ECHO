@@ -17,6 +17,7 @@ import {
 } from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
 import { formatDuration } from '../lib/formatDuration';
+import { useNickname } from '../lib/useNickname';
 import type { ExperienceTag } from '../types';
 
 interface StructureResponse {
@@ -92,6 +93,7 @@ export function RecordPage() {
   const location = useLocation();
   const speech = useSpeechInput();
   const mic = useMicAnalyser();
+  const nickname = useNickname();
 
   const [step, setStep] = useState<Step>('choice');
   const [source, setSource] = useState<Source>('typing');
@@ -452,7 +454,16 @@ export function RecordPage() {
     return (
       <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
         <Logo />
-        <h2 className="mt-6 text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
+        {/* 닉네임을 설정했으면 이름을 윗줄에 따로 두어 인사처럼 읽히게 한다. */}
+        <h2 className="mt-6 text-xl font-semibold leading-snug text-slate-50">
+          {nickname && (
+            <>
+              {nickname}님
+              <br />
+            </>
+          )}
+          오늘의 경험을 남겨보세요
+        </h2>
         <p className="mt-2 text-sm text-slate-400">말하거나 적으면 AI가 구조화해 둡니다.</p>
 
         <div className="mt-6 flex flex-col gap-3">

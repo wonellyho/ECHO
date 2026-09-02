@@ -6,6 +6,7 @@ import {
   NICKNAME_MAX_LENGTH,
   normalizeNickname,
 } from '../lib/profileValidation';
+import { readNickname } from '../lib/useNickname';
 
 // 내 정보 화면. 닉네임은 별도 테이블 없이 Supabase Auth의 user_metadata에 저장한다 —
 // PRD §6에서 SNS/공유를 스코프 밖으로 두었으므로 다른 사용자가 이 값을 읽을 일이 없고,
@@ -17,7 +18,7 @@ export function ProfilePage() {
   // (App이 user가 있을 때만 이 화면을 렌더한다.)
   // effect로 user를 감시해 setState하면, 토큰 갱신으로 user 객체가 새로 오는 순간
   // 입력 중이던 값이 덮어써진다 — 그래서 초기값으로만 읽는다.
-  const initialNickname = (user?.user_metadata?.nickname as string | undefined) ?? '';
+  const initialNickname = readNickname(user?.user_metadata);
 
   const [nickname, setNickname] = useState(initialNickname);
   const [savedNickname, setSavedNickname] = useState(initialNickname);

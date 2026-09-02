@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { buildInsightRows } from '../lib/buildInsightRows';
+import { useNickname, withNickname } from '../lib/useNickname';
 
 interface InsightRow {
   id: string;
@@ -17,6 +18,7 @@ export function InsightsPage() {
   const [entryCount, setEntryCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nickname = useNickname();
 
   async function loadStoredInsights() {
     setLoading(true);
@@ -108,7 +110,9 @@ export function InsightsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-      <h2 className="text-xl font-semibold text-slate-50">나의 에너지 패턴</h2>
+      <h2 className="text-xl font-semibold text-slate-50">
+        {withNickname(nickname, (n) => `${n}의 에너지 패턴`, '나의 에너지 패턴')}
+      </h2>
 
       {entryCount < MIN_ENTRIES_FOR_INSIGHTS && (
         <p className="mt-2 text-sm text-slate-400">
