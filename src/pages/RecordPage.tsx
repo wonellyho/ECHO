@@ -4,8 +4,9 @@ import { supabase } from '../lib/supabaseClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
 import { useMicAnalyser } from '../lib/useMicAnalyser';
 import { AmbientVoiceField } from '../components/AmbientVoiceField';
+import { VoiceWaveform } from '../components/VoiceWaveform';
 import { Logo } from '../components/Logo';
-import { CheckIcon, KeyboardIcon, MicIcon, PauseIcon, PlayIcon, TrashIcon, TypingIcon } from '../components/icons';
+import { CheckIcon, KeyboardIcon, MicIcon, StopIcon, TrashIcon, TypingIcon } from '../components/icons';
 import { canSubmitRecord } from '../lib/recordValidation';
 import { formatDuration } from '../lib/formatDuration';
 import type { ExperienceTag } from '../types';
@@ -304,13 +305,14 @@ export function RecordPage() {
   }, [location.key]);
 
   // "다시 녹음" / "다시 입력" — 이전 단계로 돌아가되 지금까지의 내용은 유지한다.
+  // 음성으로 돌아갈 때는 곧바로 녹음을 시작하지 않고 정지 상태로 들어간다 — 되돌아온 직후
+  // 주변 소리가 그대로 받아쓰기에 섞이는 걸 막고, 사용자가 준비됐을 때 가운데 버튼으로
+  // 시작하게 한다.
   function backToSource() {
     setError(null);
     if (source === 'voice') {
       setStep('voice');
       setVoiceDone(false);
-      speech.start();
-      mic.start();
     } else {
       setStep('typing');
     }
@@ -509,6 +511,12 @@ export function RecordPage() {
     return (
       <div className="relative isolate mx-auto flex h-[calc(100dvh-3.5rem)] max-w-md flex-col overflow-hidden bg-[#fdf4ec]">
         <AmbientVoiceField analyserRef={mic.analyserRef} />
+        {/* 음량 곡선도 배경 레이어에 함께 깔린다 — 화면 중간을 가로지르되 텍스트를 가리지 않도록
+            옅은 채움만 쓴다. */}
+        <VoiceWaveform
+          analyserRef={mic.analyserRef}
+          className="pointer-events-none absolute inset-x-0 top-[26%] h-40 w-full"
+        />
 
         {/* 시각화는 배경 레이어이고 조작 요소는 전부 그 위에 얹는다. */}
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
@@ -583,26 +591,17 @@ export function RecordPage() {
           )}
 
           {/* 본문이 길어져 스크롤되더라도 컨트롤은 항상 바닥에 붙어 있어야 한다. */}
+          {/* 왼쪽 삭제 · 가운데 녹음 토글(마이크 ↔ 정지, 완료 후엔 저장) · 오른쪽 완료.
+              가운데 큰 버튼이 녹음 시작/정지를 전담하므로 별도의 ⏸/▶ 버튼은 두지 않는다. */}
           <div className="sticky bottom-0 mt-8 flex items-center justify-between pb-1">
-            {speech.isRecording ? (
-              <button
-                type="button"
-                onClick={pauseVoiceRecording}
-                aria-label="일시정지"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
-              >
-                <PauseIcon className="h-5 w-5" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={resumeVoiceRecording}
-                aria-label="이어 녹음"
-                className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
-              >
-                <PlayIcon className="h-5 w-5" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={cancelVoice}
+              aria-label="삭제"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
+            >
+              <TrashIcon className="h-5 w-5" />
+            </button>
 
             {voiceDone ? (
               <button
@@ -613,24 +612,34 @@ export function RecordPage() {
               >
                 저장
               </button>
+            ) : speech.isRecording ? (
+              <button
+                type="button"
+                onClick={pauseVoiceRecording}
+                aria-label="녹음 정지"
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15"
+              >
+                <StopIcon className="h-8 w-8" />
+              </button>
             ) : (
               <button
                 type="button"
-                onClick={finishVoiceRecording}
-                aria-label="녹음 완료"
+                onClick={resumeVoiceRecording}
+                aria-label={canSubmitRecord(speech.transcript) ? '이어 녹음' : '녹음 시작'}
                 className="flex h-28 w-28 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg shadow-orange-900/10 ring-1 ring-slate-900/15"
               >
-                <CheckIcon className="h-9 w-9" />
+                <MicIcon className="h-9 w-9 text-slate-800" />
               </button>
             )}
 
             <button
               type="button"
-              onClick={cancelVoice}
-              aria-label="삭제"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white"
+              onClick={finishVoiceRecording}
+              disabled={voiceDone || !canSubmitRecord(speech.transcript)}
+              aria-label="녹음 완료"
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/15 backdrop-blur-sm hover:bg-white disabled:opacity-40"
             >
-              <TrashIcon className="h-5 w-5" />
+              <CheckIcon className="h-5 w-5" />
             </button>
           </div>
 

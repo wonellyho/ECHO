@@ -1,6 +1,6 @@
-// 녹음 버튼용 아이콘 2종. 대기 상태(=마이크, 눌러서 녹음 시작)와 녹음 중 상태(=정지 사각형,
-// 눌러서 녹음을 멈추고 저장 정보 화면으로 넘어감)를 구분해서 보여주기 위한 것 (design.md 참고).
-// 마이크 아이콘은 Lucide의 "mic" 글리프를 기반으로 함.
+// 녹화 화면 가운데 버튼의 "정지 중" 상태 — 눌러서 녹음을 시작/재개한다.
+// 첫 화면(기록 선택)의 큰 녹음 버튼에도 같은 아이콘을 쓴다.
+// Lucide의 "mic" 글리프를 기반으로 함.
 export function MicIcon({ className = 'h-7 w-7 text-white' }: { className?: string }) {
   return (
     <svg
@@ -20,21 +20,12 @@ export function MicIcon({ className = 'h-7 w-7 text-white' }: { className?: stri
   );
 }
 
-// 녹화 화면 하단 컨트롤용 아이콘. 일시정지/재생은 미디어 컨트롤 관례대로 꽉 찬(fill) 글리프를
-// 쓰고, 완료/삭제/키보드는 MicIcon과 같은 Lucide 기반 stroke 스타일을 따른다.
-export function PauseIcon({ className = 'h-5 w-5' }: { className?: string }) {
+// 녹화 화면 가운데 버튼의 "녹음 중" 상태. 미디어 컨트롤 관례대로 꽉 찬(fill) 글리프를 쓰고,
+// 완료/삭제/키보드는 MicIcon과 같은 Lucide 기반 stroke 스타일을 따른다.
+export function StopIcon({ className = 'h-7 w-7' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <rect x="6" y="4" width="4" height="16" rx="1" />
-      <rect x="14" y="4" width="4" height="16" rx="1" />
-    </svg>
-  );
-}
-
-export function PlayIcon({ className = 'h-5 w-5' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l10.3-6.86a1 1 0 0 0 0-1.68L9.54 4.3A1 1 0 0 0 8 5.14Z" />
+      <rect x="5" y="5" width="14" height="14" rx="2.5" />
     </svg>
   );
 }
