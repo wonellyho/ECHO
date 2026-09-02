@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { CardStackCarousel, type CardStackCarouselMeta } from './CardStackCarousel';
-import { NEUTRAL_CARD_GRADIENT, TAG_GRADIENTS } from '../lib/tagColors';
-import type { ExperienceTag } from '../types';
+import { CARD_COLOR_GRADIENTS, DEFAULT_CARD_COLOR } from '../lib/tagColors';
+import type { CardColorKey, ExperienceTag } from '../types';
 
 export interface StackEntry {
   id: string;
@@ -10,12 +10,12 @@ export interface StackEntry {
   project_title: string | null;
   situation: string | null;
   tags: ExperienceTag[];
+  card_color: CardColorKey | null;
 }
 
-// 첫 번째 태그로 카드 그라디언트를 정한다 (design.md 참고). 태그가 없으면 중립 그레이.
-function cardGradient(tags: ExperienceTag[]): string {
-  const primary = tags[0];
-  return primary ? TAG_GRADIENTS[primary] : NEUTRAL_CARD_GRADIENT;
+// 저장 시점에 사용자가 직접 고른 카드 색 (design.md 참고). 옛 기록처럼 값이 없으면 기본색.
+function cardGradient(cardColor: CardColorKey | null): string {
+  return CARD_COLOR_GRADIENTS[cardColor ?? DEFAULT_CARD_COLOR];
 }
 
 // 내 경험 탭의 카드 스택 — 범용 CardStackCarousel 위에 엔트리 카드 렌더링/그라디언트만 얹은 어댑터.
@@ -36,28 +36,55 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
             // 시키므로, 여기 도달했다는 건 이미 active 상태에서 눌렀다는 뜻 — 정상적으로 이동시킨다.
             if (!isActive) e.preventDefault();
           }}
-          className={`flex h-full flex-col justify-between gap-1.5 overflow-hidden rounded-3xl bg-gradient-to-br px-5 py-4 shadow-lg shadow-black/10 ${cardGradient(
-            entry.tags,
+          className={`relative flex h-full flex-col overflow-hidden rounded-3xl bg-gradient-to-br shadow-lg shadow-black/10 ${cardGradient(
+            entry.card_color,
           )}`}
         >
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-base font-bold text-white">{entry.project_title || '제목 없음'}</p>
-            <p className="shrink-0 text-[11px] text-white/70">
-              {new Date(entry.created_at).toLocaleDateString('ko-KR')}
-            </p>
-          </div>
-          <p className="line-clamp-3 flex-1 text-sm leading-snug text-white/90">
-            {entry.situation ?? entry.raw_text}
-          </p>
-          {entry.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {entry.tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium text-white">
-                  #{tag}
-                </span>
-              ))}
+          {/* Figma 카드는 좌상단이 짙은 남색, 우하단이 옅은 파스텔인 대각선(to-br) 그라디언트라,
+              흰 텍스트를 그대로 얹으면 밝은 구간에서 대비가 깨진다. 스크림도 반드시 같은 to-br
+              방향이어야 한다 — 세로(to-b) 스크림을 얹으면 카드 대각선과 축이 어긋나서, 대각선상
+              밝기가 같은 두 지점(예: 우상단과 좌하단)에 서로 다른 세기가 걸려 한쪽은 과하게
+              가려지고 다른 쪽은 그대로 밝은 채 남는다. 같은 축으로 맞추면 카드가 밝아지는
+              속도만큼 스크림도 짙어져, 카드 위 어느 위치든 밑바탕 밝기가 균일하게 눌린다. */}
+          <div
+            aria-hidden="true"
+            // to-br 스크림의 알파는 좌상단 모서리에서 0이다 — 제목이 앉는 자리(px-5 py-4, 카드
+            // 좌상단 근처)는 그라디언트 진행도가 0.1 안팎이라 이전 스톱(from-black/0)에서는
+            // 거의 안 눌린다. 밝은 카드색(rose #EAAEA5, coral #E58F91)에서 이게 흰 텍스트 대비를
+            // 2~3:1까지 떨어뜨렸다(리뷰에서 발견) — 시작 스톱을 0이 아니라 35%로 올려 카드
+            // 전체에 최소한의 어두운 바닥을 깔고, 우하단으로 갈수록 더 짙어지는 흐름은 유지한다.
+            // (30%로 처음 올렸을 때 rose(#EAAEA5) 제목만 4.31~4.36:1로 근소하게 미달해 재검증
+            // 후 35%로 한 단 더 올림 — 이제 5색 전부 4.5:1 이상.)
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/35 via-black/50 to-black/80"
+          />
+          <div className="relative z-10 flex h-full flex-col justify-between gap-1.5 px-5 py-4">
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-base font-bold text-white">{entry.project_title || '제목 없음'}</p>
+              {/* 11px 작은 글자라 white/85로는 rose/coral 카드에서 4.5:1을 간신히 못 넘길 수
+                  있다(리뷰 지적) — 여유를 두려고 불투명 흰색으로 올림. */}
+              <p className="shrink-0 text-[11px] text-white">
+                {new Date(entry.created_at).toLocaleDateString('ko-KR')}
+              </p>
             </div>
-          )}
+            <p className="line-clamp-3 flex-1 text-sm leading-snug text-white/95">
+              {entry.situation ?? entry.raw_text}
+            </p>
+            {entry.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {entry.tags.slice(0, 3).map((tag) => (
+                  // 배지는 자기 배경이 있는 별도 레이어라 카드 밝기와 무관하게 대비가 고정된다 —
+                  // 반투명 흰색(bg-white/20)은 밝은 카드 구간 위에서 배지 자체도 함께 밝아져
+                  // 흰 글자와 거의 구분되지 않았다.
+                  <span
+                    key={tag}
+                    className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-medium text-white"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </Link>
       )}
     />

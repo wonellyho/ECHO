@@ -22,8 +22,16 @@ create table if not exists collections (
 );
 
 -- 프로젝트 제목(선택) + 컬렉션 소속
+-- project_title은 2026-09-02부로 신규 기록에는 더 이상 쓰지 않는다 — "프로젝트별"과
+-- "컬렉션별"이 사실상 같은 묶음 개념으로 쓰이고 있어 컬렉션 하나로 통일했다(옛 기록의
+-- project_title 값은 보존해 카드 제목 폴백으로만 계속 쓴다). 컬럼 자체는 하위호환을 위해 남긴다.
 alter table entries add column if not exists project_title text;
 alter table entries add column if not exists collection_id uuid references collections(id) on delete set null;
+
+-- 카드 배경색 — 저장 시점에 사용자가 5색 팔레트 중 직접 고른다(태그 자동 매핑 대신).
+-- 값은 src/lib/tagColors.ts의 CARD_COLOR_KEYS와 정확히 같아야 한다.
+alter table entries add column if not exists card_color text
+  check (card_color in ('navy', 'rose', 'plum', 'coral', 'slate'));
 
 -- LLM 구조화 결과 (entry 1:1)
 create table if not exists entries_structured (

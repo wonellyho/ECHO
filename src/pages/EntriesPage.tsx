@@ -2,20 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
-import { groupEntries, type GroupBy } from '../lib/entryGrouping';
+import { groupEntries } from '../lib/entryGrouping';
 import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
-import { EntryCardStack } from '../components/EntryCardStack';
+import { CollectionSwipeView } from '../components/CollectionSwipeView';
 import { useNickname, withNickname } from '../lib/useNickname';
-import type { ExperienceTag } from '../types';
-
-type SortMode = GroupBy | 'latest';
-
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-  { value: 'latest', label: '최신순' },
-  { value: 'month', label: '월별' },
-  { value: 'project', label: '프로젝트별' },
-  { value: 'collection', label: '컬렉션별' },
-];
+import type { CardColorKey, ExperienceTag } from '../types';
 
 const NEW_COLLECTION_VALUE = '__new__';
 
@@ -25,6 +16,7 @@ interface EntryRow {
   created_at: string;
   project_title: string | null;
   collection_id: string | null;
+  card_color: CardColorKey | null;
   situation: string | null;
   tags: ExperienceTag[];
 }
@@ -39,8 +31,6 @@ export function EntriesPage() {
   const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<ExperienceTag | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>('latest');
-  const [sortOpen, setSortOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -49,7 +39,6 @@ export function EntriesPage() {
   const [newBulkCollectionName, setNewBulkCollectionName] = useState('');
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
-  const sortRef = useRef<HTMLDivElement | null>(null);
   const nickname = useNickname();
   // 일괄 추가 바가 실제로 차지하는 높이. 이만큼 목록 아래 여백을 더 줘야 마지막 카드 줄이
   // 바 뒤에 가리지 않는다 ("새 컬렉션 만들기" 선택 시 입력칸이 늘어 높이가 변한다).
@@ -60,18 +49,6 @@ export function EntriesPage() {
     loadEntries();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // 정렬 드롭다운 바깥을 클릭하면 닫는다.
-  useEffect(() => {
-    if (!sortOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
-        setSortOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [sortOpen]);
 
   // 바가 나타나거나 내용이 바뀌어 높이가 변하면 목록 아래 여백도 따라 바뀌어야 한다.
   const showBulkBar = selectMode && selectedIds.size > 0;
@@ -101,7 +78,7 @@ export function EntriesPage() {
       ] = await Promise.all([
         supabase
           .from('entries')
-          .select('id, raw_text, created_at, project_title, collection_id')
+          .select('id, raw_text, created_at, project_title, collection_id, card_color')
           .order('created_at', { ascending: false }),
         supabase.from('entry_tags').select('entry_id, tag'),
         supabase.from('entries_structured').select('entry_id, situation'),
@@ -211,14 +188,16 @@ export function EntriesPage() {
     () => filterEntries(entries, activeTag, query),
     [entries, activeTag, query],
   );
-  const groups = useMemo(
-    () => (sortMode === 'latest' ? null : groupEntries(filtered, sortMode, collections)),
-    [filtered, sortMode, collections],
-  );
-  // 카드 스택은 그룹 헤더 없이 하나의 스택으로 보여준다 — groups가 있으면 그 순서를 그대로 이어붙인다.
-  const stackEntries = useMemo(
-    () => (groups === null ? filtered : groups.flatMap((group) => group.entries)),
-    [groups, filtered],
+  // "프로젝트별"과 "컬렉션별"을 컬렉션 하나로 통일했다 — 이제 그룹 기준은 컬렉션뿐이다
+  // (design.md, entryGrouping.ts 참고). 선택 모드의 그리드와 컬렉션 스와이프 뷰가 이 그룹을
+  // 함께 쓴다. 카드 제목을 그룹 라벨로 채우는 폴백은 일부러 안 한다 — 스와이프 뷰 헤더와
+  // 선택 모드 그리드 둘 다 그룹 라벨을 바로 옆에 이미 보여주므로, 카드마다 또 같은 이름을
+  // 붙이면 카드 제목 줄이 매번 헤더를 그대로 반복할 뿐 아무 정보도 더해주지 않는다(리뷰에서
+  // 지적). project_title이 없는 신규 기록은 EntryCardStack 자신의 '제목 없음' 폴백을 그대로
+  // 쓴다.
+  const collectionGroups = useMemo(
+    () => groupEntries(filtered, collections),
+    [filtered, collections],
   );
 
   function renderCard(entry: EntryRow) {
@@ -318,40 +297,6 @@ export function EntriesPage() {
         ))}
       </div>
 
-      <div className="relative mt-3" ref={sortRef}>
-        <button
-          type="button"
-          onClick={() => setSortOpen((prev) => !prev)}
-          aria-expanded={sortOpen}
-          className="flex items-center gap-1 rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
-        >
-          {SORT_OPTIONS.find((opt) => opt.value === sortMode)?.label ?? '정렬 방식'} {sortOpen ? '▲' : '▼'}
-        </button>
-        {sortOpen && (
-          // z-30: 카드 스택 위, 하단 네비게이션(z-40) 아래.
-          <div className="absolute left-0 top-full z-30 mt-1 w-36 overflow-hidden rounded-lg border border-slate-800 bg-slate-900 py-1 shadow-lg">
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                aria-pressed={sortMode === opt.value}
-                onClick={() => {
-                  setSortMode(opt.value);
-                  setSortOpen(false);
-                }}
-                className={`block w-full px-3 py-2 text-left text-sm transition-colors ${
-                  sortMode === opt.value
-                    ? 'bg-slate-700 font-medium text-white'
-                    : 'text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {loading && <p className="mt-4 text-sm text-slate-400">불러오는 중...</p>}
 
       {!loading && loadError && (
@@ -375,23 +320,19 @@ export function EntriesPage() {
         !loadError &&
         filtered.length > 0 &&
         (selectMode ? (
-          groups === null ? (
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {filtered.map((entry) => renderCard(entry))}
-            </div>
-          ) : (
-            groups.map((group) => (
-              <section key={group.key} className="mt-5">
-                <h3 className="text-sm font-semibold text-slate-300">{group.label}</h3>
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                  {group.entries.map((entry) => renderCard(entry))}
-                </div>
-              </section>
-            ))
-          )
+          collectionGroups.map((group) => (
+            <section key={group.key} className="mt-5">
+              <h3 className="text-sm font-semibold text-slate-300">{group.label}</h3>
+              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                {group.entries.map((entry) => renderCard(entry))}
+              </div>
+            </section>
+          ))
         ) : (
+          // 토글 없이 항상 컬렉션 스와이프 뷰 — Figma 메모 원문("내 경험탭에서 좌우로
+          // 스와이프하면 컬렉션별로 넘어가게 함")을 기본 동작으로 그대로 따른다.
           <div className="mt-5">
-            <EntryCardStack entries={stackEntries} />
+            <CollectionSwipeView groups={collectionGroups} />
           </div>
         ))}
 

@@ -305,7 +305,11 @@ export function CardStackCarousel<T>({
       // isolate로 쌓임 맥락을 만든다. 아래 슬롯들이 겹침 순서를 위해 z-index를 1000까지 쓰는데,
       // 맥락이 없으면 그 값이 페이지 전체와 경쟁해 바깥의 드롭다운·오버레이를 전부 덮어버린다
       // (정렬 드롭다운이 카드 뒤로 숨어 선택할 수 없던 원인).
-      className={`relative isolate overflow-y-auto overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ''}`}
+      // overscroll-contain(양축)이 아니라 overscroll-y-contain을 쓴다 — 세로만 auto인 이
+      // 컨테이너도 가로축은 암묵적으로 auto라 scrollWidth===clientWidth인 상태로 x축 경계에
+      // 항상 붙어 있다. 양축을 contain하면 그 경계에서 가로 스크롤 체이닝이 막혀, 컬렉션
+      // 스와이프 뷰 안에서 카드 위로 가로 드래그를 시작해도 바깥 가로 페이저로 전달되지 않는다.
+      className={`relative isolate overflow-y-auto overscroll-y-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ''}`}
       style={{
         height: containerHeight,
         scrollSnapType: 'y mandatory',

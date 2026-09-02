@@ -18,7 +18,8 @@ import {
 import { canSubmitRecord } from '../lib/recordValidation';
 import { formatDuration } from '../lib/formatDuration';
 import { useNickname } from '../lib/useNickname';
-import type { ExperienceTag } from '../types';
+import { CARD_COLOR_HEX, CARD_COLOR_KEYS, CARD_COLOR_LABELS } from '../lib/tagColors';
+import type { CardColorKey, ExperienceTag } from '../types';
 
 interface StructureResponse {
   situation: string | null;
@@ -113,11 +114,12 @@ export function RecordPage() {
   // nav "기록"으로 나가려는데 작성 중인 내용이 있어 확인을 띄운 상태.
   const [confirmLeave, setConfirmLeave] = useState(false);
 
-  const [projectTitle, setProjectTitle] = useState('');
-  const [projectTitleOptions, setProjectTitleOptions] = useState<string[]>([]);
   const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [collectionChoice, setCollectionChoice] = useState('');
   const [newCollectionName, setNewCollectionName] = useState('');
+  // 카드 색상 — 5색 팔레트 중 하나를 저장 시점에 직접 고른다 (design.md 참고). 안 골라도
+  // 저장은 되게 첫 번째 색을 기본 선택값으로 둔다.
+  const [cardColor, setCardColor] = useState<CardColorKey>(CARD_COLOR_KEYS[0]);
 
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -136,14 +138,10 @@ export function RecordPage() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: entryRows }, { data: collectionRows }] = await Promise.all([
-        supabase.from('entries').select('project_title').not('project_title', 'is', null),
-        supabase.from('collections').select('id, name').order('created_at', { ascending: false }),
-      ]);
-      const titles = Array.from(
-        new Set((entryRows ?? []).map((row) => row.project_title as string).filter(Boolean)),
-      );
-      setProjectTitleOptions(titles);
+      const { data: collectionRows } = await supabase
+        .from('collections')
+        .select('id, name')
+        .order('created_at', { ascending: false });
       setCollections((collectionRows ?? []) as CollectionOption[]);
     })();
   }, []);
@@ -273,9 +271,9 @@ export function RecordPage() {
     setStructureFailed(false);
     savedEntryIdRef.current = null;
     savedRawTextRef.current = '';
-    setProjectTitle('');
     setCollectionChoice('');
     setNewCollectionName('');
+    setCardColor(CARD_COLOR_KEYS[0]);
   }
 
   // nav의 "기록" 탭 — 어느 단계에 있든 첫 화면(선택)으로 돌아간다.
@@ -418,8 +416,8 @@ export function RecordPage() {
           user_id: user.id,
           raw_text: content,
           input_type: source === 'voice' ? 'voice' : 'text',
-          project_title: projectTitle.trim() || null,
           collection_id: collectionId,
+          card_color: cardColor,
         })
         .select()
         .single();
@@ -772,24 +770,27 @@ export function RecordPage() {
       </div>
 
       <div className="mt-4">
-        <p className="text-sm font-semibold text-slate-50">프로젝트 제목</p>
-        <input
-          type="text"
-          list="project-title-options"
-          placeholder="선택 입력"
-          value={projectTitle}
-          onChange={(e) => setProjectTitle(e.target.value)}
-          disabled={saving}
-          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:opacity-50"
-        />
-        <datalist id="project-title-options">
-          {projectTitleOptions.map((title) => (
-            <option key={title} value={title} />
+        <p className="text-sm font-semibold text-slate-50">카드 색상</p>
+        <div className="mt-1.5 flex gap-2">
+          {CARD_COLOR_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setCardColor(key)}
+              disabled={saving}
+              aria-pressed={cardColor === key}
+              aria-label={CARD_COLOR_LABELS[key]}
+              title={CARD_COLOR_LABELS[key]}
+              // hex를 인라인 style로 준다 — Tailwind 임의값 클래스는 소스 텍스트를 정적으로
+              // 스캔해 생성되므로, 여기처럼 배열을 돌며 변수로 색을 넣는 자리에는 애초에
+              // 클래스 문자열이 성립하지 않는다 (tagColors.ts 카드 그라디언트 주석 참고).
+              style={{ backgroundColor: CARD_COLOR_HEX[key] }}
+              className={`h-9 w-9 shrink-0 rounded-md ring-offset-2 ring-offset-slate-950 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 disabled:opacity-50 ${
+                cardColor === key ? 'scale-105 ring-2 ring-white' : 'ring-1 ring-white/20'
+              }`}
+            />
           ))}
-        </datalist>
-        {projectTitleOptions.length === 0 && (
-          <p className="mt-1.5 text-xs text-slate-400">추천할 기존 제목이 없습니다</p>
-        )}
+        </div>
       </div>
 
       <div className="mt-4">

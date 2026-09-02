@@ -1,13 +1,18 @@
 export type ExperienceTag = '협업' | '갈등' | '주도성' | '실패' | '성취' | '문제해결';
 
+// 카드 배경색 5종 (저장 시 사용자가 팔레트에서 직접 고름). DB CHECK 제약과 동일해야 한다.
+export type CardColorKey = 'navy' | 'rose' | 'plum' | 'coral' | 'slate';
+
 export interface Entry {
   id: string;
   user_id: string;
   raw_text: string;
   input_type: 'text' | 'voice';
   audio_url: string | null;
+  // 2026-09-02부로 신규 기록엔 쓰지 않음 — 옛 기록의 카드 제목 폴백 용도로만 남아있음 (design.md 참고).
   project_title: string | null;
   collection_id: string | null;
+  card_color: CardColorKey | null;
   created_at: string;
 }
 
