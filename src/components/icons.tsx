@@ -222,24 +222,6 @@ export function EditIcon({ className = 'h-4 w-4' }: { className?: string }) {
   );
 }
 
-// 목록형 항목에서 호버 시 슬며시 나타나는 화살표 — "컬렉션 모음" 팝업의 항목 등에 쓴다.
-export function ChevronRightIcon({ className = 'h-4 w-4' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
 // "컬렉션 모음" 버튼용 — 겹쳐진 카드 더미를 위에서 본 모양. Lucide의 "layers" 글리프 기반.
 export function LayersIcon({ className = 'h-4 w-4' }: { className?: string }) {
   return (

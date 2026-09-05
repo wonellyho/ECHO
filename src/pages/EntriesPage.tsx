@@ -5,7 +5,7 @@ import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, UNASSIGNED_KEY } from '../lib/entryGrouping';
 import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
 import { CollectionSwipeView, type CollectionSwipeViewHandle } from '../components/CollectionSwipeView';
-import { CheckIcon, ChevronRightIcon, EditIcon, LayersIcon } from '../components/icons';
+import { CheckIcon, EditIcon, LayersIcon } from '../components/icons';
 import { useNickname, withNickname } from '../lib/useNickname';
 import type { CardColorKey, ExperienceTag } from '../types';
 
@@ -420,8 +420,11 @@ export function EntriesPage() {
             </div>
             <div className="mt-3 flex flex-col gap-1">
               {collectionGroups.map((group) => (
-                // group 유틸리티로 화살표를 평소엔 숨겨뒀다가 호버/포커스에서만 슬며시
-                // 나타나게 한다 — 배경색만 바뀌는 것보다 "누르면 이동한다"는 게 분명해진다.
+                // 화살표 페이드인은 눈에 잘 안 띈다는 피드백으로, 배경 자체가 확실히
+                // 밝아지는 효과로 바꿨다 — 팝업 배경(slate-900)과 이전 호버색(slate-800)이
+                // 너무 가까운 톤이라 차이가 잘 안 보였던 게 원인. 한 단 더 밝은 slate-700과
+                // 왼쪽에서 슬라이드-인하는 강조 바를 더해 "지금 이 항목이 활성화됐다"를
+                // 분명하게 한다.
                 <button
                   key={group.key}
                   type="button"
@@ -429,12 +432,15 @@ export function EntriesPage() {
                     swipeViewRef.current?.scrollToKey(group.key);
                     setCollectionSheetOpen(false);
                   }}
-                  className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-800 focus-visible:bg-slate-800 focus-visible:outline-none ${
+                  className={`group relative flex items-center justify-between overflow-hidden rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-700 focus-visible:bg-slate-700 focus-visible:outline-none ${
                     group.key === UNASSIGNED_KEY ? 'text-slate-400' : 'text-slate-100'
                   }`}
                 >
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <ChevronRightIcon className="h-3.5 w-3.5 shrink-0 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-1.5 left-0 w-1 origin-left scale-x-0 rounded-full bg-sky-400 transition-transform group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                  />
+                  <span className="flex min-w-0 items-center pl-2">
                     <span className="truncate">{group.label}</span>
                   </span>
                   <span className="shrink-0 text-xs text-slate-500">{group.entries.length}개</span>
