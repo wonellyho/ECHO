@@ -30,6 +30,7 @@ export function InsightsPage() {
   );
   const [openCluster, setOpenCluster] = useState<ClusterId | null>(null);
   const [activeInsightId, setActiveInsightId] = useState<string | null>(null);
+  const [webglFailed, setWebglFailed] = useState(false);
 
   // 인사이트 하나를 고르면 그 근거 별만 밝게 남긴다.
   const highlightedIds = useMemo(() => {
@@ -213,6 +214,32 @@ export function InsightsPage() {
     );
   }
 
+  if (webglFailed) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
+        <h2 className="text-xl font-semibold text-slate-50">
+          {withNickname(nickname, (n) => `${n}의 에너지 패턴`, '나의 에너지 패턴')}
+        </h2>
+        <p className="text-xs text-slate-500">
+          이 기기에서는 별자리를 그릴 수 없어 글로만 보여드려요.
+        </p>
+        {(['energizer', 'drainer'] as const).map((cluster) => (
+          <ClusterSummaryCard
+            key={cluster}
+            cluster={cluster}
+            insights={insights.filter((i) => i.type === cluster)}
+            activeInsightId={null}
+            onSelectInsight={() => {}}
+            onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
+            regenerating={regenerating}
+            onClose={null}
+          />
+        ))}
+        {error && <p className="text-sm text-red-400">{error}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-slate-950">
       <h2 className="pointer-events-none absolute left-4 top-4 z-10 text-sm font-medium text-slate-400">
@@ -225,7 +252,7 @@ export function InsightsPage() {
         selectedId={selectedId}
         highlightedIds={highlightedIds}
         onSelect={setSelectedId}
-        onWebglFailure={() => {}}
+        onWebglFailure={() => setWebglFailed(true)}
       />
 
       {selectedNode && (
