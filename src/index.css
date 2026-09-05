@@ -23,9 +23,9 @@ body {
   color-scheme: dark;
 }
 
-/* 컬렉션 스와이프 뷰의 컬렉션 이름 표시용 — 넘길 때마다 key를 바꿔 다시 마운트시키면
-   이 애니메이션이 재생돼, 텍스트가 뚝 바뀌는 대신 살짝 아래에서 올라오며 나타난다. */
-@keyframes collection-label-in {
+/* 짧게 나타났다 사라지는 텍스트/배지용 범용 페이드인. 다시 마운트시킬 때(key 교체) 재생된다.
+   컬렉션 스와이프 뷰의 컬렉션 이름 표시, 녹음 화면의 커서-이어녹음 안내 등에서 쓴다. */
+@keyframes fade-in-up {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -35,11 +35,11 @@ body {
     transform: translateY(0);
   }
 }
-.collection-label-enter {
-  animation: collection-label-in 180ms ease-out;
+.fade-in-up-enter {
+  animation: fade-in-up 180ms ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .collection-label-enter {
+  .fade-in-up-enter {
     animation: none;
   }
 }

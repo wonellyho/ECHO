@@ -113,6 +113,16 @@ export function RecordPage() {
   const [voiceDone, setVoiceDone] = useState(false);
   // nav "기록"으로 나가려는데 작성 중인 내용이 있어 확인을 띄운 상태.
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // 일시정지 중 보여주는 textarea. 이어 녹음(▶)을 누른 순간의 커서 위치를 읽어야 해서
+  // ref로 붙잡아둔다 — 버튼 클릭이 포커스를 옮겨도 selectionStart는 그대로 남아있다.
+  const voiceTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // 커서 중간에서 이어 녹음을 시작했을 때 잠깐 띄우는 안내.
+  const [cursorResumeHint, setCursorResumeHint] = useState(false);
+  useEffect(() => {
+    if (!cursorResumeHint) return;
+    const id = setTimeout(() => setCursorResumeHint(false), 2000);
+    return () => clearTimeout(id);
+  }, [cursorResumeHint]);
 
   const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [collectionChoice, setCollectionChoice] = useState('');
@@ -218,9 +228,15 @@ export function RecordPage() {
     setStep('details');
   }
 
+  // ▶ 이어 녹음 — textarea에 커서를 올려둔 자리가 있으면 그 위치부터 삽입하며 이어간다.
+  // 커서가 맨 끝에 있으면(수정 없이 그냥 이어 녹음하는 보통의 경우) 예전과 동일하게 끝에 붙인다.
   function resumeVoiceRecording() {
     setVoiceDone(false);
-    speech.start();
+    const el = voiceTextareaRef.current;
+    const cursor = el ? el.selectionStart : null;
+    const insertingMidway = cursor !== null && cursor < speech.transcript.length;
+    if (insertingMidway) setCursorResumeHint(true);
+    speech.start(cursor ?? undefined);
     mic.start();
   }
 
@@ -265,6 +281,7 @@ export function RecordPage() {
     setText('');
     resetVoiceTimer();
     setVoiceDone(false);
+    setCursorResumeHint(false);
     setEditingContent(false);
     setError(null);
     setStatusMessage(null);
@@ -576,7 +593,7 @@ export function RecordPage() {
           {/* 파형은 대본 위에 놓는다 — 흐름 안에 두어야 대본이 항상 그 아래로 간다. */}
           <VoiceWaveform
             analyserRef={mic.analyserRef}
-            className="pointer-events-none mt-4 h-20 w-full shrink-0"
+            className="pointer-events-none mt-4 h-28 w-full shrink-0"
           />
 
           {/* 녹음 중에는 실시간 표시(읽기 전용), 멈추면 그 자리에서 바로 고칠 수 있는 입력이 된다.
@@ -591,14 +608,27 @@ export function RecordPage() {
               </p>
             ) : (
               <textarea
+                ref={voiceTextareaRef}
                 value={speech.transcript}
                 onChange={(e) => speech.setTranscript(e.target.value)}
                 placeholder="여기에 직접 입력하거나, 녹음한 내용을 고칠 수 있어요."
-                aria-label="녹음한 내용 (수정 가능)"
-                className="h-full min-h-[6rem] w-full resize-none rounded-2xl bg-white/25 p-4 text-lg leading-relaxed text-slate-800 ring-1 ring-white/40 backdrop-blur-md placeholder:text-slate-700 focus:bg-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-800/50"
+                aria-label="녹음한 내용 (수정 가능). 커서를 올린 위치부터 이어 녹음할 수 있습니다."
+                // caret-orange-600 — 파스텔 배경 위에서 커서가 잘 안 보인다는 피드백으로
+                // 브랜드 강조색으로 진하게 표시한다. 이어 녹음(▶)이 이 커서 위치를 그대로
+                // 쓰므로, 어디서부터 이어질지 눈에 띄어야 한다.
+                className="h-full min-h-[6rem] w-full resize-none rounded-2xl bg-white/25 p-4 text-lg leading-relaxed text-slate-800 caret-orange-600 ring-1 ring-white/40 backdrop-blur-md placeholder:text-slate-700 focus:bg-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-800/50"
               />
             )}
           </div>
+
+          {/* 커서 중간에서 이어 녹음을 시작했을 때만 잠깐 띄우는 안내. */}
+          {cursorResumeHint && (
+            <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-4">
+              <p className="fade-in-up-enter rounded-full bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+                커서 위치부터 녹음을 이어갑니다
+              </p>
+            </div>
+          )}
 
           {speech.error && (
             <div className="mt-4 rounded-2xl bg-white/75 p-2.5 text-sm text-slate-800 backdrop-blur-sm">
@@ -628,9 +658,9 @@ export function RecordPage() {
               type="button"
               onClick={cancelVoice}
               aria-label="삭제"
-              className="mb-16 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
+              className="mb-16 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
             >
-              <TrashIcon className="h-5 w-5" />
+              <TrashIcon className="h-6 w-6" />
             </button>
 
             {voiceDone ? (
@@ -638,7 +668,7 @@ export function RecordPage() {
                 type="button"
                 onClick={goToDetailsFromVoice}
                 disabled={!canSubmitRecord(speech.transcript)}
-                className="flex h-28 w-28 items-center justify-center rounded-full bg-white/25 text-lg font-medium text-slate-800 ring-1 ring-white/50 backdrop-blur-md disabled:opacity-50"
+                className="flex h-32 w-32 items-center justify-center rounded-full bg-white/25 text-lg font-medium text-slate-800 ring-1 ring-white/50 backdrop-blur-md disabled:opacity-50"
               >
                 저장
               </button>
@@ -647,18 +677,18 @@ export function RecordPage() {
                 type="button"
                 onClick={pauseVoiceRecording}
                 aria-label="녹음 정지"
-                className="flex h-28 w-28 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
+                className="flex h-32 w-32 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
               >
-                <StopIcon className="h-8 w-8" />
+                <StopIcon className="h-9 w-9" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={resumeVoiceRecording}
                 aria-label={canSubmitRecord(speech.transcript) ? '이어 녹음' : '녹음 시작'}
-                className="flex h-28 w-28 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
+                className="flex h-32 w-32 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
               >
-                <MicIcon className="h-9 w-9" />
+                <MicIcon className="h-10 w-10" />
               </button>
             )}
 
@@ -667,9 +697,9 @@ export function RecordPage() {
               onClick={finishVoiceRecording}
               disabled={voiceDone || !canSubmitRecord(speech.transcript)}
               aria-label="녹음 완료"
-              className="mb-16 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35 disabled:opacity-40"
+              className="mb-16 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35 disabled:opacity-40"
             >
-              <CheckIcon className="h-5 w-5" />
+              <CheckIcon className="h-6 w-6" />
             </button>
           </div>
 

@@ -81,10 +81,10 @@ export function CollectionSwipeView({ groups }: { groups: EntryGroup<StackEntry>
           마운트시키면 넘길 때마다 살짝 아래에서 페이드인 — 그냥 텍스트가 뚝 바뀌는 것보다
           지금 페이지가 바뀌었다는 걸 분명히 알 수 있다. */}
       <div className="flex flex-col items-center gap-0.5 px-1 pb-3 text-center">
-        <p key={activeGroup?.key} className="collection-label-enter text-base font-semibold text-slate-50">
+        <p key={activeGroup?.key} className="fade-in-up-enter text-base font-semibold text-slate-50">
           {activeGroup?.label}
         </p>
-        <p key={`${activeGroup?.key}-count`} className="collection-label-enter text-xs text-slate-400">
+        <p key={`${activeGroup?.key}-count`} className="fade-in-up-enter text-xs text-slate-400">
           {activeGroup?.entries.length}개
         </p>
       </div>

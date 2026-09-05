@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { mergeAtCursor } from './transcriptMerge';
 
 // 브라우저 내장 Web Speech API 래퍼 (무료, 정확도는 낮을 수 있음).
 // 지원 브라우저: Chrome 계열. 미지원 시 isSupported=false로 텍스트 입력만 안내.
@@ -56,6 +57,11 @@ export function useSpeechInput() {
   // 아직 연결되지 않았을 때는 null이며, 그 경우 onend는 재시작을 시도하지 않고 정지 처리로
   // 떨어진다 — no-op을 부르면 녹음 중이라고 표시된 채 아무 세션도 없는 상태에 갇힌다.
   const startSessionRef = useRef<(() => void) | null>(null);
+  // 커서 위치부터 이어 녹음할 때, 커서 뒤에 남아있던 텍스트. start()가 호출될 때 한 번
+  // 정해지고, 침묵으로 인한 자동 재시작(onend → restart) 동안에는 그대로 유지되어야
+  // 새 세션마다 다시 맨 끝에 붙는 게 아니라 계속 같은 자리 앞에 삽입된다. 빈 문자열이면
+  // 예전처럼 그냥 끝에 이어붙인다.
+  const suffixRef = useRef('');
 
   const isSupported = getRecognitionCtor() !== null;
 
@@ -81,7 +87,12 @@ export function useSpeechInput() {
     // 이 세션이 시작될 때까지 쌓인 텍스트. 공유 ref가 아니라 세션마다의 클로저 변수여야 한다 —
     // 공유 ref를 읽으면 다음 세션이 기준값을 바꾼 뒤 이 세션의 늦은 이벤트가 그걸 읽어
     // 앞부분을 중복해서 덧붙인다.
-    const sessionBase = transcriptRef.current;
+    // 커서 삽입 모드(suffix가 있음)일 때는 전체 텍스트의 맨 끝이 아니라 "지금까지 인식된
+    // 커서 앞부분"이 기준이어야 한다 — 끝에 붙은 suffix 길이만큼만 잘라내면 된다. suffix
+    // 자체는 매 결과마다 다시 덧붙기만 할 뿐 바뀌지 않는다는 불변식을 이용한다.
+    const suffix = suffixRef.current;
+    const fullBefore = transcriptRef.current;
+    const sessionBase = suffix ? fullBefore.slice(0, Math.max(0, fullBefore.length - suffix.length)) : fullBefore;
     const startedAt = Date.now();
 
     // 이미 교체된 세션의 지연 이벤트는 전부 무시한다 (⏸ → ▶ 빠른 연타 시 발생).
@@ -93,7 +104,7 @@ export function useSpeechInput() {
       for (let i = 0; i < event.results.length; i += 1) {
         combined += event.results[i][0].transcript;
       }
-      applyTranscript(sessionBase && combined ? `${sessionBase} ${combined}` : sessionBase + combined);
+      applyTranscript(mergeAtCursor(sessionBase, combined, suffix));
     };
 
     recognition.onerror = (event: any) => {
@@ -150,12 +161,22 @@ export function useSpeechInput() {
     startSessionRef.current = startSession;
   }, [startSession]);
 
-  const start = useCallback(() => {
-    setError(null);
-    wantsRecordingRef.current = true;
-    rapidRestartsRef.current = 0;
-    startSession();
-  }, [startSession]);
+  // insertAt을 주면 그 위치(문자 인덱스)부터 이어 녹음한다 — 커서 뒤에 있던 텍스트를
+  // suffix로 떼어뒀다가, 새로 인식되는 말 뒤에 다시 붙인다. 생략하거나 끝 위치를 주면
+  // 예전처럼 그냥 끝에 이어붙인다.
+  const start = useCallback(
+    (insertAt?: number) => {
+      setError(null);
+      wantsRecordingRef.current = true;
+      rapidRestartsRef.current = 0;
+      suffixRef.current =
+        typeof insertAt === 'number'
+          ? transcriptRef.current.slice(Math.max(0, Math.min(insertAt, transcriptRef.current.length)))
+          : '';
+      startSession();
+    },
+    [startSession],
+  );
 
   const stop = useCallback(() => {
     wantsRecordingRef.current = false;
