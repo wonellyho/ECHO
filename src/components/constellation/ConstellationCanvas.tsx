@@ -211,6 +211,51 @@ export function ConstellationCanvas({
     });
     resizeObserver.observe(container);
 
+    // 선택된 별로 카메라를 부드럽게 이동시킨다. 별 위치 자체가 아니라 "별에서 조금 떨어진 곳"을
+    // 목표로 삼아야 별이 화면을 가득 채워버리지 않는다.
+    const FOCUS_DISTANCE = 6;
+    const focusTarget = new THREE.Vector3();
+    const focusCamera = new THREE.Vector3();
+    let focusing = false;
+    let lastFocusedId: string | null = null;
+
+    function updateFocus() {
+      const id = selectedIdRef.current;
+      if (id !== lastFocusedId) {
+        lastFocusedId = id;
+        const index = id === null ? undefined : nodeIndex.get(id);
+        if (index === undefined) {
+          // 선택 해제 — 전체가 보이는 원래 시야로 돌아간다.
+          focusTarget.set(0, 0, 0);
+          focusCamera.set(0, 0, 34);
+        } else {
+          const node = graph.nodes[index];
+          focusTarget.set(node.position.x, node.position.y, node.position.z);
+          // 지금 보고 있는 방향을 유지한 채 거리만 좁힌다 — 시점이 갑자기 뒤집히면 방향 감각을 잃는다.
+          const direction = camera.position.clone().sub(controls.target).normalize();
+          focusCamera.copy(focusTarget).add(direction.multiplyScalar(FOCUS_DISTANCE));
+        }
+        focusing = true;
+        controls.enableRotate = id === null;
+        // 별을 보는 동안 자동 회전이 돌면 카드와 별이 어긋난다.
+        controls.autoRotate = id === null && !reduceMotion;
+        if (reduceMotion) {
+          camera.position.copy(focusCamera);
+          controls.target.copy(focusTarget);
+          focusing = false;
+        }
+      }
+
+      if (!focusing) return;
+      camera.position.lerp(focusCamera, 0.08);
+      controls.target.lerp(focusTarget, 0.08);
+      if (camera.position.distanceTo(focusCamera) < 0.05) {
+        camera.position.copy(focusCamera);
+        controls.target.copy(focusTarget);
+        focusing = false;
+      }
+    }
+
     // ---- 루프 ----
     const projected = new THREE.Vector3();
     let frameId = 0;
@@ -263,6 +308,7 @@ export function ConstellationCanvas({
     function tick() {
       if (!running) return;
       frameId = requestAnimationFrame(tick);
+      updateFocus();
       controls.update();
       updateHalo();
       updateLabels();

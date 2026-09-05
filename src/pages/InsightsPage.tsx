@@ -6,6 +6,7 @@ import { useNickname, withNickname } from '../lib/useNickname';
 import { buildGraph, type GraphInputEntry, type GraphInputInsight } from '../lib/constellation/buildGraph';
 import { CLUSTER_LABELS } from '../lib/constellation/layout';
 import { ConstellationCanvas, type ClusterLabel } from '../components/constellation/ConstellationCanvas';
+import { StarDetailCard, type StarDetail } from '../components/constellation/StarDetailCard';
 import type { ExperienceTag } from '../types';
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
@@ -21,6 +22,11 @@ export function InsightsPage() {
   const nickname = useNickname();
 
   const graph = useMemo(() => buildGraph(entries, insights), [entries, insights]);
+  const [detail, setDetail] = useState<StarDetail | null>(null);
+  const selectedNode = useMemo(
+    () => graph.nodes.find((node) => node.id === selectedId) ?? null,
+    [graph, selectedId],
+  );
 
   async function loadAll() {
     setLoading(true);
@@ -121,6 +127,38 @@ export function InsightsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (selectedId === null) {
+      setDetail(null);
+      return;
+    }
+    let cancelled = false;
+    setDetail(null);
+    (async () => {
+      const [{ data: entry }, { data: structured }] = await Promise.all([
+        supabase.from('entries').select('raw_text').eq('id', selectedId).single(),
+        supabase
+          .from('entries_structured')
+          .select('situation, action, result, emotion, status')
+          .eq('entry_id', selectedId)
+          .maybeSingle(),
+      ]);
+      // 카드를 빠르게 옮겨 다니면 늦게 도착한 응답이 지금 카드를 덮어쓸 수 있다.
+      if (cancelled) return;
+      setDetail({
+        rawText: entry?.raw_text ?? '',
+        situation: structured?.situation ?? null,
+        action: structured?.action ?? null,
+        result: structured?.result ?? null,
+        emotion: structured?.emotion ?? null,
+        status: (structured?.status as StarDetail['status']) ?? null,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId]);
+
   const clusterLabels: ClusterLabel[] = (['neutral', 'energizer', 'drainer'] as const)
     .filter((cluster) => graph.counts[cluster] > 0)
     .map((cluster) => ({
@@ -174,6 +212,10 @@ export function InsightsPage() {
         onSelect={setSelectedId}
         onWebglFailure={() => {}}
       />
+
+      {selectedNode && (
+        <StarDetailCard node={selectedNode} detail={detail} onClose={() => setSelectedId(null)} />
+      )}
 
       {structuredCount < MIN_ENTRIES_FOR_INSIGHTS && (
         <p className="absolute inset-x-4 bottom-4 z-10 rounded-lg bg-slate-900/80 p-3 text-center text-xs text-slate-400">
