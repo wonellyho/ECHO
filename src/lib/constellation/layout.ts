@@ -31,7 +31,13 @@ export const CLUSTER_LABELS: Record<ClusterId, string> = {
   drainer: '소진되는 순간',
 };
 
+// BASE_RADIUS = 2.2는 대략 수십~수백 개(실사용 범위) 기록에서 밀도가 자연스럽도록 튜닝한 값이다.
 const BASE_RADIUS = 2.2;
+
+// 군집 중심 간 거리(~16.6)의 40% 정도로 반경 상한을 둔다. 이 클램프가 없으면 기록이 많아질 때
+// (군집당 약 55개 이상) 반경 합이 중심 간 거리를 넘어서서 세 군집이 시각적으로 겹쳐버리고,
+// "세 덩어리로 보인다"는 요구가 깨진다.
+export const MAX_CLUSTER_RADIUS = 6.5;
 
 // FNV-1a 32비트. 짧고 의존성이 없으며 비슷한 id(uuid는 앞부분이 겹치기 쉽다)도 잘 흩어준다.
 export function hashId(id: string): number {
@@ -58,7 +64,7 @@ function mulberry32(seed: number) {
 
 // 별이 늘어도 군집 안 밀도가 일정하게 유지되도록 부피에 비례해 반경을 키운다(세제곱근).
 export function clusterRadius(count: number): number {
-  return BASE_RADIUS * Math.cbrt(Math.max(count, 1));
+  return Math.min(BASE_RADIUS * Math.cbrt(Math.max(count, 1)), MAX_CLUSTER_RADIUS);
 }
 
 export function starPosition(entryId: string, cluster: ClusterId, clusterSize: number): Vec3 {

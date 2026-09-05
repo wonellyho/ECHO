@@ -3,6 +3,7 @@ import {
   CLUSTER_CENTERS,
   CLUSTER_COLORS,
   CLUSTER_LABELS,
+  MAX_CLUSTER_RADIUS,
   clusterRadius,
   hashId,
   starPosition,
@@ -35,6 +36,16 @@ describe('clusterRadius', () => {
 
   test('별이 0개여도 0이 아닌 반경을 낸다 (0으로 나누기 방지)', () => {
     expect(clusterRadius(0)).toBeGreaterThan(0);
+  });
+
+  test('작은 범위에서는 여전히 개수에 따라 커진다 (상한에 걸리기 전)', () => {
+    expect(clusterRadius(10)).toBeGreaterThan(clusterRadius(1));
+    expect(clusterRadius(10)).toBeLessThan(MAX_CLUSTER_RADIUS);
+  });
+
+  test('아주 많은 기록에서도 상한을 넘지 않는다 — 군집끼리 겹쳐서 한 덩어리로 보이면 안 된다', () => {
+    expect(clusterRadius(100000)).toBe(MAX_CLUSTER_RADIUS);
+    expect(clusterRadius(1000)).toBeLessThanOrEqual(MAX_CLUSTER_RADIUS);
   });
 });
 
@@ -71,6 +82,14 @@ describe('starPosition', () => {
     expect(Number.isFinite(pos.x)).toBe(true);
     expect(Number.isFinite(pos.y)).toBe(true);
     expect(Number.isFinite(pos.z)).toBe(true);
+  });
+
+  test('군집이 아주 커져도 클램프된 반경 안에 머문다', () => {
+    const radius = clusterRadius(100000);
+    for (let i = 0; i < 50; i += 1) {
+      const pos = starPosition(`entry-${i}`, 'energizer', 100000);
+      expect(distance(pos, CLUSTER_CENTERS.energizer)).toBeLessThanOrEqual(radius + 1e-9);
+    }
   });
 });
 

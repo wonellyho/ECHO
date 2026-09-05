@@ -5,7 +5,9 @@ export interface ClusterSummaryCardProps {
   cluster: ClusterId;
   insights: GraphInputInsight[];
   activeInsightId: string | null;
-  onSelectInsight: (id: string | null) => void;
+  // null이면 선택 기능 자체가 없다는 뜻 — WebGL 폴백처럼 별을 밝게 표시할 화면이 없을 때다.
+  // 이때는 버튼이 아니라 div로 그려서 스크린리더가 "눌러도 반응 없는 토글"을 안내하지 않게 한다.
+  onSelectInsight: ((id: string | null) => void) | null;
   // null이면 재생성 버튼을 숨긴다 (기록이 부족할 때).
   onRegenerate: (() => void) | null;
   regenerating: boolean;
@@ -51,22 +53,31 @@ export function ClusterSummaryCard({
         <ul className="mt-3 space-y-2">
           {insights.map((insight) => {
             const active = insight.id === activeInsightId;
+            const body = (
+              <>
+                <p className="text-sm text-slate-100">{insight.summary}</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  근거 기록 {insight.evidence_entry_ids.length}건
+                  {active && ' · 근거 별만 밝게 표시 중'}
+                </p>
+              </>
+            );
             return (
               <li key={insight.id}>
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onSelectInsight(active ? null : insight.id)}
-                  className={`w-full rounded-lg p-3 text-left transition-colors ${
-                    active ? 'bg-slate-700' : 'bg-slate-800/60 hover:bg-slate-800'
-                  }`}
-                >
-                  <p className="text-sm text-slate-100">{insight.summary}</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    근거 기록 {insight.evidence_entry_ids.length}건
-                    {active && ' · 근거 별만 밝게 표시 중'}
-                  </p>
-                </button>
+                {onSelectInsight ? (
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onSelectInsight(active ? null : insight.id)}
+                    className={`w-full rounded-lg p-3 text-left transition-colors ${
+                      active ? 'bg-slate-700' : 'bg-slate-800/60 hover:bg-slate-800'
+                    }`}
+                  >
+                    {body}
+                  </button>
+                ) : (
+                  <div className="w-full rounded-lg bg-slate-800/60 p-3 text-left">{body}</div>
+                )}
               </li>
             );
           })}

@@ -100,7 +100,16 @@ export function InsightsPage() {
         .select('entry_id, situation, role, action, result, emotion, emotion_reason')
         .eq('status', 'done');
       if (fetchError) throw fetchError;
-      if (!structuredRows || structuredRows.length < MIN_ENTRIES_FOR_INSIGHTS) return;
+      if (!structuredRows || structuredRows.length < MIN_ENTRIES_FOR_INSIGHTS) {
+        // 다른 화면에서 기록이 지워져 최신 개수가 화면 상태와 어긋날 수 있다 — 버튼이 말없이
+        // "분석 중..."만 반복하지 않도록 최신 개수와 이유를 같이 보여준다.
+        const count = structuredRows?.length ?? 0;
+        setStructuredCount(count);
+        setError(
+          `분석하려면 정리된 기록이 최소 ${MIN_ENTRIES_FOR_INSIGHTS}개 필요해요. (현재 ${count}개)`,
+        );
+        return;
+      }
 
       const res = await fetch('/api/insights', {
         method: 'POST',
@@ -114,8 +123,14 @@ export function InsightsPage() {
       const rowsToInsert = buildInsightRows(result, user.id, validEntryIds);
       if (rowsToInsert.length === 0) throw new Error('인사이트 재생성에 실패했습니다. 다시 시도해주세요.');
 
-      const { error: deleteError } = await supabase.from('insights').delete().eq('user_id', user.id);
-      if (deleteError) throw deleteError;
+      // 삭제를 먼저 하면 삽입이 실패했을 때 DB에 인사이트가 하나도 안 남는다 — "기존 별자리
+      // 유지"가 깨진다. 그래서 지울 대상 id를 먼저 기억해두고, 삽입이 성공한 뒤에만 지운다.
+      const { data: oldRows, error: oldFetchError } = await supabase
+        .from('insights')
+        .select('id')
+        .eq('user_id', user.id);
+      if (oldFetchError) throw oldFetchError;
+      const oldIds = (oldRows ?? []).map((row) => row.id);
 
       const { data: insertedRows, error: insertError } = await supabase
         .from('insights')
@@ -125,6 +140,14 @@ export function InsightsPage() {
 
       setInsights((insertedRows ?? []) as GraphInputInsight[]);
       setActiveInsightId(null);
+
+      if (oldIds.length > 0) {
+        const { error: deleteError } = await supabase.from('insights').delete().in('id', oldIds);
+        if (deleteError) {
+          // 새 인사이트는 이미 화면과 DB에 반영됐으니 상태는 그대로 두고, 청소가 안 됐다는 것만 알린다.
+          setError('새 분석은 반영됐지만 이전 기록 정리에 실패했어요.');
+        }
+      }
     } catch (err) {
       // 실패해도 기존 별자리는 그대로 둔다 — 우주가 통째로 사라지면 손실감이 크다.
       setError(err instanceof Error ? err.message : '인사이트 재생성에 실패했습니다.');
@@ -229,7 +252,7 @@ export function InsightsPage() {
             cluster={cluster}
             insights={insights.filter((i) => i.type === cluster)}
             activeInsightId={null}
-            onSelectInsight={() => {}}
+            onSelectInsight={null}
             onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
             regenerating={regenerating}
             onClose={null}
@@ -251,7 +274,15 @@ export function InsightsPage() {
         clusterLabels={clusterLabels}
         selectedId={selectedId}
         highlightedIds={highlightedIds}
-        onSelect={setSelectedId}
+        onSelect={(id) => {
+          setSelectedId(id);
+          // 별 하나를 골랐다면 인사이트 강조/군집 카드는 정리한다 — 안 그러면 별 카드 뒤에서
+          // 다른 별들이 계속 어둡게 남고, 별 카드를 닫을 때 군집 카드가 불쑥 다시 뜬다.
+          if (id !== null) {
+            setActiveInsightId(null);
+            setOpenCluster(null);
+          }
+        }}
         onWebglFailure={() => setWebglFailed(true)}
       />
 
@@ -294,7 +325,9 @@ export function InsightsPage() {
       )}
 
       {error && (
-        <p className="absolute inset-x-4 bottom-20 z-10 rounded-lg bg-red-950/80 p-3 text-center text-xs text-red-300">
+        // 카드(별 상세 z-20, 군집 요약 z-20)에 가려지면 재생성 실패를 알릴 방법이 없다 —
+        // 어떤 카드가 열려 있어도 항상 보이도록 오버레이 스택의 맨 위, z-30에 둔다.
+        <p className="absolute inset-x-3 top-14 z-30 rounded-lg bg-red-950/90 p-3 text-center text-xs text-red-300">
           {error}
         </p>
       )}

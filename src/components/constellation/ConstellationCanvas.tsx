@@ -56,9 +56,11 @@ export function ConstellationCanvas({
   const selectedIdRef = useRef(selectedId);
   const highlightedIdsRef = useRef(highlightedIds);
   const onSelectRef = useRef(onSelect);
+  const onWebglFailureRef = useRef(onWebglFailure);
   selectedIdRef.current = selectedId;
   highlightedIdsRef.current = highlightedIds;
   onSelectRef.current = onSelect;
+  onWebglFailureRef.current = onWebglFailure;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -173,13 +175,27 @@ export function ConstellationCanvas({
     // Points는 기본 임계값이 1이라 손가락 탭에는 너무 빡빡하다.
     raycaster.params.Points = { threshold: 0.7 };
     const pointer = new THREE.Vector2();
-    let pointerDownAt = { x: 0, y: 0, time: 0 };
+    let pointerDownAt = { x: 0, y: 0, time: 0, id: -1 };
+    // 핀치줌 중 손가락 하나를 떼면 그 pointerup은 탭이 아니다 — 제스처 동안 포인터가 두 개
+    // 이상 있었는지를 이 Set으로 추적해서, 그런 경우 raycast 자체를 건너뛴다.
+    const activePointers = new Set<number>();
+    let multiTouchGesture = false;
 
     function handlePointerDown(event: PointerEvent) {
-      pointerDownAt = { x: event.clientX, y: event.clientY, time: performance.now() };
+      activePointers.add(event.pointerId);
+      if (activePointers.size > 1) multiTouchGesture = true;
+      pointerDownAt = { x: event.clientX, y: event.clientY, time: performance.now(), id: event.pointerId };
     }
 
     function handlePointerUp(event: PointerEvent) {
+      const wasMultiTouch = multiTouchGesture;
+      activePointers.delete(event.pointerId);
+      if (activePointers.size === 0) multiTouchGesture = false;
+
+      // 이 포인터가 gesture를 시작한 그 손가락이 아니거나, 도중에 두 번째 포인터가 있었다면
+      // (핀치줌) 탭으로 보지 않는다.
+      if (event.pointerId !== pointerDownAt.id || wasMultiTouch) return;
+
       // 회전 드래그를 탭으로 오인하지 않도록 이동 거리와 시간을 함께 본다.
       const moved = Math.hypot(event.clientX - pointerDownAt.x, event.clientY - pointerDownAt.y);
       if (moved > 8 || performance.now() - pointerDownAt.time > 500) return;
@@ -198,8 +214,24 @@ export function ConstellationCanvas({
       onSelectRef.current(graph.nodes[hits[0].index].id);
     }
 
+    function handlePointerCancel(event: PointerEvent) {
+      activePointers.delete(event.pointerId);
+      if (activePointers.size === 0) multiTouchGesture = false;
+    }
+
     renderer.domElement.addEventListener('pointerdown', handlePointerDown);
     renderer.domElement.addEventListener('pointerup', handlePointerUp);
+    renderer.domElement.addEventListener('pointercancel', handlePointerCancel);
+
+    // ---- WebGL 컨텍스트 유실 ----
+    // 컨텍스트를 잃으면 검은 화면만 남는다 — preventDefault로 브라우저의 기본 처리를 막고
+    // 기존 텍스트 폴백으로 넘어가게 한다(복구를 시도하지 않는다: 씬을 다시 만드는 것보다
+    // 페이지가 이미 갖고 있는 폴백 UI로 내려가는 편이 안전하다).
+    function handleContextLost(event: Event) {
+      event.preventDefault();
+      onWebglFailureRef.current();
+    }
+    renderer.domElement.addEventListener('webglcontextlost', handleContextLost);
 
     // ---- 리사이즈 ----
     const resizeObserver = new ResizeObserver(() => {
@@ -343,6 +375,8 @@ export function ConstellationCanvas({
       resizeObserver.disconnect();
       renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
       renderer.domElement.removeEventListener('pointerup', handlePointerUp);
+      renderer.domElement.removeEventListener('pointercancel', handlePointerCancel);
+      renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
       controls.dispose();
       starGeometry.dispose();
       starMaterial.dispose();
@@ -353,6 +387,10 @@ export function ConstellationCanvas({
       (collectionLines.material as THREE.Material).dispose();
       halo.material.dispose();
       renderer.dispose();
+      // dispose()는 three의 캐시만 해제하고 실제 GL 컨텍스트는 남긴다 — /insights를 여러 번
+      // 오가면 컨텍스트가 계속 쌓여 모바일 브라우저의 동시 컨텍스트 상한에 걸리고, 그 시점에
+      // 브라우저가 아무 컨텍스트나(지금 쓰는 것까지) 강제로 잃게 만든다. 명시적으로 반납한다.
+      renderer.forceContextLoss();
       container.removeChild(renderer.domElement);
     };
     // graph가 바뀌면 씬을 통째로 다시 만든다 — 인사이트 재생성은 드문 일이라 증분 갱신의
