@@ -32,8 +32,15 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   return (
-    <div>
+    // 인디케이터를 스택 아래가 아니라 옆에 세로로 둔다 — 세로로 넘기는 스택인데 점이 가로로
+    // 아래 깔리면 스택의 고정 높이(containerHeight)만큼 자리를 차지한 "뒤"에 더 얹히는
+    // 셈이라, 화면이 낮은 기기에서는 그 추가 줄이 화면 아래로 밀려 스크롤해야만 보이거나
+    // (기기별로 있다 없다 하는 것처럼 느껴짐) 아예 잘렸다. flex row로 묶어 items-stretch를
+    // 주면 이 열이 스택과 똑같은 높이를 갖고, 그 안에서 세로 중앙 정렬되어 항상 카드와
+    // 나란히 보인다 — 화면 크기와 무관하게 스택이 보이는 한 인디케이터도 함께 보인다.
+    <div className="flex items-stretch gap-2">
       <CardStackCarousel
+        className="min-w-0 flex-1"
         items={entries}
         getKey={entryKey}
         activeIndex={activeIndex}
@@ -101,9 +108,10 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
       />
 
       {/* 애플식 페이지 점 인디케이터 (pagerDots.ts 참고) — 카드가 많으면 활성 카드 주변
-          창(window)만 보여주고 창 양 끝은 축소해 "더 있다"는 걸 암시한다. */}
+          창(window)만 보여주고 창 양 끝은 축소해 "더 있다"는 걸 암시한다. 세로로 넘기는
+          스택이라 점도 세로로 쌓는다. */}
       {entries.length > 1 && (
-        <div role="group" aria-label="카드 위치" className="mt-2 flex items-center justify-center gap-1.5">
+        <div role="group" aria-label="카드 위치" className="flex w-2 shrink-0 flex-col items-center justify-center gap-1.5">
           {pagerDots(entries.length, activeIndex).map((dot) => (
             <button
               key={dot.index}
@@ -113,7 +121,7 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
               aria-current={dot.size === 'active' ? 'true' : undefined}
               className={`shrink-0 rounded-full transition-all ${
                 dot.size === 'active'
-                  ? 'h-2 w-5 bg-slate-50'
+                  ? 'h-5 w-2 bg-slate-50'
                   : dot.size === 'near'
                     ? 'h-2 w-2 bg-slate-500 hover:bg-slate-400'
                     : 'h-1.5 w-1.5 bg-slate-700'
