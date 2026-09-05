@@ -1,52 +1,77 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { buildInsightRows } from '../lib/buildInsightRows';
 import { useNickname, withNickname } from '../lib/useNickname';
-
-interface InsightRow {
-  id: string;
-  type: 'energizer' | 'drainer';
-  summary: string;
-  evidence_entry_ids: string[];
-}
+import { buildGraph, type GraphInputEntry, type GraphInputInsight } from '../lib/constellation/buildGraph';
+import { CLUSTER_LABELS } from '../lib/constellation/layout';
+import { ConstellationCanvas, type ClusterLabel } from '../components/constellation/ConstellationCanvas';
+import type { ExperienceTag } from '../types';
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
 
 export function InsightsPage() {
-  const [energizers, setEnergizers] = useState<InsightRow[]>([]);
-  const [drainers, setDrainers] = useState<InsightRow[]>([]);
-  const [entryCount, setEntryCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [entries, setEntries] = useState<GraphInputEntry[]>([]);
+  const [insights, setInsights] = useState<GraphInputInsight[]>([]);
+  const [structuredCount, setStructuredCount] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const nickname = useNickname();
 
-  async function loadStoredInsights() {
+  const graph = useMemo(() => buildGraph(entries, insights), [entries, insights]);
+
+  async function loadAll() {
     setLoading(true);
     setError(null);
     try {
-      const [{ data: structuredRows, error: structuredError }, { data: insightRows, error: insightError }] = await Promise.all([
-        supabase.from('entries_structured').select('entry_id').eq('status', 'done'),
-        supabase
-          .from('insights')
-          .select('id, type, summary, evidence_entry_ids')
-          .order('created_at', { ascending: false }),
+      const [
+        { data: entryRows, error: entryError },
+        { data: tagRows, error: tagError },
+        { data: structuredRows, error: structuredError },
+        { data: insightRows, error: insightError },
+      ] = await Promise.all([
+        supabase.from('entries').select('id, raw_text, project_title, collection_id').order('created_at', { ascending: false }),
+        supabase.from('entry_tags').select('entry_id, tag'),
+        supabase.from('entries_structured').select('entry_id, situation, status'),
+        supabase.from('insights').select('id, type, summary, evidence_entry_ids').order('created_at', { ascending: false }),
       ]);
+      if (entryError) throw entryError;
+      if (tagError) throw tagError;
       if (structuredError) throw structuredError;
       if (insightError) throw insightError;
 
-      setEntryCount(structuredRows?.length ?? 0);
-      const rows = (insightRows ?? []) as InsightRow[];
-      setEnergizers(rows.filter((r) => r.type === 'energizer'));
-      setDrainers(rows.filter((r) => r.type === 'drainer'));
+      const tagsByEntry = new Map<string, ExperienceTag[]>();
+      (tagRows ?? []).forEach((row) => {
+        const list = tagsByEntry.get(row.entry_id) ?? [];
+        list.push(row.tag as ExperienceTag);
+        tagsByEntry.set(row.entry_id, list);
+      });
+
+      const situationByEntry = new Map<string, string | null>();
+      (structuredRows ?? []).forEach((row) => situationByEntry.set(row.entry_id, row.situation));
+
+      setStructuredCount((structuredRows ?? []).filter((row) => row.status === 'done').length);
+      setEntries(
+        (entryRows ?? []).map((row) => ({
+          id: row.id,
+          // 경험 탭 카드와 같은 폴백 순서 — 두 화면에서 같은 기록이 다른 이름으로 보이면 안 된다.
+          label: situationByEntry.get(row.id) || row.project_title || row.raw_text.slice(0, 24),
+          collection_id: row.collection_id,
+          tags: tagsByEntry.get(row.id) ?? [],
+        })),
+      );
+      setInsights((insightRows ?? []) as GraphInputInsight[]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '인사이트를 불러오지 못했습니다.');
+      setError(err instanceof Error ? err.message : '패턴을 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
   }
 
   async function regenerate() {
-    setLoading(true);
+    setRegenerating(true);
     setError(null);
     try {
       const {
@@ -59,12 +84,7 @@ export function InsightsPage() {
         .select('entry_id, situation, role, action, result, emotion, emotion_reason')
         .eq('status', 'done');
       if (fetchError) throw fetchError;
-
-      setEntryCount(structuredRows?.length ?? 0);
-      if (!structuredRows || structuredRows.length < MIN_ENTRIES_FOR_INSIGHTS) {
-        setLoading(false);
-        return;
-      }
+      if (!structuredRows || structuredRows.length < MIN_ENTRIES_FOR_INSIGHTS) return;
 
       const res = await fetch('/api/insights', {
         method: 'POST',
@@ -76,11 +96,7 @@ export function InsightsPage() {
 
       const validEntryIds = new Set(structuredRows.map((row) => row.entry_id));
       const rowsToInsert = buildInsightRows(result, user.id, validEntryIds);
-      if (rowsToInsert.length === 0) {
-        setError('인사이트 재생성에 실패했습니다. 다시 시도해주세요.');
-        setLoading(false);
-        return;
-      }
+      if (rowsToInsert.length === 0) throw new Error('인사이트 재생성에 실패했습니다. 다시 시도해주세요.');
 
       const { error: deleteError } = await supabase.from('insights').delete().eq('user_id', user.id);
       if (deleteError) throw deleteError;
@@ -91,74 +107,96 @@ export function InsightsPage() {
         .select('id, type, summary, evidence_entry_ids');
       if (insertError) throw insertError;
 
-      const rows = (insertedRows ?? []) as InsightRow[];
-      setEnergizers(rows.filter((r) => r.type === 'energizer'));
-      setDrainers(rows.filter((r) => r.type === 'drainer'));
+      setInsights((insertedRows ?? []) as GraphInputInsight[]);
     } catch (err) {
-      setEnergizers([]);
-      setDrainers([]);
+      // 실패해도 기존 별자리는 그대로 둔다 — 우주가 통째로 사라지면 손실감이 크다.
       setError(err instanceof Error ? err.message : '인사이트 재생성에 실패했습니다.');
     } finally {
-      setLoading(false);
+      setRegenerating(false);
     }
   }
 
   useEffect(() => {
-    loadStoredInsights();
+    loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const clusterLabels: ClusterLabel[] = (['neutral', 'energizer', 'drainer'] as const)
+    .filter((cluster) => graph.counts[cluster] > 0)
+    .map((cluster) => ({
+      cluster,
+      text: `${CLUSTER_LABELS[cluster]} ${graph.counts[cluster]}`,
+      onTap: () => {},
+    }));
+
+  if (loading) {
+    return <p className="px-4 py-6 text-sm text-slate-400">별자리를 그리는 중...</p>;
+  }
+
+  if (error && entries.length === 0) {
+    return (
+      <div className="px-4 py-6">
+        <p className="text-sm text-red-400">{error}</p>
+        <button
+          type="button"
+          onClick={loadAll}
+          className="mt-3 rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  if (entries.length === 0) {
+    return (
+      <div className="px-4 py-10 text-center">
+        <p className="text-sm text-slate-300">아직 별이 하나도 없어요.</p>
+        <p className="mt-1 text-sm text-slate-400">첫 기록을 남기면 첫 별이 뜹니다.</p>
+        <Link to="/" className="mt-4 inline-block rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white">
+          기록하러 가기
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-      <h2 className="text-xl font-semibold text-slate-50">
-        {withNickname(nickname, (n) => `${n}의 에너지 패턴`, '나의 에너지 패턴')}
+    <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-slate-950">
+      <h2 className="pointer-events-none absolute left-4 top-4 z-10 text-sm font-medium text-slate-400">
+        {withNickname(nickname, (n) => `${n}의 경험 별자리`, '나의 경험 별자리')}
       </h2>
 
-      {entryCount < MIN_ENTRIES_FOR_INSIGHTS && (
-        <p className="mt-2 text-sm text-slate-400">
-          기록이 {MIN_ENTRIES_FOR_INSIGHTS}개 이상 쌓이면 패턴을 분석해드려요. (현재 {entryCount}개)
+      <ConstellationCanvas
+        graph={graph}
+        clusterLabels={clusterLabels}
+        selectedId={selectedId}
+        highlightedIds={null}
+        onSelect={setSelectedId}
+        onWebglFailure={() => {}}
+      />
+
+      {structuredCount < MIN_ENTRIES_FOR_INSIGHTS && (
+        <p className="absolute inset-x-4 bottom-4 z-10 rounded-lg bg-slate-900/80 p-3 text-center text-xs text-slate-400">
+          기록이 {MIN_ENTRIES_FOR_INSIGHTS}개 이상 정리되면 별무리가 나뉘어요. (현재 {structuredCount}개)
         </p>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
-      {loading && <p className="mt-2 text-sm text-slate-400">분석 중...</p>}
-
-      {energizers.length > 0 && (
-        <section className="mt-6">
-          <h3 className="text-sm font-medium text-slate-300">⚡ 에너지를 얻는 조건</h3>
-          <ul className="mt-2 space-y-2">
-            {energizers.map((item) => (
-              <li key={item.id} className="rounded-lg border-l-4 border-amber-400 bg-amber-500/10 p-3">
-                <p className="text-sm text-slate-100">{item.summary}</p>
-                <p className="mt-1 text-xs text-slate-400">근거 기록 {item.evidence_entry_ids.length}건</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {structuredCount >= MIN_ENTRIES_FOR_INSIGHTS && insights.length === 0 && (
+        <button
+          type="button"
+          onClick={regenerate}
+          disabled={regenerating}
+          className="absolute inset-x-4 bottom-4 z-10 rounded-lg bg-slate-700 px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {regenerating ? '분석 중...' : '패턴 분석하기'}
+        </button>
       )}
 
-      {drainers.length > 0 && (
-        <section className="mt-6">
-          <h3 className="text-sm font-medium text-slate-300">🔋 소진되는 조건</h3>
-          <ul className="mt-2 space-y-2">
-            {drainers.map((item) => (
-              <li key={item.id} className="rounded-lg border-l-4 border-slate-400 bg-slate-500/10 p-3">
-                <p className="text-sm text-slate-100">{item.summary}</p>
-                <p className="mt-1 text-xs text-slate-400">근거 기록 {item.evidence_entry_ids.length}건</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {error && (
+        <p className="absolute inset-x-4 bottom-20 z-10 rounded-lg bg-red-950/80 p-3 text-center text-xs text-red-300">
+          {error}
+        </p>
       )}
-
-      <button
-        type="button"
-        onClick={regenerate}
-        disabled={loading}
-        className="mt-6 rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
-      >
-        다시 분석하기
-      </button>
     </div>
   );
 }
