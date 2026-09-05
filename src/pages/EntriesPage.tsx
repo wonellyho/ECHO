@@ -5,7 +5,7 @@ import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, UNASSIGNED_KEY } from '../lib/entryGrouping';
 import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
 import { CollectionSwipeView, type CollectionSwipeViewHandle } from '../components/CollectionSwipeView';
-import { LayersIcon } from '../components/icons';
+import { CheckIcon, ChevronRightIcon, EditIcon, LayersIcon } from '../components/icons';
 import { useNickname, withNickname } from '../lib/useNickname';
 import type { CardColorKey, ExperienceTag } from '../types';
 
@@ -271,12 +271,21 @@ export function EntriesPage() {
         <h2 className="text-xl font-semibold text-slate-50">
           {withNickname(nickname, (n) => `${n}의 경험 기록`, '내 경험 기록')}
         </h2>
+        {/* 텍스트 버튼 대신 편집 아이콘 토글 — 선택 모드에서는 체크 아이콘으로 바뀌어
+            "누르면 편집을 마친다"는 걸 알려준다(사진 앱 등의 편집/완료 관례). */}
         <button
           type="button"
           onClick={toggleSelectMode}
-          className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
+          aria-pressed={selectMode}
+          aria-label={selectMode ? '편집 완료' : '기록 편집'}
+          title={selectMode ? '편집 완료' : '기록 편집'}
+          className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+            selectMode
+              ? 'border-slate-500 bg-slate-700 text-white'
+              : 'border-slate-700 text-slate-300 hover:bg-slate-800'
+          }`}
         >
-          {selectMode ? '선택 취소' : '선택'}
+          {selectMode ? <CheckIcon className="h-4 w-4" /> : <EditIcon className="h-4 w-4" />}
         </button>
       </div>
 
@@ -334,14 +343,33 @@ export function EntriesPage() {
         !loadError &&
         filtered.length > 0 &&
         (selectMode ? (
-          collectionGroups.map((group) => (
-            <section key={group.key} className="mt-5">
-              <h3 className="text-sm font-semibold text-slate-300">{group.label}</h3>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {group.entries.map((entry) => renderCard(entry))}
-              </div>
-            </section>
-          ))
+          // 편집 모드에서는 컬렉션마다 테두리 있는 카드 블록으로 감싸 경계를 분명히 하고,
+          // 이름 옆에 개수 배지를 붙인다 — 예전엔 회색 제목 한 줄만 있어 스크롤하다 보면
+          // 어디부터 어디까지가 한 컬렉션인지 잘 안 보였다(요청 사항).
+          <div className="mt-4 flex flex-col gap-4">
+            {collectionGroups.map((group) => (
+              <section
+                key={group.key}
+                className="rounded-xl border border-slate-800 bg-slate-900/40 p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <h3
+                    className={`text-sm font-semibold ${
+                      group.key === UNASSIGNED_KEY ? 'text-slate-400' : 'text-slate-100'
+                    }`}
+                  >
+                    {group.label}
+                  </h3>
+                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-400">
+                    {group.entries.length}개
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {group.entries.map((entry) => renderCard(entry))}
+                </div>
+              </section>
+            ))}
+          </div>
         ) : (
           // 토글 없이 항상 컬렉션 스와이프 뷰 — Figma 메모 원문("내 경험탭에서 좌우로
           // 스와이프하면 컬렉션별로 넘어가게 함")을 기본 동작으로 그대로 따른다.
@@ -354,10 +382,11 @@ export function EntriesPage() {
                 <button
                   type="button"
                   onClick={() => setCollectionSheetOpen(true)}
-                  className="flex items-center gap-1.5 rounded-full border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
+                  aria-label={`컬렉션 모음 (${collectionGroups.length}개)`}
+                  title="컬렉션 모음"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 text-slate-300 transition-colors hover:bg-slate-800"
                 >
-                  <LayersIcon className="h-3.5 w-3.5" />
-                  컬렉션 모음 ({collectionGroups.length})
+                  <LayersIcon className="h-4 w-4" />
                 </button>
               </div>
             )}
@@ -366,8 +395,9 @@ export function EntriesPage() {
         ))}
 
       {collectionSheetOpen && (
+        // 화면 크기와 무관하게 항상 가운데 팝업으로 뜨게 한다 (예전엔 모바일 폭에서 바텀시트).
         <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/70 sm:items-center"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-6"
           onClick={() => setCollectionSheetOpen(false)}
         >
           <div
@@ -375,7 +405,7 @@ export function EntriesPage() {
             aria-modal="true"
             aria-label="컬렉션 모음"
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-t-2xl border border-slate-800 bg-slate-900 p-4 sm:rounded-2xl"
+            className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900 p-4"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-slate-50">컬렉션 모음</p>
@@ -388,8 +418,10 @@ export function EntriesPage() {
                 닫기
               </button>
             </div>
-            <div className="mt-3 flex flex-col gap-1.5">
+            <div className="mt-3 flex flex-col gap-1">
               {collectionGroups.map((group) => (
+                // group 유틸리티로 화살표를 평소엔 숨겨뒀다가 호버/포커스에서만 슬며시
+                // 나타나게 한다 — 배경색만 바뀌는 것보다 "누르면 이동한다"는 게 분명해진다.
                 <button
                   key={group.key}
                   type="button"
@@ -397,11 +429,14 @@ export function EntriesPage() {
                     swipeViewRef.current?.scrollToKey(group.key);
                     setCollectionSheetOpen(false);
                   }}
-                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-slate-800 ${
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-800 focus-visible:bg-slate-800 focus-visible:outline-none ${
                     group.key === UNASSIGNED_KEY ? 'text-slate-400' : 'text-slate-100'
                   }`}
                 >
-                  <span className="truncate">{group.label}</span>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <ChevronRightIcon className="h-3.5 w-3.5 shrink-0 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
+                    <span className="truncate">{group.label}</span>
+                  </span>
                   <span className="shrink-0 text-xs text-slate-500">{group.entries.length}개</span>
                 </button>
               ))}
