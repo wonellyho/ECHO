@@ -261,8 +261,13 @@ export function ConstellationCanvas({
     let frameId = 0;
     let running = true;
 
+    let lastHighlightKey = '__init__';
+
     function updateDimming() {
       const highlighted = highlightedIdsRef.current;
+      const key = highlighted === null ? 'none' : highlighted.join(',');
+      if (key === lastHighlightKey) return;
+      lastHighlightKey = key;
       const colorAttr = starGeometry.getAttribute('color') as THREE.BufferAttribute;
       graph.nodes.forEach((node, i) => {
         const base = new THREE.Color(CLUSTER_COLORS[node.cluster]);
@@ -310,6 +315,7 @@ export function ConstellationCanvas({
       frameId = requestAnimationFrame(tick);
       updateFocus();
       controls.update();
+      updateDimming();
       updateHalo();
       updateLabels();
       renderer.render(scene, camera);

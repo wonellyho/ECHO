@@ -4,9 +4,10 @@ import { supabase } from '../lib/supabaseClient';
 import { buildInsightRows } from '../lib/buildInsightRows';
 import { useNickname, withNickname } from '../lib/useNickname';
 import { buildGraph, type GraphInputEntry, type GraphInputInsight } from '../lib/constellation/buildGraph';
-import { CLUSTER_LABELS } from '../lib/constellation/layout';
+import { CLUSTER_LABELS, type ClusterId } from '../lib/constellation/layout';
 import { ConstellationCanvas, type ClusterLabel } from '../components/constellation/ConstellationCanvas';
 import { StarDetailCard, type StarDetail } from '../components/constellation/StarDetailCard';
+import { ClusterSummaryCard } from '../components/constellation/ClusterSummaryCard';
 import type { ExperienceTag } from '../types';
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
@@ -27,6 +28,14 @@ export function InsightsPage() {
     () => graph.nodes.find((node) => node.id === selectedId) ?? null,
     [graph, selectedId],
   );
+  const [openCluster, setOpenCluster] = useState<ClusterId | null>(null);
+  const [activeInsightId, setActiveInsightId] = useState<string | null>(null);
+
+  // 인사이트 하나를 고르면 그 근거 별만 밝게 남긴다.
+  const highlightedIds = useMemo(() => {
+    if (activeInsightId === null) return null;
+    return insights.find((i) => i.id === activeInsightId)?.evidence_entry_ids ?? null;
+  }, [activeInsightId, insights]);
 
   async function loadAll() {
     setLoading(true);
@@ -114,6 +123,7 @@ export function InsightsPage() {
       if (insertError) throw insertError;
 
       setInsights((insertedRows ?? []) as GraphInputInsight[]);
+      setActiveInsightId(null);
     } catch (err) {
       // 실패해도 기존 별자리는 그대로 둔다 — 우주가 통째로 사라지면 손실감이 크다.
       setError(err instanceof Error ? err.message : '인사이트 재생성에 실패했습니다.');
@@ -164,7 +174,12 @@ export function InsightsPage() {
     .map((cluster) => ({
       cluster,
       text: `${CLUSTER_LABELS[cluster]} ${graph.counts[cluster]}`,
-      onTap: () => {},
+      onTap: () => {
+        // 전체 경험 군집은 인사이트가 없으므로 카드를 열지 않는다.
+        if (cluster === 'neutral') return;
+        setSelectedId(null);
+        setOpenCluster(cluster);
+      },
     }));
 
   if (loading) {
@@ -208,13 +223,30 @@ export function InsightsPage() {
         graph={graph}
         clusterLabels={clusterLabels}
         selectedId={selectedId}
-        highlightedIds={null}
+        highlightedIds={highlightedIds}
         onSelect={setSelectedId}
         onWebglFailure={() => {}}
       />
 
       {selectedNode && (
         <StarDetailCard node={selectedNode} detail={detail} onClose={() => setSelectedId(null)} />
+      )}
+
+      {openCluster !== null && selectedId === null && (
+        <div className="absolute inset-x-3 bottom-3 z-20 max-h-[55dvh] overflow-y-auto">
+          <ClusterSummaryCard
+            cluster={openCluster}
+            insights={insights.filter((i) => i.type === openCluster)}
+            activeInsightId={activeInsightId}
+            onSelectInsight={setActiveInsightId}
+            onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
+            regenerating={regenerating}
+            onClose={() => {
+              setOpenCluster(null);
+              setActiveInsightId(null);
+            }}
+          />
+        </div>
       )}
 
       {structuredCount < MIN_ENTRIES_FOR_INSIGHTS && (
