@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
-import { groupEntries } from '../lib/entryGrouping';
+import { groupEntries, UNASSIGNED_KEY } from '../lib/entryGrouping';
 import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
-import { CollectionSwipeView } from '../components/CollectionSwipeView';
+import { CollectionSwipeView, type CollectionSwipeViewHandle } from '../components/CollectionSwipeView';
+import { LayersIcon } from '../components/icons';
 import { useNickname, withNickname } from '../lib/useNickname';
 import type { CardColorKey, ExperienceTag } from '../types';
 
@@ -44,6 +45,12 @@ export function EntriesPage() {
   // 바 뒤에 가리지 않는다 ("새 컬렉션 만들기" 선택 시 입력칸이 늘어 높이가 변한다).
   const [bulkBarHeight, setBulkBarHeight] = useState(0);
   const bulkBarRef = useRef<HTMLDivElement | null>(null);
+  // "컬렉션 모음" 시트 — 스와이프로 하나씩 넘기지 않고도 전체 컬렉션 목록을 한눈에 보고
+  // 원하는 곳으로 바로 이동하기 위한 것. 스크롤 위치 자체는 CollectionSwipeView가 계속 들고
+  // 있고, 여기서는 ref로 "이 컬렉션으로 이동해라" 명령만 보낸다(끌어올리면 스크롤 프레임마다
+  // 이 페이지까지 리렌더된다).
+  const [collectionSheetOpen, setCollectionSheetOpen] = useState(false);
+  const swipeViewRef = useRef<CollectionSwipeViewHandle>(null);
 
   useEffect(() => {
     loadEntries();
@@ -281,14 +288,21 @@ export function EntriesPage() {
         className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
       />
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
+      {/* 태그 6개가 화면 폭에 따라 줄바꿈되면 두세 줄로 들쭉날쭉해져 지저분했다. 한 줄로
+          고정하고 넘치면 가로 스크롤되게 한다 — 스크롤바는 숨기되(다른 가로 스크롤 영역과
+          동일한 관례) 태그 자체가 손에 잡히니 스와이프로 넘긴다는 게 자연스럽게 읽힌다. */}
+      <div
+        role="group"
+        aria-label="태그로 필터"
+        className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {ALL_TAGS.map((tag) => (
           <button
             key={tag}
             type="button"
             aria-pressed={activeTag === tag}
             onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               activeTag === tag ? TAG_COLORS_ACTIVE[tag] : TAG_COLORS[tag]
             }`}
           >
@@ -332,9 +346,69 @@ export function EntriesPage() {
           // 토글 없이 항상 컬렉션 스와이프 뷰 — Figma 메모 원문("내 경험탭에서 좌우로
           // 스와이프하면 컬렉션별로 넘어가게 함")을 기본 동작으로 그대로 따른다.
           <div className="mt-5">
-            <CollectionSwipeView groups={collectionGroups} />
+            {/* 하나씩 스와이프하지 않고도 전체 컬렉션이 뭐가 있는지 한눈에 보고 싶다는
+                요청으로 추가한 "컬렉션 모음" 진입점. 컬렉션이 하나뿐이면(또는 전부 미분류라
+                하나로 뭉쳐 있으면) 굳이 목록을 볼 필요가 없어 숨긴다. */}
+            {collectionGroups.length > 1 && (
+              <div className="mb-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setCollectionSheetOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
+                >
+                  <LayersIcon className="h-3.5 w-3.5" />
+                  컬렉션 모음 ({collectionGroups.length})
+                </button>
+              </div>
+            )}
+            <CollectionSwipeView ref={swipeViewRef} groups={collectionGroups} />
           </div>
         ))}
+
+      {collectionSheetOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/70 sm:items-center"
+          onClick={() => setCollectionSheetOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="컬렉션 모음"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-t-2xl border border-slate-800 bg-slate-900 p-4 sm:rounded-2xl"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-50">컬렉션 모음</p>
+              <button
+                type="button"
+                onClick={() => setCollectionSheetOpen(false)}
+                aria-label="닫기"
+                className="rounded-md px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+              >
+                닫기
+              </button>
+            </div>
+            <div className="mt-3 flex flex-col gap-1.5">
+              {collectionGroups.map((group) => (
+                <button
+                  key={group.key}
+                  type="button"
+                  onClick={() => {
+                    swipeViewRef.current?.scrollToKey(group.key);
+                    setCollectionSheetOpen(false);
+                  }}
+                  className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-slate-800 ${
+                    group.key === UNASSIGNED_KEY ? 'text-slate-400' : 'text-slate-100'
+                  }`}
+                >
+                  <span className="truncate">{group.label}</span>
+                  <span className="shrink-0 text-xs text-slate-500">{group.entries.length}개</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showBulkBar && (
         <div

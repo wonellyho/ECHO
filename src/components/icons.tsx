@@ -202,6 +202,26 @@ export function GoogleIcon({ className = 'h-5 w-5' }: { className?: string }) {
   );
 }
 
+// "컬렉션 모음" 버튼용 — 겹쳐진 카드 더미를 위에서 본 모양. Lucide의 "layers" 글리프 기반.
+export function LayersIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="m12 2 9 5-9 5-9-5 9-5Z" />
+      <path d="m3 12 9 5 9-5" />
+      <path d="m3 17 9 5 9-5" />
+    </svg>
+  );
+}
+
 export function KakaoIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
