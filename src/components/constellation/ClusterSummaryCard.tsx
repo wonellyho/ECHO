@@ -85,7 +85,7 @@ export function ClusterSummaryCard({
           const expanded = insight.id === expandedInsightId;
           const summary = <p className="text-[15px] leading-relaxed text-ink">{insight.summary}</p>;
           return (
-            <li key={insight.id} className="overflow-hidden rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)]">
+            <li key={insight.id} className="overflow-hidden rounded-2xl border border-hairline bg-[rgba(10,20,40,0.34)]">
               {/* 요약 줄을 누르면 근거 별만 밝게 남는다 (별자리가 있을 때만). */}
               {onSelectInsight ? (
                 <button
@@ -140,7 +140,7 @@ export function ClusterSummaryCard({
   }
 
   return (
-    <div className="rounded-2xl border border-hairline bg-[rgba(10,20,40,0.7)] p-4 backdrop-blur-md">
+    <div className="rounded-2xl border border-hairline bg-[rgba(10,20,40,0.45)] p-4 backdrop-blur-xl">
       {header}
       <div className="mt-3">{list}</div>
       {onRegenerate ? (

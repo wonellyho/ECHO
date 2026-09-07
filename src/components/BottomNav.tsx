@@ -39,11 +39,13 @@ export function BottomNav() {
       style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
     >
       <ul
-        className="mx-auto flex max-w-md items-stretch gap-1 rounded-[1.75rem] border border-hairline p-1.5 backdrop-blur-xl"
+        className="mx-auto flex max-w-md items-stretch gap-1 rounded-[1.75rem] border border-hairline p-1.5 backdrop-blur-2xl"
         style={{
           height: '3.75rem',
-          background: 'rgba(8, 15, 33, 0.72)',
-          boxShadow: '0 8px 32px -12px rgba(0,0,0,0.9)',
+          // 배경 사진이 dock 너머로 비쳐야 한다. 알파를 낮추는 대신 blur를 세게 걸어
+          // 뒤의 별이 뭉개지도록 한다(backdrop-blur-2xl).
+          background: 'rgba(8, 15, 33, 0.4)',
+          boxShadow: '0 8px 32px -14px rgba(0,0,0,0.85)',
         }}
       >
         {ITEMS.map((item) => {
@@ -56,23 +58,37 @@ export function BottomNav() {
               <Link
                 to={item.to}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-full flex-col items-center justify-center gap-1 rounded-[1.4rem] border transition-[color,background-color,border-color] duration-200 ${
-                  active ? '' : 'border-transparent text-ink-muted hover:text-ink-dim'
+                className={`relative flex h-full flex-col items-center justify-center gap-1 overflow-hidden rounded-[1.4rem] border transition-[color,background-color,border-color] duration-200 ${
+                  active ? 'text-ink' : 'border-transparent text-ink-muted hover:text-ink-dim'
                 }`}
                 style={
                   active
                     ? {
-                        // 아이콘이 currentColor를 쓰므로 링크에 색을 주면 아이콘과 라벨이 함께 물든다.
-                        color: `rgb(${item.accent})`,
-                        borderColor: `rgba(${item.accent}, 0.45)`,
-                        background: `rgba(${item.accent}, 0.1)`,
-                        boxShadow: `0 0 18px -6px rgba(${item.accent}, 0.7)`,
+                        borderColor: `rgba(${item.accent}, 0.4)`,
+                        background: `rgba(${item.accent}, 0.08)`,
+                        boxShadow: `0 0 20px -8px rgba(${item.accent}, 0.6)`,
                       }
                     : undefined
                 }
               >
-                <item.Icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium leading-none">{item.label}</span>
+                {/* 앰비언트 라이트 — 캡슐 안쪽 아래에서 은은하게 피어오른다 (레퍼런스 04).
+                    테두리 glow만 있으면 스티커처럼 보이고, 이 빛이 있어야 "켜진" 느낌이 난다. */}
+                {active && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background: `radial-gradient(70% 90% at 50% 118%, rgba(${item.accent}, 0.55) 0%, rgba(${item.accent}, 0.16) 42%, rgba(0,0,0,0) 74%)`,
+                      filter: 'blur(6px)',
+                    }}
+                  />
+                )}
+                {/* 아이콘만 강조색으로 물들이고 라벨은 흰색으로 둔다.
+                    아이콘이 currentColor를 쓰므로 감싼 span에 색을 주면 그대로 따라온다. */}
+                <span className="relative" style={active ? { color: `rgb(${item.accent})` } : undefined}>
+                  <item.Icon className="h-5 w-5" />
+                </span>
+                <span className="relative text-[10px] font-medium leading-none">{item.label}</span>
               </Link>
             </li>
           );

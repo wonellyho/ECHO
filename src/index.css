@@ -11,9 +11,8 @@
   --color-space-navy: #050a18;
 
   /* ── glass surface ──────────────────────────────────────────
-     카드는 "우주 위에 얇게 떠 있는 유리"다. 불투명한 남색 사각형이 아니다. */
-  --color-surface: rgba(10, 20, 40, 0.55);
-  --color-surface-strong: rgba(15, 26, 50, 0.78);
+     카드는 "우주 위에 얇게 떠 있는 유리"다. 불투명한 남색 사각형이 아니다.
+     배경 자체의 알파는 GlassCard가 톤별로 들고 있다 (여기 두면 두 곳이 어긋난다). */
   --color-hairline: rgba(130, 160, 220, 0.24);
   --color-hairline-active: rgba(190, 170, 255, 0.55);
 
@@ -78,41 +77,6 @@ body {
   animation: fade-in-up 180ms ease-out;
 }
 
-/* 성운이 아주 느리게 떠다닌다. transform만 바꾸므로 합성 단계에서 끝난다. */
-@keyframes echo-nebula-drift {
-  0% {
-    transform: translate(-50%, -50%) scale(1) translate(0, 0);
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.12) translate(2%, -3%);
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1) translate(0, 0);
-  }
-}
-
-/* 유성. 전체 주기의 3%만 실제로 보인다 — 자주 지나가면 배경이 주인공이 되어버린다. */
-@keyframes echo-shooting-star {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0) rotate(var(--angle, 28deg));
-  }
-  1% {
-    opacity: 0;
-  }
-  2% {
-    opacity: 0.9;
-  }
-  4.5% {
-    opacity: 0;
-    transform: translate(320px, 170px) rotate(var(--angle, 28deg));
-  }
-  100% {
-    opacity: 0;
-    transform: translate(320px, 170px) rotate(var(--angle, 28deg));
-  }
-}
-
 /* 바텀시트가 아래에서 올라온다. */
 @keyframes echo-sheet-up {
   from {
@@ -125,13 +89,14 @@ body {
   }
 }
 
-/* 마이크 오브 둘레의 궤도. 아주 느리게 돈다. */
-@keyframes echo-orbit {
+/* 마이크 오브 둘레의 나선 궤도 위를 입자가 지나간다. 궤도 자체는 돌지 않는다 —
+   기울어진 궤도면을 통째로 회전시키면 접시처럼 흔들려 어지럽다. */
+@keyframes echo-orbit-travel {
   from {
-    transform: rotate(0deg);
+    offset-distance: 0%;
   }
   to {
-    transform: rotate(360deg);
+    offset-distance: 100%;
   }
 }
 
@@ -154,9 +119,7 @@ body {
   .fade-in-up-enter {
     animation: none;
   }
-  [style*='echo-nebula-drift'],
-  [style*='echo-shooting-star'],
-  [style*='echo-orbit'],
+  [style*='echo-orbit-travel'],
   [style*='echo-pulse'] {
     animation: none !important;
   }

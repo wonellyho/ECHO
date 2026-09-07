@@ -47,7 +47,7 @@ export function EvidenceList({ state }: { state: EvidenceState | undefined }) {
   return (
     <ul className="space-y-2 px-3 pb-3">
       {state.entries.map((entry) => (
-        <li key={entry.id} className="rounded-xl border border-hairline bg-[rgba(6,12,28,0.6)] p-3">
+        <li key={entry.id} className="rounded-xl border border-hairline bg-[rgba(6,12,28,0.45)] p-3">
           {entry.status === 'done' ? (
             <dl className="space-y-1.5">
               {FIELDS.filter((field) => entry[field.key]).map((field) => (

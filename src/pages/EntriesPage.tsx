@@ -290,8 +290,8 @@ export function EntriesPage() {
       </div>
 
       <div
-        className="mt-5 flex items-center gap-3 rounded-2xl border border-hairline px-4 backdrop-blur-md transition-colors focus-within:border-hairline-active"
-        style={{ background: 'rgba(10, 20, 40, 0.55)' }}
+        className="mt-5 flex items-center gap-3 rounded-2xl border border-hairline px-4 backdrop-blur-xl transition-colors focus-within:border-hairline-active"
+        style={{ background: 'rgba(10, 20, 40, 0.38)' }}
       >
         <SearchIcon className="h-5 w-5 shrink-0 text-ink-muted" />
         <input
@@ -456,7 +456,7 @@ export function EntriesPage() {
               value={bulkCollectionChoice}
               aria-label="컬렉션 선택"
               onChange={(e) => setBulkCollectionChoice(e.target.value)}
-              className="min-h-[2.75rem] flex-1 rounded-xl border border-hairline bg-[rgba(10,20,40,0.6)] px-3 text-sm text-ink focus:border-hairline-active focus:outline-none"
+              className="min-h-[2.75rem] flex-1 rounded-xl border border-hairline bg-[rgba(10,20,40,0.4)] px-3 text-sm text-ink focus:border-hairline-active focus:outline-none"
             >
               <option value="">컬렉션 선택</option>
               {collections.map((c) => (
@@ -481,7 +481,7 @@ export function EntriesPage() {
               placeholder="새 컬렉션 이름"
               value={newBulkCollectionName}
               onChange={(e) => setNewBulkCollectionName(e.target.value)}
-              className="min-h-[2.75rem] w-full rounded-xl border border-hairline bg-[rgba(10,20,40,0.6)] px-3 text-sm text-ink placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
+              className="min-h-[2.75rem] w-full rounded-xl border border-hairline bg-[rgba(10,20,40,0.4)] px-3 text-sm text-ink placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
             />
           )}
           {bulkError && <p className="text-xs text-echo-coral">{bulkError}</p>}

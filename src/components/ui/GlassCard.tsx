@@ -19,9 +19,13 @@ export interface GlassCardProps {
   className?: string;
 }
 
+// 카드는 기본적으로 **투명하다**. 배경 사진이 카드 너머로 비쳐야 "우주 위에 떠 있는 유리"로
+// 보인다. 불투명도를 낮추면서 가독성을 지키는 방법은 blur를 함께 올리는 것 —
+// 낮은 알파 + 강한 blur가 유리로 읽히고, 뒤의 별이 뭉개져 글자를 방해하지 않는다.
 const TONE_BG: Record<GlassTone, string> = {
-  default: 'rgba(10, 20, 40, 0.55)',
-  strong: 'rgba(15, 26, 50, 0.78)',
+  default: 'rgba(10, 20, 40, 0.38)',
+  // 긴 본문을 담는 카드만 한 단 진하게 (기록 원문, 별 상세 등).
+  strong: 'rgba(12, 22, 44, 0.58)',
 };
 
 export function GlassCard({
@@ -33,7 +37,7 @@ export function GlassCard({
 }: GlassCardProps) {
   return (
     <div
-      className={`rounded-2xl border backdrop-blur-md transition-[border-color,box-shadow] duration-200 ${className}`}
+      className={`rounded-2xl border backdrop-blur-xl transition-[border-color,box-shadow] duration-200 ${className}`}
       style={{
         background: TONE_BG[tone],
         borderColor: active ? `rgba(${accent}, 0.55)` : 'rgba(130, 160, 220, 0.24)',
@@ -52,9 +56,9 @@ export function GlassCard({
 export function GlassPanel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-3xl border backdrop-blur-sm ${className}`}
+      className={`rounded-3xl border backdrop-blur-xl ${className}`}
       style={{
-        background: 'rgba(8, 15, 33, 0.62)',
+        background: 'rgba(8, 15, 33, 0.42)',
         borderColor: 'rgba(130, 160, 220, 0.22)',
         boxShadow: '0 0 40px -18px rgba(160, 140, 255, 0.5)',
       }}

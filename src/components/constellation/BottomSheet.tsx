@@ -24,7 +24,7 @@ export function BottomSheet({ scroll = true, children }: BottomSheetProps) {
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-20 border-t border-hairline bg-[rgba(8,15,33,0.92)] backdrop-blur-xl"
+      className="absolute inset-x-0 bottom-0 z-20 border-t border-hairline bg-[rgba(8,15,33,0.55)] backdrop-blur-xl"
       style={{
         height: SHEET_HEIGHT,
         borderTopLeftRadius: '1rem',

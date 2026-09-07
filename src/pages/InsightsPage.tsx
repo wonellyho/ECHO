@@ -464,7 +464,7 @@ export function InsightsPage() {
       <button
         type="button"
         onClick={goToOverview}
-        className={`absolute left-1/2 z-30 flex min-h-[2.75rem] -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-[rgba(8,15,33,0.72)] px-5 text-[13px] font-medium text-ink-dim backdrop-blur-xl transition-colors hover:border-hairline-active hover:text-ink ${
+        className={`absolute left-1/2 z-30 flex min-h-[2.75rem] -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-[rgba(8,15,33,0.55)] px-5 text-[13px] font-medium text-ink-dim backdrop-blur-xl transition-colors hover:border-hairline-active hover:text-ink ${
           sheetOpen ? 'bottom-[calc(40dvh+0.75rem)]' : 'bottom-4'
         }`}
       >
@@ -473,7 +473,7 @@ export function InsightsPage() {
       </button>
 
       {structuredCount < MIN_ENTRIES_FOR_INSIGHTS && (
-        <p className="absolute inset-x-4 bottom-14 z-10 rounded-2xl border border-hairline bg-[rgba(8,15,33,0.8)] p-3 text-center text-xs text-ink-dim backdrop-blur-md">
+        <p className="absolute inset-x-4 bottom-14 z-10 rounded-2xl border border-hairline bg-[rgba(8,15,33,0.6)] p-3 text-center text-xs text-ink-dim backdrop-blur-xl">
           기록이 {MIN_ENTRIES_FOR_INSIGHTS}개 이상 정리되면 별무리가 나뉘어요. (현재 {structuredCount}개)
         </p>
       )}
@@ -493,7 +493,7 @@ export function InsightsPage() {
       {error && (
         // 카드(별 상세 z-20, 군집 요약 z-20)에 가려지면 재생성 실패를 알릴 방법이 없다 —
         // 어떤 카드가 열려 있어도 항상 보이도록 오버레이 스택의 맨 위, z-30에 둔다.
-        <p className="absolute inset-x-3 top-3 z-30 rounded-2xl border border-[rgba(255,120,140,0.35)] bg-[rgba(48,10,26,0.9)] p-3 text-center text-xs text-echo-coral backdrop-blur-md">
+        <p className="absolute inset-x-3 top-3 z-30 rounded-2xl border border-[rgba(255,120,140,0.35)] bg-[rgba(48,10,26,0.9)] p-3 text-center text-xs text-echo-coral backdrop-blur-xl">
           {error}
         </p>
       )}

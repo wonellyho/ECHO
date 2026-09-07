@@ -129,7 +129,7 @@ export function ProfilePage() {
             setSaved(false);
           }}
           placeholder="어떻게 불러드릴까요?"
-          className="mt-2.5 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)] px-4 text-[15px] text-ink backdrop-blur-md placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
+          className="mt-2.5 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.38)] px-4 text-[15px] text-ink backdrop-blur-xl placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="text-xs text-ink-muted">다른 사용자에게 표시될 이름이에요.</p>

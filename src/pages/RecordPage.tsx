@@ -503,8 +503,12 @@ export function RecordPage() {
               <span
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
                 style={{
-                  background: 'radial-gradient(circle at 34% 28%, #ffb190 0%, #ff7a63 40%, #cf4a7e 100%)',
-                  boxShadow: '0 0 22px -6px rgba(255,120,120,0.8)',
+                  // 레퍼런스의 아이콘 오브 — 왼쪽 위에서 빛을 받는 주황이 코럴을 지나
+                  // 마젠타·자주로 떨어진다. 반투명이라 뒤의 우주가 살짝 비친다.
+                  background:
+                    'radial-gradient(circle at 32% 26%, rgba(255,196,140,0.95) 0%, rgba(255,126,96,0.9) 34%, rgba(232,74,142,0.85) 66%, rgba(126,46,132,0.78) 100%)',
+                  boxShadow:
+                    '0 0 0 1px rgba(255,190,160,0.35), 0 0 26px -4px rgba(255,110,140,0.75)',
                 }}
               >
                 <MicIcon className="h-6 w-6 text-white" />
@@ -524,8 +528,10 @@ export function RecordPage() {
               <span
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
                 style={{
-                  background: 'radial-gradient(circle at 34% 28%, #9fc0ff 0%, #5f7de0 42%, #3b3f8f 100%)',
-                  boxShadow: '0 0 22px -8px rgba(120,150,255,0.8)',
+                  background:
+                    'radial-gradient(circle at 32% 26%, rgba(186,214,255,0.95) 0%, rgba(112,146,230,0.88) 38%, rgba(74,78,178,0.82) 70%, rgba(44,44,110,0.75) 100%)',
+                  boxShadow:
+                    '0 0 0 1px rgba(170,200,255,0.3), 0 0 26px -6px rgba(120,150,255,0.7)',
                 }}
               >
                 <TypingIcon className="h-6 w-6 text-white" />
@@ -545,13 +551,15 @@ export function RecordPage() {
           </p>
         )}
 
-        <div className="mt-auto flex flex-col items-center pt-12">
+        {/* 오브는 배경 사진의 지구 지평선 **위에** 떠 있어야 한다 — 화면 맨 아래에 두면
+            지구에 파묻힌다. mt-auto로 아래로 민 뒤 다시 끌어올린다. */}
+        <div className="mt-auto flex flex-col items-center pt-12" style={{ marginBottom: '13vh' }}>
           <div className="flex w-full items-center gap-3">
             <span className="h-px flex-1 bg-hairline" />
             <p className="text-[11px] tracking-wide text-ink-dim">눌러서 바로 녹음 시작</p>
             <span className="h-px flex-1 bg-hairline" />
           </div>
-          <div className="mt-8">
+          <div className="mt-9">
             <RecordOrb
               size="clamp(112px, 34vw, 148px)"
               icon={<MicIcon className="h-9 w-9 text-white" />}
@@ -658,7 +666,7 @@ export function RecordPage() {
             </GlassCard>
           )}
           {mic.error && (
-            <p className="mt-2 rounded-xl border border-hairline px-3 py-2 text-xs text-ink-dim backdrop-blur-md">
+            <p className="mt-2 rounded-xl border border-hairline px-3 py-2 text-xs text-ink-dim backdrop-blur-xl">
               {mic.error} (배경 시각화만 비활성됩니다)
             </p>
           )}
@@ -739,7 +747,7 @@ export function RecordPage() {
             <button
               type="button"
               onClick={switchTypingToVoice}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-hairline px-3.5 py-2 text-xs font-medium text-ink-dim backdrop-blur-md transition-colors hover:border-hairline-active hover:text-ink"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-hairline px-3.5 py-2 text-xs font-medium text-ink-dim backdrop-blur-xl transition-colors hover:border-hairline-active hover:text-ink"
             >
               <MicIcon className="h-3.5 w-3.5" />
               음성으로
@@ -794,7 +802,7 @@ export function RecordPage() {
           type="button"
           onClick={backToSource}
           disabled={saving}
-          className="rounded-full border border-hairline px-3.5 py-2 text-xs font-medium text-ink-dim backdrop-blur-md transition-colors hover:border-hairline-active hover:text-ink disabled:opacity-50"
+          className="rounded-full border border-hairline px-3.5 py-2 text-xs font-medium text-ink-dim backdrop-blur-xl transition-colors hover:border-hairline-active hover:text-ink disabled:opacity-50"
         >
           ← {source === 'voice' ? '다시 녹음' : '다시 입력'}
         </button>
@@ -858,7 +866,7 @@ export function RecordPage() {
           value={collectionChoice}
           onChange={(e) => setCollectionChoice(e.target.value)}
           disabled={saving}
-          className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)] px-4 text-[15px] text-ink backdrop-blur-md focus:border-hairline-active focus:outline-none disabled:opacity-50"
+          className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.38)] px-4 text-[15px] text-ink backdrop-blur-xl focus:border-hairline-active focus:outline-none disabled:opacity-50"
         >
           <option value="">컬렉션 없음</option>
           {collections.map((c) => (
@@ -875,7 +883,7 @@ export function RecordPage() {
             value={newCollectionName}
             onChange={(e) => setNewCollectionName(e.target.value)}
             disabled={saving}
-            className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)] px-4 text-[15px] text-ink backdrop-blur-md placeholder:text-ink-muted focus:border-hairline-active focus:outline-none disabled:opacity-50"
+            className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.38)] px-4 text-[15px] text-ink backdrop-blur-xl placeholder:text-ink-muted focus:border-hairline-active focus:outline-none disabled:opacity-50"
           />
         )}
       </div>

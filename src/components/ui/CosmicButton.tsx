@@ -41,8 +41,8 @@ export function OutlineButton({
   return (
     <button
       {...props}
-      className={`flex min-h-[3rem] w-full items-center gap-3 rounded-2xl border border-hairline px-4 text-sm font-medium text-ink backdrop-blur-md transition-colors duration-200 hover:border-hairline-active disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS} ${className}`}
-      style={{ background: 'rgba(10, 20, 40, 0.55)' }}
+      className={`flex min-h-[3rem] w-full items-center gap-3 rounded-2xl border border-hairline px-4 text-sm font-medium text-ink backdrop-blur-xl transition-colors duration-200 hover:border-hairline-active disabled:cursor-not-allowed disabled:opacity-45 ${FOCUS} ${className}`}
+      style={{ background: 'rgba(10, 20, 40, 0.34)' }}
     >
       {leading}
       <span className="flex-1 text-center">{children}</span>
@@ -60,8 +60,8 @@ export function CosmicIconButton({
   return (
     <button
       {...props}
-      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline text-ink-dim backdrop-blur-md transition-colors duration-200 hover:border-hairline-active hover:text-ink disabled:opacity-45 ${FOCUS} ${className}`}
-      style={{ background: 'rgba(10, 20, 40, 0.5)' }}
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline text-ink-dim backdrop-blur-xl transition-colors duration-200 hover:border-hairline-active hover:text-ink disabled:opacity-45 ${FOCUS} ${className}`}
+      style={{ background: 'rgba(10, 20, 40, 0.32)' }}
     >
       {children}
     </button>

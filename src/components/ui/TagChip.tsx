@@ -26,7 +26,7 @@ export function TagChip({ tag, active = false, onClick, disabled, className = ''
   const style = {
     color: active ? '#fff' : TAG_HEX[tag],
     borderColor: `rgba(${rgb}, ${active ? 0.9 : 0.45})`,
-    background: active ? `rgba(${rgb}, 0.28)` : 'rgba(10, 20, 40, 0.5)',
+    background: active ? `rgba(${rgb}, 0.3)` : 'rgba(10, 20, 40, 0.32)',
     boxShadow: active ? `0 0 14px -4px rgba(${rgb}, 0.8)` : 'none',
   };
   const base = `shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur-md transition-[background-color,border-color,box-shadow] duration-200 ${className}`;

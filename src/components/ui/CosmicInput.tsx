@@ -4,7 +4,7 @@ import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'rea
 // label을 시각적으로 감추더라도 접근성 이름은 반드시 남긴다 (§22).
 
 const FIELD_BASE =
-  'w-full rounded-2xl border border-hairline text-[15px] text-ink placeholder:text-ink-muted backdrop-blur-md transition-colors duration-200 focus:border-hairline-active focus:outline-none';
+  'w-full rounded-2xl border border-hairline text-[15px] text-ink placeholder:text-ink-muted backdrop-blur-xl transition-colors duration-200 focus:border-hairline-active focus:outline-none';
 
 export interface CosmicInputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** 왼쪽 아이콘 (선택) */
@@ -16,8 +16,8 @@ export interface CosmicInputProps extends InputHTMLAttributes<HTMLInputElement> 
 export function CosmicInput({ leading, trailing, className = '', ...props }: CosmicInputProps) {
   return (
     <div
-      className={`flex items-center gap-3 rounded-2xl border border-hairline px-4 backdrop-blur-md transition-colors duration-200 focus-within:border-hairline-active ${className}`}
-      style={{ background: 'rgba(10, 20, 40, 0.55)' }}
+      className={`flex items-center gap-3 rounded-2xl border border-hairline px-4 backdrop-blur-xl transition-colors duration-200 focus-within:border-hairline-active ${className}`}
+      style={{ background: 'rgba(10, 20, 40, 0.38)' }}
     >
       {leading && <span className="shrink-0 text-ink-muted">{leading}</span>}
       <input
@@ -37,7 +37,7 @@ export function CosmicTextarea({
     <textarea
       {...props}
       className={`${FIELD_BASE} resize-none p-4 leading-relaxed ${className}`}
-      style={{ background: 'rgba(10, 20, 40, 0.55)' }}
+      style={{ background: 'rgba(10, 20, 40, 0.38)' }}
     />
   );
 }
