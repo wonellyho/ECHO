@@ -2,7 +2,20 @@ import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { signInWithProvider, type SocialProvider } from '../lib/oauthProviders';
 import { Logo } from '../components/Logo';
-import { GoogleIcon, KakaoIcon } from '../components/icons';
+import { SpaceScene } from '../components/cosmic/SpaceScene';
+import { GlassPanel } from '../components/ui/GlassCard';
+import { CosmicInput } from '../components/ui/CosmicInput';
+import { GradientButton, OutlineButton } from '../components/ui/CosmicButton';
+import {
+  ArrowRightIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  EyeOffIcon,
+  GoogleIcon,
+  KakaoIcon,
+  LockIcon,
+  MailIcon,
+} from '../components/icons';
 
 type Mode = 'login' | 'signup';
 
@@ -11,6 +24,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(null);
@@ -79,134 +93,200 @@ export function LoginPage() {
     }
   }
 
-  if (signupPendingEmail) {
-    return (
-      <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center bg-slate-950 px-4 py-6">
-        <Logo />
-        <p className="mt-1 text-sm text-slate-400">경험을 기록하고, 나를 발견하다.</p>
-
-        <div className="mt-6 rounded-md border border-slate-700 p-3 text-sm text-slate-200">
-          <p>
-            <span className="font-medium">{signupPendingEmail}</span>로 확인 메일을 보냈습니다.
-          </p>
-          <p className="mt-1 text-slate-400">메일의 링크를 눌러 인증을 완료하면 로그인할 수 있어요.</p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => switchMode('login')}
-          className="mt-4 w-full rounded-md border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-200 hover:bg-slate-800"
-        >
-          로그인 화면으로
-        </button>
+  // 로그인 화면에는 하단 네비게이션이 없다 — 화면 전체를 쓴다.
+  const shell = (children: React.ReactNode) => (
+    <div className="relative min-h-[100dvh] overflow-hidden">
+      <SpaceScene variant="login" />
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-8">
+        {children}
       </div>
+    </div>
+  );
+
+  if (signupPendingEmail) {
+    return shell(
+      <>
+        <Logo />
+        <div className="flex flex-1 flex-col justify-center">
+          <GlassPanel className="p-6">
+            <p className="text-[15px] leading-relaxed text-ink">
+              <span className="font-semibold">{signupPendingEmail}</span>로 확인 메일을 보냈습니다.
+            </p>
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-dim">
+              메일의 링크를 눌러 인증을 완료하면 로그인할 수 있어요.
+            </p>
+            <OutlineButton type="button" onClick={() => switchMode('login')} className="mt-5">
+              로그인 화면으로
+            </OutlineButton>
+          </GlassPanel>
+        </div>
+      </>,
     );
   }
 
-  return (
-    <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center bg-slate-950 px-4 py-6">
-      <Logo />
-      <p className="mt-1 text-sm text-slate-400">경험을 기록하고, 나를 발견하다.</p>
-
-      <div className="mt-6 inline-flex rounded-full bg-slate-800 p-1 text-sm font-medium">
-        <button
-          type="button"
-          onClick={() => switchMode('login')}
-          aria-pressed={mode === 'login'}
-          className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
-            mode === 'login' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400'
-          }`}
-        >
-          로그인
-        </button>
-        <button
-          type="button"
-          onClick={() => switchMode('signup')}
-          aria-pressed={mode === 'signup'}
-          className={`flex-1 rounded-full px-4 py-1.5 transition-colors ${
-            mode === 'signup' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400'
-          }`}
-        >
-          회원가입
-        </button>
+  return shell(
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <Logo />
+        <p className="hidden shrink-0 pt-1 text-right text-[11px] leading-relaxed text-ink-muted min-[380px]:block">
+          <span className="block">오늘도</span>
+          <span className="block">조금 더</span>
+          <span className="block">나답게</span>
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-        <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={6}
-          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
-        />
-        {mode === 'signup' && (
-          <input
-            type="password"
-            placeholder="비밀번호 확인"
-            value={passwordConfirm}
-            onChange={(e) => setPasswordConfirm(e.target.value)}
+      <h1 className="mt-9 text-[30px] font-bold leading-[1.28] tracking-tight text-ink">
+        경험을 기록하고,
+        <br />
+        <span
+          className="bg-clip-text text-transparent"
+          style={{ backgroundImage: 'linear-gradient(100deg, #ffd0bb 0%, #ffb3cd 45%, #d6b4ff 100%)' }}
+        >
+          나를 발견하다.
+        </span>
+      </h1>
+      <p className="mt-4 text-[13px] leading-relaxed text-ink-dim">
+        작은 경험이 모여
+        <br />
+        특별한 나를 만듭니다.
+      </p>
+
+      <GlassPanel className="mt-8 p-4">
+        {/* 로그인/회원가입 세그먼티드 컨트롤 — 활성 쪽만 그라디언트 pill */}
+        <div
+          className="flex rounded-full border border-hairline p-1"
+          style={{ background: 'rgba(6, 12, 28, 0.6)' }}
+        >
+          {(['login', 'signup'] as const).map((value) => {
+            const active = mode === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => switchMode(value)}
+                aria-pressed={active}
+                className={`flex-1 rounded-full py-2.5 text-sm font-semibold transition-colors duration-200 ${
+                  active ? 'text-white' : 'text-ink-dim hover:text-ink'
+                }`}
+                style={
+                  active
+                    ? {
+                        background: 'var(--echo-gradient)',
+                        boxShadow: '0 0 18px -6px rgba(241,74,180,0.8)',
+                      }
+                    : undefined
+                }
+              >
+                {value === 'login' ? '로그인' : '회원가입'}
+              </button>
+            );
+          })}
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <CosmicInput
+            type="email"
+            aria-label="이메일"
+            placeholder="이메일을 입력하세요"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            leading={<MailIcon />}
+          />
+          <CosmicInput
+            type={showPassword ? 'text' : 'password'}
+            aria-label="비밀번호"
+            placeholder="비밀번호를 입력하세요"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            autoComplete="new-password"
-            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            leading={<LockIcon />}
+            trailing={
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:text-ink-dim"
+              >
+                {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+              </button>
+            }
           />
-        )}
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-full bg-gradient-to-r from-orange-400 to-pink-500 px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? (mode === 'login' ? '로그인 중...' : '가입 중...') : mode === 'login' ? '로그인' : '회원가입'}
-        </button>
-      </form>
+          {mode === 'signup' && (
+            <CosmicInput
+              type={showPassword ? 'text' : 'password'}
+              aria-label="비밀번호 확인"
+              placeholder="비밀번호를 한 번 더 입력하세요"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              required
+              minLength={6}
+              autoComplete="new-password"
+              leading={<LockIcon />}
+            />
+          )}
 
-      <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
-        <div className="h-px flex-1 bg-slate-800" />
-        또는
-        <div className="h-px flex-1 bg-slate-800" />
-      </div>
+          {error && (
+            <p role="alert" className="text-[13px] leading-relaxed text-echo-coral">
+              {error}
+            </p>
+          )}
 
-      <div className="mt-4 space-y-2">
-        <button
-          type="button"
-          onClick={() => handleSocialLogin('google')}
-          disabled={socialLoading !== null}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-800 disabled:opacity-50"
-        >
-          <GoogleIcon />
-          {socialLoading === 'google' ? '연결 중...' : 'Google로 계속하기'}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleSocialLogin('kakao')}
-          disabled={socialLoading !== null}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-2.5 text-sm font-medium text-black/85 transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          <KakaoIcon />
-          {socialLoading === 'kakao' ? '연결 중...' : '카카오로 계속하기'}
-        </button>
-      </div>
-      <p className="mt-2 text-center text-xs text-slate-400">소셜 로그인은 설정 완료 후 사용할 수 있어요.</p>
+          <GradientButton type="submit" disabled={loading} trailing={<ArrowRightIcon className="h-4 w-4" />}>
+            {loading ? (mode === 'login' ? '로그인 중...' : '가입 중...') : mode === 'login' ? '로그인' : '회원가입'}
+          </GradientButton>
+        </form>
+
+        <div className="my-4 flex items-center gap-3 text-[11px] text-ink-muted">
+          <div className="h-px flex-1 bg-hairline" />
+          또는
+          <div className="h-px flex-1 bg-hairline" />
+        </div>
+
+        <div className="space-y-2.5">
+          <OutlineButton
+            type="button"
+            onClick={() => handleSocialLogin('google')}
+            disabled={socialLoading !== null}
+            leading={<GoogleIcon className="h-5 w-5" />}
+            trailing={<ChevronRightIcon className="h-4 w-4 text-ink-muted" />}
+          >
+            {socialLoading === 'google' ? '연결 중...' : 'Google로 계속하기'}
+          </OutlineButton>
+          <OutlineButton
+            type="button"
+            onClick={() => handleSocialLogin('kakao')}
+            disabled={socialLoading !== null}
+            leading={
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FEE500]">
+                <KakaoIcon className="h-3.5 w-3.5" />
+              </span>
+            }
+            trailing={<ChevronRightIcon className="h-4 w-4 text-ink-muted" />}
+          >
+            {socialLoading === 'kakao' ? '연결 중...' : '카카오로 계속하기'}
+          </OutlineButton>
+        </div>
+
+        <p className="mt-3 text-center text-[11px] text-ink-muted">
+          소셜 로그인은 설정 완료 후 사용할 수 있어요.
+        </p>
+      </GlassPanel>
 
       <button
         type="button"
         onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-        className="mt-4 text-center text-sm text-slate-400 hover:text-slate-200"
+        className="mx-auto mt-7 flex items-center gap-1.5 text-[13px] text-ink-dim transition-colors hover:text-ink"
       >
-        {mode === 'login' ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인'}
+        {mode === 'login' ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}
+        <span className="font-semibold text-ink underline underline-offset-4">
+          {mode === 'login' ? '회원가입' : '로그인'}
+        </span>
+        <ChevronRightIcon className="h-3.5 w-3.5" />
       </button>
-    </div>
+    </>,
   );
 }

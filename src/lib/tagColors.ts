@@ -23,6 +23,18 @@ export const TAG_COLORS_ACTIVE: Record<ExperienceTag, string> = {
   문제해결: 'bg-violet-600 text-white',
 };
 
+// 태그의 기준 색(hex). 우주 배경 위의 "유리 캡슐" 칩은 배경을 채우는 대신 테두리와 글자에만
+// 색을 쓰므로 rgb 값이 직접 필요하다 — Tailwind 클래스로는 알파를 자유롭게 조절할 수 없다.
+// 위 TAG_COLORS(채운 배지)와 같은 계열을 유지한다.
+export const TAG_HEX: Record<ExperienceTag, string> = {
+  협업: '#5B9BFF',
+  갈등: '#FF6B84',
+  주도성: '#F2B33D',
+  실패: '#9AA8C5',
+  성취: '#3FCC96',
+  문제해결: '#A76EFF',
+};
+
 // 카드 배경색 5종 (2026-09-02, 사용자 요청). 이전엔 태그의 첫 번째 값으로 카드 색을 자동 결정했지만,
 // 지금은 저장 시점에 사용자가 이 5색 팔레트 중 하나를 직접 고른다 — RecordPage의 "카드 색상" 선택
 // 칸(CARD_COLOR_KEYS 순서로 스와치 렌더)과 DB의 entries.card_color CHECK 제약이 이 5개 키와

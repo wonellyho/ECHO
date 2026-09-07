@@ -3,6 +3,8 @@
 // 성립하지 않는다. PRD §8의 성공 기준에 "회상 가능성"이 있고 이 화면이 그걸 직접 겨냥한다.
 // three.js를 import하지 않는다 — WebGL 없이 vitest로 검증할 수 있어야 한다.
 
+import { hashString, mulberry32 } from '../rng';
+
 export type ClusterId = 'neutral' | 'energizer' | 'drainer';
 
 export interface Vec3 {
@@ -39,28 +41,8 @@ const BASE_RADIUS = 2.2;
 // "세 덩어리로 보인다"는 요구가 깨진다.
 export const MAX_CLUSTER_RADIUS = 6.5;
 
-// FNV-1a 32비트. 짧고 의존성이 없으며 비슷한 id(uuid는 앞부분이 겹치기 쉽다)도 잘 흩어준다.
-export function hashId(id: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < id.length; i += 1) {
-    hash ^= id.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
-// mulberry32 — seed 하나에서 서로 독립적인 난수 여러 개를 순서대로 뽑기 위한 것.
-// 좌표 세 축에 같은 해시를 그대로 쓰면 별들이 대각선 위에 줄지어 선다.
-export function mulberry32(seed: number) {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// 해시·난수는 우주 배경(cosmic/starfield)과 공유한다 — lib/rng.ts 참고.
+export const hashId = hashString;
 
 // 별이 늘어도 군집 안 밀도가 일정하게 유지되도록 부피에 비례해 반경을 키운다(세제곱근).
 export function clusterRadius(count: number): number {

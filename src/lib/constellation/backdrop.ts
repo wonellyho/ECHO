@@ -2,7 +2,7 @@
 // 클릭 대상이 아니고, 개수만 기기 성능에 맞춰 줄인다.
 // layout.ts와 같은 이유로 three.js를 import하지 않는다 (vitest로 검증 가능해야 한다).
 
-import { mulberry32 } from './layout';
+import { mulberry32 } from '../rng';
 
 export interface BackdropLayer {
   positions: Float32Array;

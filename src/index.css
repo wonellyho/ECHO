@@ -4,23 +4,62 @@
   --font-sans:
     'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
     'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+
+  /* ── 우주 base ──────────────────────────────────────────────
+     순수 검정을 쓰지 않는다. 검정 위의 별은 오려붙인 것처럼 납작해 보인다. */
+  --color-space-black: #02040d;
+  --color-space-navy: #050a18;
+
+  /* ── glass surface ──────────────────────────────────────────
+     카드는 "우주 위에 얇게 떠 있는 유리"다. 불투명한 남색 사각형이 아니다. */
+  --color-surface: rgba(10, 20, 40, 0.55);
+  --color-surface-strong: rgba(15, 26, 50, 0.78);
+  --color-hairline: rgba(130, 160, 220, 0.24);
+  --color-hairline-active: rgba(190, 170, 255, 0.55);
+
+  /* ── 텍스트 ─────────────────────────────────────────────────
+     우주 배경 위에서도 대비를 지켜야 하므로 muted도 너무 어둡게 내리지 않는다. */
+  --color-ink: #f5f7ff;
+  --color-ink-dim: #9aa8c5;
+  --color-ink-muted: #66738f;
+
+  /* ── ECHO primary accent: orange → coral → pink → magenta ── */
+  --color-echo-orange: #ff8a4c;
+  --color-echo-coral: #ff667a;
+  --color-echo-magenta: #f14ab4;
+
+  /* ── 보조 우주색 ───────────────────────────────────────────── */
+  --color-cosmic-blue: #68a7ff;
+  --color-cosmic-indigo: #818cf8;
+  --color-cosmic-violet: #a76eff;
+  --color-cosmic-cyan: #4fd6e7;
 }
 
 :root {
-  /* 하단 네비게이션(BottomNav) 자체의 높이. */
-  --bottom-nav-height: 4rem;
+  /* 하단 네비게이션(BottomNav) 자체의 높이. floating dock이라 실제 pill 높이 + 띄운 여백이다. */
+  --bottom-nav-height: 4.25rem;
   /* 네비게이션이 실제로 가리는 총 높이 — iOS 홈 인디케이터 영역까지 포함한다.
      각 화면은 이 값만큼 아래 여백을 두거나(스크롤형) 높이에서 빼서(전체화면형) 쓴다.
      값을 화면마다 하드코딩하면 어느 한 곳에서 콘텐츠가 가려도 눈치채기 어려우므로
      여기 한 곳에서만 정의한다. */
   --bottom-nav-total: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+
+  /* ECHO 그라디언트 — 로고, primary CTA, active nav가 같은 각도로 공유한다. */
+  --echo-gradient: linear-gradient(
+    100deg,
+    var(--color-echo-orange) 0%,
+    var(--color-echo-coral) 45%,
+    var(--color-echo-magenta) 100%
+  );
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: #020617; /* slate-950 */
-  color: #f8fafc; /* slate-50 */
+  background-color: var(--color-space-black);
+  color: var(--color-ink);
   color-scheme: dark;
+  /* 배경이 화면 밖까지 이어져 보이도록 — iOS 오버스크롤 때 흰 띠가 뜨는 것을 막는다. */
+  overscroll-behavior-y: none;
 }
 
 /* 짧게 나타났다 사라지는 텍스트/배지용 범용 페이드인. 다시 마운트시킬 때(key 교체) 재생된다.
@@ -38,8 +77,87 @@ body {
 .fade-in-up-enter {
   animation: fade-in-up 180ms ease-out;
 }
+
+/* 성운이 아주 느리게 떠다닌다. transform만 바꾸므로 합성 단계에서 끝난다. */
+@keyframes echo-nebula-drift {
+  0% {
+    transform: translate(-50%, -50%) scale(1) translate(0, 0);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.12) translate(2%, -3%);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) translate(0, 0);
+  }
+}
+
+/* 유성. 전체 주기의 3%만 실제로 보인다 — 자주 지나가면 배경이 주인공이 되어버린다. */
+@keyframes echo-shooting-star {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(var(--angle, 28deg));
+  }
+  1% {
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.9;
+  }
+  4.5% {
+    opacity: 0;
+    transform: translate(320px, 170px) rotate(var(--angle, 28deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(320px, 170px) rotate(var(--angle, 28deg));
+  }
+}
+
+/* 바텀시트가 아래에서 올라온다. */
+@keyframes echo-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 마이크 오브 둘레의 궤도. 아주 느리게 돈다. */
+@keyframes echo-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 녹음 중 오브가 숨 쉬듯 밝아졌다 어두워진다. */
+@keyframes echo-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+
+/* prefers-reduced-motion: 배경의 모든 움직임을 멈춘다.
+   컴포넌트 쪽에서도 개별적으로 끄지만, 여기서 한 번 더 막아 빠뜨린 곳이 없게 한다. */
 @media (prefers-reduced-motion: reduce) {
   .fade-in-up-enter {
     animation: none;
+  }
+  [style*='echo-nebula-drift'],
+  [style*='echo-shooting-star'],
+  [style*='echo-orbit'],
+  [style*='echo-pulse'] {
+    animation: none !important;
   }
 }

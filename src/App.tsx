@@ -13,7 +13,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
+      <div className="flex min-h-screen items-center justify-center bg-space-black text-ink-dim">
         불러오는 중...
       </div>
     );
@@ -28,7 +28,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-slate-950">
+    <div className="min-h-[100dvh] bg-space-black">
       {/* 각 화면은 자기 안에서 하단 네비게이션 높이만큼 여백을 두거나(스크롤형) 높이를
           빼서(전체화면형) 쓴다. 여기서는 네비게이션 자체만 얹는다. */}
       <main>
