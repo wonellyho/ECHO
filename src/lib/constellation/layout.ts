@@ -51,7 +51,7 @@ export function hashId(id: string): number {
 
 // mulberry32 — seed 하나에서 서로 독립적인 난수 여러 개를 순서대로 뽑기 위한 것.
 // 좌표 세 축에 같은 해시를 그대로 쓰면 별들이 대각선 위에 줄지어 선다.
-function mulberry32(seed: number) {
+export function mulberry32(seed: number) {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;

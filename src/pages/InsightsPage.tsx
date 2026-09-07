@@ -5,7 +5,12 @@ import { buildInsightRows } from '../lib/buildInsightRows';
 import { useNickname, withNickname } from '../lib/useNickname';
 import { buildGraph, type GraphInputEntry, type GraphInputInsight } from '../lib/constellation/buildGraph';
 import { CLUSTER_LABELS, type ClusterId } from '../lib/constellation/layout';
-import { ConstellationCanvas, type ClusterLabel } from '../components/constellation/ConstellationCanvas';
+import {
+  ConstellationCanvas,
+  type ClusterFocusRequest,
+  type ClusterLabel,
+} from '../components/constellation/ConstellationCanvas';
+import { ExperienceGalaxyBackground } from '../components/constellation/ExperienceGalaxyBackground';
 import { StarDetailCard, type StarDetail } from '../components/constellation/StarDetailCard';
 import { ClusterSummaryCard } from '../components/constellation/ClusterSummaryCard';
 import type { ExperienceTag } from '../types';
@@ -31,6 +36,8 @@ export function InsightsPage() {
   const [openCluster, setOpenCluster] = useState<ClusterId | null>(null);
   const [activeInsightId, setActiveInsightId] = useState<string | null>(null);
   const [webglFailed, setWebglFailed] = useState(false);
+  // 같은 라벨을 다시 눌러도 다시 이동해야 하므로 값 비교가 아니라 token으로 요청을 구분한다.
+  const [clusterFocus, setClusterFocus] = useState<ClusterFocusRequest | null>(null);
 
   // 인사이트 하나를 고르면 그 근거 별만 밝게 남긴다.
   const highlightedIds = useMemo(() => {
@@ -199,10 +206,12 @@ export function InsightsPage() {
       cluster,
       text: `${CLUSTER_LABELS[cluster]} ${graph.counts[cluster]}`,
       onTap: () => {
-        // 전체 경험 군집은 인사이트가 없으므로 카드를 열지 않는다.
-        if (cluster === 'neutral') return;
         setSelectedId(null);
-        setOpenCluster(cluster);
+        // 어느 군집이든 시점은 그 별무리로 옮겨간다.
+        setClusterFocus((previous) => ({ cluster, token: (previous?.token ?? 0) + 1 }));
+        // 전체 경험 군집은 인사이트가 없으므로 요약 카드는 열지 않는다.
+        setOpenCluster(cluster === 'neutral' ? null : cluster);
+        if (cluster === 'neutral') setActiveInsightId(null);
       },
     }));
 
@@ -239,32 +248,38 @@ export function InsightsPage() {
 
   if (webglFailed) {
     return (
-      <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-        <h2 className="text-xl font-semibold text-slate-50">
-          {withNickname(nickname, (n) => `${n}의 에너지 패턴`, '나의 에너지 패턴')}
-        </h2>
-        <p className="text-xs text-slate-500">
-          이 기기에서는 별자리를 그릴 수 없어 글로만 보여드려요.
-        </p>
-        {(['energizer', 'drainer'] as const).map((cluster) => (
-          <ClusterSummaryCard
-            key={cluster}
-            cluster={cluster}
-            insights={insights.filter((i) => i.type === cluster)}
-            activeInsightId={null}
-            onSelectInsight={null}
-            onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
-            regenerating={regenerating}
-            onClose={null}
-          />
-        ))}
-        {error && <p className="text-sm text-red-400">{error}</p>}
+      <div className="relative min-h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-[#05070f]">
+        {/* 별자리는 못 그려도 배경은 CSS라 어디서든 뜬다 — 화면 분위기까지 잃지 않게 한다. */}
+        <ExperienceGalaxyBackground glowIntensity={0.6} />
+        <div className="relative mx-auto max-w-2xl space-y-4 px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
+          <h2 className="text-xl font-semibold text-slate-50">
+            {withNickname(nickname, (n) => `${n}의 에너지 패턴`, '나의 에너지 패턴')}
+          </h2>
+          <p className="text-xs text-slate-500">
+            이 기기에서는 별자리를 그릴 수 없어 글로만 보여드려요.
+          </p>
+          {(['energizer', 'drainer'] as const).map((cluster) => (
+            <ClusterSummaryCard
+              key={cluster}
+              cluster={cluster}
+              insights={insights.filter((i) => i.type === cluster)}
+              activeInsightId={null}
+              onSelectInsight={null}
+              onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
+              regenerating={regenerating}
+              onClose={null}
+            />
+          ))}
+          {error && <p className="text-sm text-red-400">{error}</p>}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-slate-950">
+    <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-[#05070f]">
+      <ExperienceGalaxyBackground />
+
       <h2 className="pointer-events-none absolute left-4 top-4 z-10 text-sm font-medium text-slate-400">
         {withNickname(nickname, (n) => `${n}의 경험 별자리`, '나의 경험 별자리')}
       </h2>
@@ -274,6 +289,7 @@ export function InsightsPage() {
         clusterLabels={clusterLabels}
         selectedId={selectedId}
         highlightedIds={highlightedIds}
+        clusterFocus={clusterFocus}
         onSelect={(id) => {
           setSelectedId(id);
           // 별 하나를 골랐다면 인사이트 강조/군집 카드는 정리한다 — 안 그러면 별 카드 뒤에서
