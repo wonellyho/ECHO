@@ -670,9 +670,21 @@ export function ConstellationCanvas({
             else labelRefs.current.delete(label.cluster);
           }}
           onClick={label.onTap}
-          className="absolute left-0 top-0 z-10 whitespace-nowrap rounded-full border border-slate-700/70 bg-slate-950/70 px-3 py-1.5 text-xs font-medium text-slate-200 backdrop-blur-sm"
+          className="absolute left-0 top-0 z-10 flex min-h-[2.5rem] items-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-[rgba(8,15,33,0.72)] px-4 text-[13px] font-semibold text-ink backdrop-blur-xl transition-colors hover:border-hairline-active"
         >
           {label.text}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5 text-ink-muted"
+            aria-hidden="true"
+          >
+            <path d="m9 5 7 7-7 7" />
+          </svg>
         </button>
       ))}
     </div>

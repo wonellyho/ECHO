@@ -10,7 +10,10 @@ import {
   type CameraFocusRequest,
   type ClusterLabel,
 } from '../components/constellation/ConstellationCanvas';
-import { ExperienceGalaxyBackground } from '../components/constellation/ExperienceGalaxyBackground';
+import { SpaceScene } from '../components/cosmic/SpaceScene';
+import { Logo } from '../components/Logo';
+import { OutlineButton } from '../components/ui/CosmicButton';
+import { ChevronRightIcon } from '../components/icons';
 import { BottomSheet } from '../components/constellation/BottomSheet';
 import { StarDetailCard, type StarDetail } from '../components/constellation/StarDetailCard';
 import { ClusterSummaryCard } from '../components/constellation/ClusterSummaryCard';
@@ -309,46 +312,50 @@ export function InsightsPage() {
     }));
 
   if (loading) {
-    return <p className="px-4 py-6 text-sm text-slate-400">별자리를 그리는 중...</p>;
+    return <p className="px-5 py-6 text-sm text-ink-dim">별자리를 그리는 중...</p>;
   }
 
   if (error && entries.length === 0) {
     return (
-      <div className="px-4 py-6">
-        <p className="text-sm text-red-400">{error}</p>
-        <button
-          type="button"
-          onClick={loadAll}
-          className="mt-3 rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
-        >
+      <div className="px-5 py-6">
+        <p className="text-sm text-echo-coral">{error}</p>
+        <OutlineButton type="button" onClick={loadAll} className="mt-4 max-w-xs">
           다시 시도
-        </button>
+        </OutlineButton>
       </div>
     );
   }
 
   if (entries.length === 0) {
     return (
-      <div className="px-4 py-10 text-center">
-        <p className="text-sm text-slate-300">아직 별이 하나도 없어요.</p>
-        <p className="mt-1 text-sm text-slate-400">첫 기록을 남기면 첫 별이 뜹니다.</p>
-        <Link to="/" className="mt-4 inline-block rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white">
-          기록하러 가기
-        </Link>
+      <div className="relative min-h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden">
+        <SpaceScene variant="pattern" />
+        <div className="relative px-5 py-14 text-center">
+          <p className="text-[15px] text-ink">아직 별이 하나도 없어요.</p>
+          <p className="mt-1.5 text-sm text-ink-dim">첫 기록을 남기면 첫 별이 뜹니다.</p>
+          <Link
+            to="/"
+            className="mt-6 inline-flex min-h-[3rem] items-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white"
+            style={{ background: 'var(--echo-gradient)' }}
+          >
+            기록하러 가기
+            <ChevronRightIcon className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (webglFailed) {
     return (
-      <div className="relative min-h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-[#05070f]">
-        {/* 별자리는 못 그려도 배경은 CSS라 어디서든 뜬다 — 화면 분위기까지 잃지 않게 한다. */}
-        <ExperienceGalaxyBackground glowIntensity={0.6} />
-        <div className="relative mx-auto max-w-2xl space-y-4 px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-          <h2 className="text-xl font-semibold text-slate-50">
+      <div className="relative min-h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden">
+        {/* 별자리는 못 그려도 배경은 CSS/캔버스라 어디서든 뜬다 — 화면 분위기까지 잃지 않게 한다. */}
+        <SpaceScene variant="pattern" />
+        <div className="relative mx-auto max-w-2xl space-y-4 px-5 py-7 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
+          <h2 className="text-[27px] font-bold tracking-tight text-ink">
             {withNickname(nickname, (n) => `${n}의 에너지 패턴`, '나의 에너지 패턴')}
           </h2>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-ink-muted">
             이 기기에서는 별자리를 그릴 수 없어 글로만 보여드려요.
           </p>
           {(['energizer', 'drainer'] as const).map((cluster) => (
@@ -366,7 +373,7 @@ export function InsightsPage() {
               onClose={null}
             />
           ))}
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-echo-coral">{error}</p>}
         </div>
       </div>
     );
@@ -376,12 +383,32 @@ export function InsightsPage() {
   const sheetOpen = selectedNode !== null || (openCluster !== null && selectedId === null);
 
   return (
-    <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-[#05070f]">
-      <ExperienceGalaxyBackground />
+    <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden">
+      <SpaceScene variant="pattern" />
 
-      <h2 className="pointer-events-none absolute left-4 top-4 z-10 text-sm font-medium text-slate-400">
-        {withNickname(nickname, (n) => `${n}의 경험 별자리`, '나의 경험 별자리')}
-      </h2>
+      {/* 머리말은 별자리 위에 얹히되 조작을 가로막지 않는다 — 별을 탭하려면 이 영역도
+          캔버스로 이벤트가 지나가야 한다. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-5 pt-7">
+        <div className="flex items-start justify-between gap-3">
+          <Logo />
+          <p className="hidden shrink-0 pt-1 text-right text-[11px] leading-relaxed text-ink-muted min-[380px]:block">
+            <span className="block">작은</span>
+            <span className="block">경험이 모여</span>
+            <span className="block">특별한 나를 만듭니다.</span>
+          </p>
+        </div>
+        <h1
+          className="mt-7 bg-clip-text text-[27px] font-bold tracking-tight text-transparent"
+          style={{ backgroundImage: 'linear-gradient(100deg, #ffd0bb 0%, #ffb3cd 45%, #d6b4ff 100%)' }}
+        >
+          {withNickname(nickname, (n) => `${n}의 경험 별자리`, '나의 경험 별자리')}
+        </h1>
+        <p className="mt-2.5 text-[13px] leading-relaxed text-ink-dim">
+          지금까지의 경험이 모여
+          <br />
+          오늘의 당신을 이루고 있어요.
+        </p>
+      </div>
 
       <ConstellationCanvas
         graph={graph}
@@ -434,15 +461,16 @@ export function InsightsPage() {
       <button
         type="button"
         onClick={goToOverview}
-        className={`absolute left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-slate-700/70 bg-slate-950/80 px-3.5 py-1.5 text-xs font-medium text-slate-300 backdrop-blur-sm hover:text-slate-100 ${
+        className={`absolute left-1/2 z-30 flex min-h-[2.75rem] -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-hairline bg-[rgba(8,15,33,0.72)] px-5 text-[13px] font-medium text-ink-dim backdrop-blur-xl transition-colors hover:border-hairline-active hover:text-ink ${
           sheetOpen ? 'bottom-[calc(40dvh+0.75rem)]' : 'bottom-4'
         }`}
       >
         전체 별자리 보기
+        <ChevronRightIcon className="h-4 w-4" />
       </button>
 
       {structuredCount < MIN_ENTRIES_FOR_INSIGHTS && (
-        <p className="absolute inset-x-4 bottom-14 z-10 rounded-lg bg-slate-900/80 p-3 text-center text-xs text-slate-400">
+        <p className="absolute inset-x-4 bottom-14 z-10 rounded-2xl border border-hairline bg-[rgba(8,15,33,0.8)] p-3 text-center text-xs text-ink-dim backdrop-blur-md">
           기록이 {MIN_ENTRIES_FOR_INSIGHTS}개 이상 정리되면 별무리가 나뉘어요. (현재 {structuredCount}개)
         </p>
       )}
@@ -452,7 +480,8 @@ export function InsightsPage() {
           type="button"
           onClick={regenerate}
           disabled={regenerating}
-          className="absolute inset-x-4 bottom-14 z-10 rounded-lg bg-slate-700 px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+          className="absolute inset-x-4 bottom-14 z-10 min-h-[3rem] rounded-full px-4 text-[15px] font-semibold text-white disabled:opacity-50"
+          style={{ background: 'var(--echo-gradient)' }}
         >
           {regenerating ? '분석 중...' : '패턴 분석하기'}
         </button>
@@ -461,7 +490,7 @@ export function InsightsPage() {
       {error && (
         // 카드(별 상세 z-20, 군집 요약 z-20)에 가려지면 재생성 실패를 알릴 방법이 없다 —
         // 어떤 카드가 열려 있어도 항상 보이도록 오버레이 스택의 맨 위, z-30에 둔다.
-        <p className="absolute inset-x-3 top-14 z-30 rounded-lg bg-red-950/90 p-3 text-center text-xs text-red-300">
+        <p className="absolute inset-x-3 top-3 z-30 rounded-2xl border border-[rgba(255,120,140,0.35)] bg-[rgba(48,10,26,0.9)] p-3 text-center text-xs text-echo-coral backdrop-blur-md">
           {error}
         </p>
       )}

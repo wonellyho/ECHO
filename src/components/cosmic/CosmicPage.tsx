@@ -16,6 +16,11 @@ export interface CosmicPageProps {
   fullHeight?: boolean;
   /** 콘텐츠 폭 상한. 기본은 모바일 캔버스(28rem). */
   width?: 'default' | 'wide';
+  /**
+   * 네비게이션 위에 또 다른 고정 바가 떠 있을 때 그만큼 아래 여백을 더 준다(px).
+   * 내 경험 탭의 "일괄 컬렉션 추가" 바처럼 높이가 변하는 요소가 있어 고정값을 쓸 수 없다.
+   */
+  bottomExtra?: number;
   className?: string;
 }
 
@@ -24,6 +29,7 @@ export function CosmicPage({
   children,
   fullHeight = false,
   width = 'default',
+  bottomExtra = 0,
   className = '',
 }: CosmicPageProps) {
   return (
@@ -35,8 +41,13 @@ export function CosmicPage({
       <SpaceScene variant={variant} />
       <div
         className={`relative mx-auto w-full px-5 ${width === 'wide' ? 'max-w-2xl' : 'max-w-md'} ${
-          fullHeight ? 'flex h-full flex-col' : 'pb-[calc(var(--bottom-nav-total)+1.5rem)] pt-7'
+          fullHeight ? 'flex h-full flex-col' : 'pt-7'
         } ${className}`}
+        style={
+          fullHeight
+            ? undefined
+            : { paddingBottom: `calc(var(--bottom-nav-total) + 1.5rem + ${bottomExtra}px)` }
+        }
       >
         {children}
       </div>

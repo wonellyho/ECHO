@@ -3,12 +3,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
 import { useMicAnalyser } from '../lib/useMicAnalyser';
-import { AmbientVoiceField } from '../components/AmbientVoiceField';
 import { VoiceWaveform } from '../components/VoiceWaveform';
 import { Logo } from '../components/Logo';
+import { SpaceScene } from '../components/cosmic/SpaceScene';
+import { CosmicPage } from '../components/cosmic/CosmicPage';
+import { GlassCard, GlassPanel } from '../components/ui/GlassCard';
+import { GradientButton, OutlineButton, CosmicIconButton } from '../components/ui/CosmicButton';
+import { CosmicTextarea } from '../components/ui/CosmicInput';
+import { RecordOrb } from '../components/record/RecordOrb';
 import {
   CheckIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
   KeyboardIcon,
   MicIcon,
   StopIcon,
@@ -58,33 +64,25 @@ function LeaveConfirmDialog({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-6">
-      <div className="w-full max-w-xs rounded-2xl border border-slate-800 bg-slate-900 p-5">
-        <p className="text-sm font-medium text-slate-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(2,4,13,0.78)] p-6 backdrop-blur-sm">
+      <GlassPanel className="w-full max-w-xs p-5">
+        <p className="text-sm font-medium text-ink">
           {alreadySaved ? '구조화를 마치지 않고 나갑니다' : '작성 중인 내용이 사라집니다'}
         </p>
-        <p className="mt-1.5 text-xs text-slate-400">
+        <p className="mt-2 text-xs leading-relaxed text-ink-dim">
           {alreadySaved
             ? '기록 자체는 이미 저장되어 있고, AI 구조화만 아직 안 된 상태입니다. 나중에 기록 상세에서 다시 시도할 수 있어요.'
             : '지금까지 기록한 내용은 저장되지 않았습니다. 첫 화면으로 나갈까요?'}
         </p>
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800"
-          >
+        <div className="mt-5 flex gap-2">
+          <OutlineButton type="button" onClick={onCancel} className="flex-1">
             계속 작성
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="flex-1 rounded-md bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600"
-          >
+          </OutlineButton>
+          <GradientButton type="button" onClick={onConfirm} className="flex-1">
             나가기
-          </button>
+          </GradientButton>
         </div>
-      </div>
+      </GlassPanel>
     </div>
   );
 }
@@ -467,73 +465,103 @@ export function RecordPage() {
 
   if (step === 'choice') {
     return (
-      <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-        <Logo />
-        {/* 닉네임을 설정했으면 이름을 윗줄에 따로 두어 인사처럼 읽히게 한다. */}
-        <h2 className="mt-6 text-xl font-semibold leading-snug text-slate-50">
-          {nickname && (
-            <>
-              {nickname}님
-              <br />
-            </>
-          )}
-          오늘의 경험을 남겨보세요
-        </h2>
-        <p className="mt-2 text-sm text-slate-400">말하거나 적으면 AI가 구조화해 둡니다.</p>
+      <CosmicPage variant="record-home" className="flex min-h-[100dvh] flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <Logo />
+          <p className="hidden shrink-0 pt-1 text-right text-[11px] leading-relaxed text-ink-muted min-[380px]:block">
+            <span className="block">작은</span>
+            <span className="block">경험이 모여</span>
+            <span className="block">특별한 나를 만듭니다.</span>
+          </p>
+        </div>
 
-        <div className="mt-6 flex flex-col gap-3">
+        {/* 닉네임을 설정했으면 이름을 윗줄에 따로 두어 인사처럼 읽히게 한다. */}
+        <h1 className="mt-9 text-[30px] font-bold leading-[1.25] tracking-tight text-ink">
+          {nickname && <span className="block text-lg font-semibold text-ink-dim">{nickname}님</span>}
+          <span
+            className="mt-1 block bg-clip-text text-transparent"
+            style={{ backgroundImage: 'linear-gradient(100deg, #ffd0bb 0%, #ffb3cd 45%, #d6b4ff 100%)' }}
+          >
+            오늘의 경험을
+          </span>
+          남겨보세요
+        </h1>
+        <p className="mt-4 text-[13px] leading-relaxed text-ink-dim">
+          말하거나 적으면 AI가 구조화해
+          <br />
+          소중한 내 경험으로 정리해드립니다.
+        </p>
+
+        <div className="mt-7 flex flex-col gap-3">
           <button
             type="button"
             onClick={goToVoice}
             disabled={!speech.isSupported}
-            className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="text-left disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500">
-              <MicIcon className="h-5 w-5 text-white" />
-            </span>
-            <span>
-              <p className="text-sm font-semibold text-slate-50">음성으로 기록</p>
-              <p className="mt-0.5 text-xs text-slate-400">
-                {speech.isSupported ? '말하면 자동으로 글로 옮깁니다' : '사용 불가'}
-              </p>
-            </span>
+            <GlassCard accent="255, 138, 76" className="flex items-center gap-4 px-4 py-4">
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
+                style={{
+                  background: 'radial-gradient(circle at 34% 28%, #ffb190 0%, #ff7a63 40%, #cf4a7e 100%)',
+                  boxShadow: '0 0 22px -6px rgba(255,120,120,0.8)',
+                }}
+              >
+                <MicIcon className="h-6 w-6 text-white" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-ink">음성으로 기록</span>
+                <span className="mt-1 block text-xs text-ink-dim">
+                  {speech.isSupported ? '말하면 자동으로 글로 옮깁니다.' : '이 브라우저에서는 사용할 수 없어요.'}
+                </span>
+              </span>
+              <ChevronRightIcon className="h-5 w-5 shrink-0 text-ink-muted" />
+            </GlassCard>
           </button>
-          <button
-            type="button"
-            onClick={goToTyping}
-            className="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-left transition-colors hover:bg-slate-800"
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-700">
-              <TypingIcon className="h-5 w-5 text-white" />
-            </span>
-            <span>
-              <p className="text-sm font-semibold text-slate-50">타이핑으로 기록</p>
-              <p className="mt-0.5 text-xs text-slate-400">직접 입력합니다</p>
-            </span>
+
+          <button type="button" onClick={goToTyping} className="text-left">
+            <GlassCard accent="104, 167, 255" className="flex items-center gap-4 px-4 py-4">
+              <span
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
+                style={{
+                  background: 'radial-gradient(circle at 34% 28%, #9fc0ff 0%, #5f7de0 42%, #3b3f8f 100%)',
+                  boxShadow: '0 0 22px -8px rgba(120,150,255,0.8)',
+                }}
+              >
+                <TypingIcon className="h-6 w-6 text-white" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-ink">타이핑으로 기록</span>
+                <span className="mt-1 block text-xs text-ink-dim">직접 입력합니다.</span>
+              </span>
+              <ChevronRightIcon className="h-5 w-5 shrink-0 text-ink-muted" />
+            </GlassCard>
           </button>
         </div>
 
         {!speech.isSupported && (
-          <p className="mt-3 rounded-md border border-slate-700 p-2.5 text-xs text-slate-200">
+          <p className="mt-4 rounded-2xl border border-hairline p-3 text-xs leading-relaxed text-ink-dim">
             이 브라우저에서는 음성 입력을 쓸 수 없습니다. 타이핑으로 기록해주세요.
           </p>
         )}
 
-        <div className="mt-auto flex flex-col items-center gap-2 pt-8">
-          <p className="text-xs text-slate-400">눌러서 바로 녹음 시작</p>
-          <button
-            type="button"
-            onClick={goToVoice}
-            disabled={!speech.isSupported}
-            aria-label="음성으로 기록 시작"
-            className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-pink-500 p-1 disabled:opacity-40"
-          >
-            <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-900">
-              <MicIcon className="h-7 w-7 text-white" />
-            </span>
-          </button>
+        <div className="mt-auto flex flex-col items-center pt-12">
+          <div className="flex w-full items-center gap-3">
+            <span className="h-px flex-1 bg-hairline" />
+            <p className="text-[11px] tracking-wide text-ink-dim">눌러서 바로 녹음 시작</p>
+            <span className="h-px flex-1 bg-hairline" />
+          </div>
+          <div className="mt-8">
+            <RecordOrb
+              size="clamp(112px, 34vw, 148px)"
+              icon={<MicIcon className="h-9 w-9 text-white" />}
+              onClick={goToVoice}
+              disabled={!speech.isSupported}
+              aria-label="음성으로 기록 시작"
+            />
+          </div>
         </div>
-      </div>
+      </CosmicPage>
     );
   }
 
@@ -543,48 +571,29 @@ export function RecordPage() {
     // 그리고 본문은 스크롤되게 두고 컨트롤 줄은 sticky로 바닥에 붙여, 화면이 아무리 낮아도
     // (가로 모드 등) 녹음을 멈출 수단이 사라지지 않게 한다.
     return (
-      <div
-        className="relative isolate mx-auto flex h-[calc(100dvh-var(--bottom-nav-total))] max-w-md flex-col overflow-hidden"
-        style={{
-          // Figma 프레임의 대각선 그라디언트 — 위쪽 옅은 살구에서 아래로 갈수록 진한 주황,
-          // 맨 아래는 노란빛이 돈다. 가장 진한 지점(#e5811f)조차 slate-800 텍스트와
-          // 5.2:1을 유지하도록 고른 값이라, 여기보다 더 어둡게 하면 대비가 깨진다.
-          background:
-            'linear-gradient(168deg, #fbe6d4 0%, #f7cba4 26%, #f0a561 48%, #e88a2c 68%, #e5811f 84%, #dcae3f 100%)',
-        }}
-      >
-        <AmbientVoiceField analyserRef={mic.analyserRef} />
+      <div className="relative isolate mx-auto flex h-[calc(100dvh-var(--bottom-nav-total))] max-w-md flex-col overflow-hidden">
+        {/* 앱에서 가장 몰입감 있는 화면 — 별이 가장 촘촘하고 성운도 가장 넓다.
+            대신 비네트를 가장 강하게 줘서 파형과 대본의 가독성을 지킨다. */}
+        <SpaceScene variant="recording" />
 
         {/* 시각화는 배경 레이어이고 조작 요소는 전부 그 위에 얹는다. */}
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-6">
-          <div className="flex items-center justify-between text-sm">
-            <button
-              type="button"
-              onClick={requestReturnToChoice}
-              aria-label="뒤로"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
-            >
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-2 pt-5">
+          <div className="flex items-center justify-between">
+            <CosmicIconButton type="button" onClick={requestReturnToChoice} aria-label="뒤로">
               <ChevronLeftIcon className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={switchVoiceToTyping}
-              aria-label="타이핑으로 전환"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
-            >
+            </CosmicIconButton>
+            <CosmicIconButton type="button" onClick={switchVoiceToTyping} aria-label="타이핑으로 전환">
               <KeyboardIcon className="h-4 w-4" />
-            </button>
+            </CosmicIconButton>
           </div>
 
-          <p
-            className="mt-4 text-center text-sm font-medium tracking-wide text-slate-700"
-            aria-live="polite"
-          >
+          <p className="mt-5 text-center text-[13px] font-medium tracking-wide text-ink-dim" aria-live="polite">
             {speech.isRecording ? '듣고 있어요' : voiceDone ? '녹음을 마쳤어요' : '잠시 멈췄어요'}
           </p>
 
           <p
-            className="mt-1 text-center text-5xl font-light tabular-nums text-slate-800"
+            className="mt-1 bg-clip-text text-center text-[54px] font-extralight leading-none tabular-nums text-transparent"
+            style={{ backgroundImage: 'linear-gradient(100deg, #ffd0bb 0%, #ffb3cd 50%, #d6b4ff 100%)' }}
             role="timer"
           >
             {formatDuration(elapsedMs)}
@@ -593,19 +602,27 @@ export function RecordPage() {
           {/* 파형은 대본 위에 놓는다 — 흐름 안에 두어야 대본이 항상 그 아래로 간다. */}
           <VoiceWaveform
             analyserRef={mic.analyserRef}
-            className="pointer-events-none mt-4 h-28 w-full shrink-0"
+            className="pointer-events-none mt-5 h-24 w-full shrink-0"
           />
 
           {/* 녹음 중에는 실시간 표시(읽기 전용), 멈추면 그 자리에서 바로 고칠 수 있는 입력이 된다.
-              커서를 올린 곳부터 수정 가능하도록 textarea를 그대로 노출한다. */}
-          <div className="mt-3 min-h-0 flex-1">
+              커서를 올린 곳부터 수정 가능하도록 textarea를 그대로 노출한다.
+              레퍼런스처럼 뒤의 은하가 은근히 비치는 큰 유리 패널 안에 담는다. */}
+          <div className="mt-5 min-h-0 flex-1">
             {speech.isRecording ? (
-              <p
-                ref={liveTranscriptRef}
-                className="h-full overflow-y-auto whitespace-pre-wrap text-center text-lg leading-relaxed text-slate-800"
+              <div
+                className="h-full min-h-[8rem] overflow-hidden rounded-2xl border border-hairline p-4 backdrop-blur-[2px]"
+                style={{ background: 'rgba(10, 20, 40, 0.32)' }}
               >
-                {speech.transcript || '말씀하시면 이 자리에 실시간으로 옮겨 적어요.'}
-              </p>
+                <p
+                  ref={liveTranscriptRef}
+                  className="h-full overflow-y-auto whitespace-pre-wrap text-[17px] leading-relaxed text-ink"
+                >
+                  {speech.transcript || (
+                    <span className="text-ink-muted">말씀하시면 이 자리에 실시간으로 옮겨 적어요.</span>
+                  )}
+                </p>
+              </div>
             ) : (
               <textarea
                 ref={voiceTextareaRef}
@@ -613,98 +630,90 @@ export function RecordPage() {
                 onChange={(e) => speech.setTranscript(e.target.value)}
                 placeholder="여기에 직접 입력하거나, 녹음한 내용을 고칠 수 있어요."
                 aria-label="녹음한 내용 (수정 가능). 커서를 올린 위치부터 이어 녹음할 수 있습니다."
-                // caret-orange-600 — 파스텔 배경 위에서 커서가 잘 안 보인다는 피드백으로
-                // 브랜드 강조색으로 진하게 표시한다. 이어 녹음(▶)이 이 커서 위치를 그대로
-                // 쓰므로, 어디서부터 이어질지 눈에 띄어야 한다.
-                className="h-full min-h-[6rem] w-full resize-none rounded-2xl bg-white/25 p-4 text-lg leading-relaxed text-slate-800 caret-orange-600 ring-1 ring-white/40 backdrop-blur-md placeholder:text-slate-700 focus:bg-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-800/50"
+                // 이어 녹음(▶)이 이 커서 위치를 그대로 쓰므로, 어디서부터 이어질지 눈에 띄어야 한다.
+                className="h-full min-h-[8rem] w-full resize-none rounded-2xl border border-hairline p-4 text-[17px] leading-relaxed text-ink caret-echo-coral backdrop-blur-[2px] placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
+                style={{ background: 'rgba(10, 20, 40, 0.32)' }}
               />
             )}
           </div>
 
           {/* 커서 중간에서 이어 녹음을 시작했을 때만 잠깐 띄우는 안내. */}
           {cursorResumeHint && (
-            <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-4">
-              <p className="fade-in-up-enter rounded-full bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-x-0 top-24 z-20 flex justify-center px-4">
+              <p className="fade-in-up-enter rounded-full border border-hairline bg-[rgba(8,15,33,0.85)] px-3 py-1.5 text-xs font-medium text-ink backdrop-blur-sm">
                 커서 위치부터 녹음을 이어갑니다
               </p>
             </div>
           )}
 
           {speech.error && (
-            <div className="mt-4 rounded-2xl bg-white/75 p-2.5 text-sm text-slate-800 backdrop-blur-sm">
+            <GlassCard tone="strong" className="mt-4 p-3">
               {/* 훅이 침묵 같은 정상 상황과 실제 오류(마이크 끊김, 권한 거부 등)를 이미 구분해서
                   올려주므로, 원인을 뭉뚱그리지 않고 그대로 보여준다. */}
-              <p>! {speech.error}</p>
-              <p className="mt-1 text-xs text-slate-600">다시 시도하거나 타이핑으로 남겨주세요.</p>
+              <p className="text-[13px] text-ink">{speech.error}</p>
+              <p className="mt-1 text-xs text-ink-dim">다시 시도하거나 타이핑으로 남겨주세요.</p>
               {speech.transcript && (
-                <p className="mt-1 text-xs text-slate-600">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
+                <p className="mt-1 text-xs text-ink-dim">여기까지는 저장되어 있습니다 (이어서 녹음 가능)</p>
               )}
-            </div>
+            </GlassCard>
           )}
           {mic.error && (
-            <p className="mt-2 rounded-xl bg-white/75 px-2.5 py-1.5 text-xs text-slate-800 backdrop-blur-sm">
+            <p className="mt-2 rounded-xl border border-hairline px-3 py-2 text-xs text-ink-dim backdrop-blur-md">
               {mic.error} (배경 시각화만 비활성됩니다)
             </p>
           )}
 
-          {/* 본문이 길어져 스크롤되더라도 컨트롤은 항상 바닥에 붙어 있어야 한다. */}
-          {/* 왼쪽 삭제 · 가운데 녹음 토글(마이크 ↔ 정지, 완료 후엔 저장) · 오른쪽 완료.
-              가운데 큰 버튼이 녹음 시작/정지를 전담하므로 별도의 ⏸/▶ 버튼은 두지 않는다.
-              Figma처럼 양옆 버튼을 위로 올려 가운데를 기점으로 완만한 호를 그린다.
-              버튼은 전부 반투명이라 뒤의 그라디언트가 그대로 비친다 — 아이콘은 어두운 색을
-              써야 대비가 나온다(반투명 흰 원 위의 흰 아이콘은 2:1대로 떨어진다). */}
-          <div className="sticky bottom-0 mt-8 flex items-end justify-between pb-1">
-            <button
+          {/* 본문이 길어져 스크롤되더라도 컨트롤은 항상 바닥에 붙어 있어야 한다.
+              왼쪽 삭제 · 가운데 오브(마이크 ↔ 정지, 완료 후엔 저장) · 오른쪽 완료.
+              가운데 오브가 녹음 시작/정지를 전담하므로 별도의 ⏸/▶ 버튼은 두지 않는다. */}
+          <div className="sticky bottom-0 mt-7 flex items-center justify-between gap-2 pb-1">
+            <CosmicIconButton
               type="button"
               onClick={cancelVoice}
               aria-label="삭제"
-              className="mb-16 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35"
             >
-              <TrashIcon className="h-6 w-6" />
-            </button>
+              <TrashIcon className="h-5 w-5" />
+            </CosmicIconButton>
 
             {voiceDone ? (
-              <button
-                type="button"
+              <RecordOrb
+                size="clamp(104px, 30vw, 132px)"
+                state="processing"
+                icon={<CheckIcon className="h-9 w-9" />}
                 onClick={goToDetailsFromVoice}
                 disabled={!canSubmitRecord(speech.transcript)}
-                className="flex h-32 w-32 items-center justify-center rounded-full bg-white/25 text-lg font-medium text-slate-800 ring-1 ring-white/50 backdrop-blur-md disabled:opacity-50"
-              >
-                저장
-              </button>
+                aria-label="저장 화면으로"
+              />
             ) : speech.isRecording ? (
-              <button
-                type="button"
+              <RecordOrb
+                size="clamp(104px, 30vw, 132px)"
+                state="recording"
+                icon={<StopIcon className="h-8 w-8" />}
                 onClick={pauseVoiceRecording}
                 aria-label="녹음 정지"
-                className="flex h-32 w-32 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
-              >
-                <StopIcon className="h-9 w-9" />
-              </button>
+              />
             ) : (
-              <button
-                type="button"
+              <RecordOrb
+                size="clamp(104px, 30vw, 132px)"
+                state="paused"
+                icon={<MicIcon className="h-9 w-9 text-white" />}
                 onClick={resumeVoiceRecording}
                 aria-label={canSubmitRecord(speech.transcript) ? '이어 녹음' : '녹음 시작'}
-                className="flex h-32 w-32 items-center justify-center rounded-full bg-white/25 text-slate-800 ring-1 ring-white/50 backdrop-blur-md"
-              >
-                <MicIcon className="h-10 w-10" />
-              </button>
+              />
             )}
 
-            <button
+            <CosmicIconButton
               type="button"
               onClick={finishVoiceRecording}
               disabled={voiceDone || !canSubmitRecord(speech.transcript)}
               aria-label="녹음 완료"
-              className="mb-16 flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-slate-800 ring-1 ring-white/40 backdrop-blur-md hover:bg-white/35 disabled:opacity-40"
             >
-              <CheckIcon className="h-6 w-6" />
-            </button>
+              <CheckIcon className="h-5 w-5" />
+            </CosmicIconButton>
           </div>
 
           {voiceDone && !canSubmitRecord(speech.transcript) && (
-            <p className="mt-3 text-center text-xs text-slate-800">먼저 녹음해주세요</p>
+            <p className="mt-3 text-center text-xs text-ink-dim">먼저 녹음해주세요</p>
           )}
         </div>
 
@@ -721,35 +730,50 @@ export function RecordPage() {
 
   if (step === 'typing') {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-slate-50">오늘의 경험을 남겨보세요</h2>
+      <CosmicPage variant="recording">
+        <div className="flex items-start justify-between gap-3">
+          <CosmicIconButton type="button" onClick={requestReturnToChoice} aria-label="뒤로">
+            <ChevronLeftIcon className="h-5 w-5" />
+          </CosmicIconButton>
           {speech.isSupported && (
             <button
               type="button"
               onClick={switchTypingToVoice}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-hairline px-3.5 py-2 text-xs font-medium text-ink-dim backdrop-blur-md transition-colors hover:border-hairline-active hover:text-ink"
             >
-              <MicIcon className="h-3.5 w-3.5 text-slate-300" />
+              <MicIcon className="h-3.5 w-3.5" />
               음성으로
             </button>
           )}
         </div>
-        <textarea
+
+        <h1 className="mt-7 text-[26px] font-bold leading-[1.3] tracking-tight text-ink">
+          오늘의 경험을
+          <br />
+          남겨보세요
+        </h1>
+        <p className="mt-3 text-[13px] leading-relaxed text-ink-dim">
+          적어두면 AI가 구조화해 소중한 내 경험으로 정리해드립니다.
+        </p>
+
+        <CosmicTextarea
           placeholder="예: 오늘 팀 발표에서 갑자기 자료가 안 열려서 당황했는데, 즉석에서 화면 공유 없이 설명해서 넘겼다. 발표 끝나고 뿌듯했다."
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={8}
-          className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 p-3 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+          rows={10}
+          aria-label="오늘의 경험"
+          className="mt-6"
         />
-        <button
+
+        <GradientButton
           type="button"
           onClick={goToDetailsFromTyping}
           disabled={!canSubmitRecord(text)}
-          className="mt-4 w-full rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
+          trailing={<ChevronRightIcon className="h-4 w-4" />}
+          className="mt-5"
         >
           다음
-        </button>
+        </GradientButton>
 
         {confirmLeave && (
           <LeaveConfirmDialog
@@ -758,50 +782,50 @@ export function RecordPage() {
             onConfirm={returnToChoice}
           />
         )}
-      </div>
+      </CosmicPage>
     );
   }
 
   // step === 'details'
   return (
-    <div className="mx-auto max-w-md px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-      <div className="flex items-center justify-between text-sm">
+    <CosmicPage variant="recording">
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={backToSource}
           disabled={saving}
-          className="rounded-md border border-slate-700 px-3 py-1.5 text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+          className="rounded-full border border-hairline px-3.5 py-2 text-xs font-medium text-ink-dim backdrop-blur-md transition-colors hover:border-hairline-active hover:text-ink disabled:opacity-50"
         >
           ← {source === 'voice' ? '다시 녹음' : '다시 입력'}
         </button>
-        <p className="font-medium text-slate-50">2 / 2 · 저장 정보</p>
-        <span className="w-16" />
+        <p className="text-xs font-medium text-ink-dim">2 / 2 · 저장 정보</p>
       </div>
 
-      <div className="mt-4 rounded-md border border-slate-700 bg-slate-900 p-3">
-        <p className="text-xs text-slate-400">{source === 'voice' ? '녹음한 내용' : '입력한 내용'}</p>
+      <GlassCard tone="strong" className="mt-5 p-4">
+        <p className="text-xs text-ink-muted">{source === 'voice' ? '녹음한 내용' : '입력한 내용'}</p>
         {editingContent ? (
-          <textarea
+          <CosmicTextarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={4}
-            className="mt-2 w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50"
+            rows={5}
+            aria-label="기록 내용 수정"
+            className="mt-2"
           />
         ) : (
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-100">{content}</p>
+          <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{content}</p>
         )}
         <button
           type="button"
           onClick={() => setEditingContent((prev) => !prev)}
-          className="mt-2 rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800"
+          className="mt-3 rounded-full border border-hairline px-3 py-1.5 text-xs text-ink-dim transition-colors hover:border-hairline-active hover:text-ink"
         >
           {editingContent ? '수정 완료' : '내용 수정'}
         </button>
-      </div>
+      </GlassCard>
 
-      <div className="mt-4">
-        <p className="text-sm font-semibold text-slate-50">카드 색상</p>
-        <div className="mt-1.5 flex gap-2">
+      <div className="mt-5">
+        <p className="text-[13px] font-semibold text-ink">카드 색상</p>
+        <div className="mt-2.5 flex gap-2.5">
           {CARD_COLOR_KEYS.map((key) => (
             <button
               key={key}
@@ -815,7 +839,7 @@ export function RecordPage() {
               // 스캔해 생성되므로, 여기처럼 배열을 돌며 변수로 색을 넣는 자리에는 애초에
               // 클래스 문자열이 성립하지 않는다 (tagColors.ts 카드 그라디언트 주석 참고).
               style={{ backgroundColor: CARD_COLOR_HEX[key] }}
-              className={`h-9 w-9 shrink-0 rounded-md ring-offset-2 ring-offset-slate-950 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 disabled:opacity-50 ${
+              className={`h-10 w-10 shrink-0 rounded-xl ring-offset-2 ring-offset-space-black transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cosmic-violet disabled:opacity-50 ${
                 cardColor === key ? 'scale-105 ring-2 ring-white' : 'ring-1 ring-white/20'
               }`}
             />
@@ -823,10 +847,10 @@ export function RecordPage() {
         </div>
       </div>
 
-      <div className="mt-4">
-        <p className="text-sm font-semibold text-slate-50">컬렉션</p>
+      <div className="mt-5">
+        <p className="text-[13px] font-semibold text-ink">컬렉션</p>
         {collections.length === 0 ? (
-          <p className="mt-1.5 rounded-md border border-dashed border-slate-700 p-3 text-center text-xs text-slate-400">
+          <p className="mt-2 rounded-2xl border border-dashed border-hairline p-3 text-center text-xs text-ink-muted">
             만든 컬렉션이 없습니다.
           </p>
         ) : null}
@@ -834,7 +858,7 @@ export function RecordPage() {
           value={collectionChoice}
           onChange={(e) => setCollectionChoice(e.target.value)}
           disabled={saving}
-          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+          className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)] px-4 text-[15px] text-ink backdrop-blur-md focus:border-hairline-active focus:outline-none disabled:opacity-50"
         >
           <option value="">컬렉션 없음</option>
           {collections.map((c) => (
@@ -851,55 +875,49 @@ export function RecordPage() {
             value={newCollectionName}
             onChange={(e) => setNewCollectionName(e.target.value)}
             disabled={saving}
-            className="mt-2 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none disabled:opacity-50"
+            className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)] px-4 text-[15px] text-ink backdrop-blur-md placeholder:text-ink-muted focus:border-hairline-active focus:outline-none disabled:opacity-50"
           />
         )}
       </div>
 
-      {statusMessage && <p className="mt-4 text-sm text-slate-400">{statusMessage}</p>}
+      {statusMessage && <p className="mt-5 text-[13px] text-ink-dim">{statusMessage}</p>}
       {error && (
-        <div className="mt-4 rounded-md border border-slate-700 bg-slate-900 p-2.5 text-sm text-slate-100">
-          <p>! {error}</p>
-          {structureFailed && <p className="mt-1 text-xs text-slate-400">기록 자체는 저장됨 · 구조화만 재시도</p>}
-        </div>
+        <GlassCard tone="strong" className="mt-5 p-3">
+          <p className="text-[13px] text-ink">{error}</p>
+          {structureFailed && (
+            <p className="mt-1 text-xs text-ink-dim">기록 자체는 저장됨 · 구조화만 재시도</p>
+          )}
+        </GlassCard>
       )}
 
       {structureFailed ? (
-        <div className="mt-4 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={handleRetryStructuring}
-            disabled={saving}
-            className="rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
-          >
+        <div className="mt-5 flex flex-col gap-2.5">
+          <GradientButton type="button" onClick={handleRetryStructuring} disabled={saving}>
             {saving ? '다시 시도 중...' : '다시 시도'}
-          </button>
-          <button
-            type="button"
-            onClick={handleSkipStructuring}
-            className="rounded-md border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800"
-          >
+          </GradientButton>
+          <OutlineButton type="button" onClick={handleSkipStructuring}>
             구조화 없이 저장만 하고 나가기
-          </button>
+          </OutlineButton>
         </div>
       ) : (
-        <button
+        <GradientButton
           type="button"
           onClick={handleSave}
           disabled={saving || !canSubmitRecord(content)}
-          className="mt-4 w-full rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
+          trailing={<ChevronRightIcon className="h-4 w-4" />}
+          className="mt-5"
         >
           {saving ? '저장 중...' : '기록 저장하기'}
-        </button>
+        </GradientButton>
       )}
 
       {confirmLeave && (
         <LeaveConfirmDialog
-            alreadySaved={savedEntryIdRef.current !== null}
-            onCancel={() => setConfirmLeave(false)}
-            onConfirm={returnToChoice}
-          />
+          alreadySaved={savedEntryIdRef.current !== null}
+          onCancel={() => setConfirmLeave(false)}
+          onConfirm={returnToChoice}
+        />
       )}
-    </div>
+    </CosmicPage>
   );
 }

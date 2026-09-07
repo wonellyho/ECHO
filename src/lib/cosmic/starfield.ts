@@ -84,3 +84,20 @@ export function starfieldBudget(options: {
     twinkle: !options.reduceMotion,
   };
 }
+
+export interface DecorProfile {
+  /** navigator.hardwareConcurrency (없으면 undefined) */
+  cores?: number;
+  /** 화면 짧은 쪽 픽셀 수 — 모바일 판별용 */
+  minViewport: number;
+}
+
+/**
+ * 배경 장식(은하수 겹, 성운, 천체)을 얼마나 그릴지. 별 개수(starfieldBudget)와 따로 두는
+ * 이유는 비용의 원천이 다르기 때문이다 — 별은 개수, 장식은 **큰 면적에 걸린 blur 레이어 수**.
+ * prefers-reduced-motion은 여기에 영향을 주지 않는다: 정지한 배경은 디테일이 많아도 부담이 아니다.
+ */
+export function backgroundDetail(profile: DecorProfile): 'full' | 'lite' {
+  const lowCore = profile.cores !== undefined && profile.cores <= 4;
+  return lowCore || profile.minViewport < 480 ? 'lite' : 'full';
+}

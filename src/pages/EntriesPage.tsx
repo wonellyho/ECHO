@@ -3,9 +3,14 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, UNASSIGNED_KEY } from '../lib/entryGrouping';
-import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
+import { ALL_TAGS } from '../lib/tagColors';
 import { CollectionSwipeView, type CollectionSwipeViewHandle } from '../components/CollectionSwipeView';
-import { CheckIcon, EditIcon, LayersIcon } from '../components/icons';
+import { CheckIcon, EditIcon, LayersIcon, SearchIcon } from '../components/icons';
+import { Logo } from '../components/Logo';
+import { CosmicPage } from '../components/cosmic/CosmicPage';
+import { GlassCard } from '../components/ui/GlassCard';
+import { CosmicIconButton, GradientButton, OutlineButton } from '../components/ui/CosmicButton';
+import { TagChip } from '../components/ui/TagChip';
 import { useNickname, withNickname } from '../lib/useNickname';
 import type { CardColorKey, ExperienceTag } from '../types';
 
@@ -208,94 +213,96 @@ export function EntriesPage() {
   );
 
   function renderCard(entry: EntryRow) {
-    const dividerClass = selectMode && selectedIds.has(entry.id) ? 'border-white/20' : 'border-slate-800';
     const cardBody = (
-      <>
-        <div className={`border-b px-3 py-2 ${dividerClass}`}>
-          <p className="truncate text-base font-semibold">{entry.project_title || '제목 없음'}</p>
-        </div>
-        <div className={`flex-1 overflow-hidden border-b px-3 py-2 ${dividerClass}`}>
-          <p className="line-clamp-3 text-xs opacity-80">{entry.situation ?? entry.raw_text}</p>
-        </div>
-        <div className="px-3 py-1.5 text-right">
-          <p className="text-xs opacity-60">{new Date(entry.created_at).toLocaleDateString('ko-KR')}</p>
-        </div>
-      </>
+      <div className="flex h-full flex-col justify-between gap-2 p-3.5 text-left">
+        <p className="truncate text-sm font-semibold text-ink">{entry.project_title || '제목 없음'}</p>
+        <p className="line-clamp-3 flex-1 text-[11px] leading-relaxed text-ink-dim">
+          {entry.situation ?? entry.raw_text}
+        </p>
+        <p className="text-right text-[10px] text-ink-muted">
+          {new Date(entry.created_at).toLocaleDateString('ko-KR')}
+        </p>
+      </div>
     );
 
     if (selectMode) {
       const selected = selectedIds.has(entry.id);
       return (
-        <button
-          key={entry.id}
-          type="button"
-          onClick={() => toggleSelected(entry.id)}
-          className={`relative flex h-44 flex-col overflow-hidden rounded-lg text-left transition-colors ${
-            selected
-              ? 'bg-gradient-to-br from-orange-500 to-pink-600 text-white'
-              : 'border border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800'
-          }`}
-        >
-          <span
-            className={`absolute right-2 top-2 h-4 w-4 rounded-full border-2 ${
-              selected ? 'border-white bg-white' : 'border-slate-600'
-            }`}
-          />
-          {cardBody}
+        <button key={entry.id} type="button" onClick={() => toggleSelected(entry.id)} className="text-left">
+          <GlassCard active={selected} accent="255, 138, 76" className="relative h-44 overflow-hidden">
+            <span
+              className="absolute right-2.5 top-2.5 h-4 w-4 rounded-full border-2"
+              style={{
+                borderColor: selected ? 'rgb(255,138,76)' : 'rgba(130,160,220,0.4)',
+                background: selected ? 'rgb(255,138,76)' : 'transparent',
+              }}
+            />
+            {cardBody}
+          </GlassCard>
         </button>
       );
     }
 
     return (
-      <Link
-        key={entry.id}
-        to={`/entries/${entry.id}`}
-        className="flex h-44 flex-col overflow-hidden rounded-lg bg-slate-900 text-slate-100 transition-shadow hover:shadow-md"
-      >
-        {cardBody}
+      <Link key={entry.id} to={`/entries/${entry.id}`}>
+        <GlassCard className="h-44 overflow-hidden">{cardBody}</GlassCard>
       </Link>
     );
   }
 
   return (
-    <div
-      className="mx-auto max-w-2xl px-4 py-6"
+    <CosmicPage
+      variant="archive"
+      width="wide"
       // 아래 여백은 네비게이션 + (떠 있다면) 일괄 추가 바를 모두 비켜야 한다.
       // 바 높이는 "새 컬렉션 만들기"를 고르면 입력칸이 하나 더 생겨 달라지므로,
       // 고정값 대신 실제 높이를 재서 더한다.
-      style={{
-        paddingBottom: `calc(var(--bottom-nav-total) + 1.5rem + ${bulkBarHeight}px)`,
-      }}
+      bottomExtra={bulkBarHeight}
     >
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-50">
+      <div className="flex items-start justify-between gap-3">
+        <Logo />
+        <p className="hidden shrink-0 pt-1 text-right text-[11px] leading-relaxed text-ink-muted min-[380px]:block">
+          <span className="block">모든 경험은</span>
+          <span className="block">조금 더 나은 나를 만드는</span>
+          <span className="block">별이 됩니다.</span>
+        </p>
+      </div>
+
+      <div className="mt-8 flex items-center justify-between gap-3">
+        <h1
+          className="min-w-0 truncate bg-clip-text text-[27px] font-bold tracking-tight text-transparent"
+          style={{ backgroundImage: 'linear-gradient(100deg, #ffd0bb 0%, #ffb3cd 45%, #d6b4ff 100%)' }}
+        >
           {withNickname(nickname, (n) => `${n}의 경험 기록`, '내 경험 기록')}
-        </h2>
+        </h1>
         {/* 텍스트 버튼 대신 편집 아이콘 토글 — 선택 모드에서는 체크 아이콘으로 바뀌어
             "누르면 편집을 마친다"는 걸 알려준다(사진 앱 등의 편집/완료 관례). */}
-        <button
+        <CosmicIconButton
           type="button"
           onClick={toggleSelectMode}
           aria-pressed={selectMode}
           aria-label={selectMode ? '편집 완료' : '기록 편집'}
           title={selectMode ? '편집 완료' : '기록 편집'}
-          className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
-            selectMode
-              ? 'border-slate-500 bg-slate-700 text-white'
-              : 'border-slate-700 text-slate-300 hover:bg-slate-800'
-          }`}
+          className={selectMode ? 'border-hairline-active text-ink' : ''}
         >
           {selectMode ? <CheckIcon className="h-4 w-4" /> : <EditIcon className="h-4 w-4" />}
-        </button>
+        </CosmicIconButton>
       </div>
 
-      <input
-        type="text"
-        placeholder="키워드로 검색 (예: 갈등)"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="mt-4 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
-      />
+      <div
+        className="mt-5 flex items-center gap-3 rounded-2xl border border-hairline px-4 backdrop-blur-md transition-colors focus-within:border-hairline-active"
+        style={{ background: 'rgba(10, 20, 40, 0.55)' }}
+      >
+        <SearchIcon className="h-5 w-5 shrink-0 text-ink-muted" />
+        <input
+          type="text"
+          aria-label="키워드로 검색"
+          placeholder="키워드로 검색 (예: 갈등)"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="min-h-[3rem] flex-1 bg-transparent text-[15px] text-ink placeholder:text-ink-muted focus:outline-none"
+        />
+      </div>
 
       {/* 태그 6개가 화면 폭에 따라 줄바꿈되면 두세 줄로 들쭉날쭉해져 지저분했다. 한 줄로
           고정하고 넘치면 가로 스크롤되게 한다 — 스크롤바는 숨기되(다른 가로 스크롤 영역과
@@ -303,40 +310,31 @@ export function EntriesPage() {
       <div
         role="group"
         aria-label="태그로 필터"
-        className="mt-3 flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mt-3.5 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {ALL_TAGS.map((tag) => (
-          <button
+          <TagChip
             key={tag}
-            type="button"
-            aria-pressed={activeTag === tag}
+            tag={tag}
+            active={activeTag === tag}
             onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-              activeTag === tag ? TAG_COLORS_ACTIVE[tag] : TAG_COLORS[tag]
-            }`}
-          >
-            #{tag}
-          </button>
+          />
         ))}
       </div>
 
-      {loading && <p className="mt-4 text-sm text-slate-400">불러오는 중...</p>}
+      {loading && <p className="mt-5 text-sm text-ink-dim">불러오는 중...</p>}
 
       {!loading && loadError && (
-        <div className="mt-4 rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm">
-          <p className="text-slate-200">기록을 불러오지 못했습니다.</p>
-          <button
-            type="button"
-            onClick={loadEntries}
-            className="mt-2 rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
-          >
+        <GlassCard tone="strong" className="mt-5 p-4">
+          <p className="text-sm text-ink">기록을 불러오지 못했습니다.</p>
+          <OutlineButton type="button" onClick={loadEntries} className="mt-3">
             다시 불러오기
-          </button>
-        </div>
+          </OutlineButton>
+        </GlassCard>
       )}
 
       {!loading && !loadError && filtered.length === 0 && (
-        <p className="mt-4 text-sm text-slate-400">기록이 없습니다.</p>
+        <p className="mt-5 text-sm text-ink-dim">기록이 없습니다.</p>
       )}
 
       {!loading &&
@@ -348,26 +346,23 @@ export function EntriesPage() {
           // 어디부터 어디까지가 한 컬렉션인지 잘 안 보였다(요청 사항).
           <div className="mt-4 flex flex-col gap-4">
             {collectionGroups.map((group) => (
-              <section
-                key={group.key}
-                className="rounded-xl border border-slate-800 bg-slate-900/40 p-3"
-              >
+              <GlassCard key={group.key} className="p-3.5">
                 <div className="flex items-center gap-2">
                   <h3
                     className={`text-sm font-semibold ${
-                      group.key === UNASSIGNED_KEY ? 'text-slate-400' : 'text-slate-100'
+                      group.key === UNASSIGNED_KEY ? 'text-ink-dim' : 'text-ink'
                     }`}
                   >
                     {group.label}
                   </h3>
-                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-400">
+                  <span className="rounded-full border border-hairline px-2 py-0.5 text-[11px] font-medium text-ink-muted">
                     {group.entries.length}개
                   </span>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                   {group.entries.map((entry) => renderCard(entry))}
                 </div>
-              </section>
+              </GlassCard>
             ))}
           </div>
         ) : (
@@ -379,15 +374,14 @@ export function EntriesPage() {
                 하나로 뭉쳐 있으면) 굳이 목록을 볼 필요가 없어 숨긴다. */}
             {collectionGroups.length > 1 && (
               <div className="mb-2 flex justify-end">
-                <button
+                <CosmicIconButton
                   type="button"
                   onClick={() => setCollectionSheetOpen(true)}
                   aria-label={`컬렉션 모음 (${collectionGroups.length}개)`}
                   title="컬렉션 모음"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 text-slate-300 transition-colors hover:bg-slate-800"
                 >
                   <LayersIcon className="h-4 w-4" />
-                </button>
+                </CosmicIconButton>
               </div>
             )}
             <CollectionSwipeView ref={swipeViewRef} groups={collectionGroups} />
@@ -397,7 +391,7 @@ export function EntriesPage() {
       {collectionSheetOpen && (
         // 화면 크기와 무관하게 항상 가운데 팝업으로 뜨게 한다 (예전엔 모바일 폭에서 바텀시트).
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 p-6"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(2,4,13,0.78)] p-6 backdrop-blur-sm"
           onClick={() => setCollectionSheetOpen(false)}
         >
           <div
@@ -405,15 +399,15 @@ export function EntriesPage() {
             aria-modal="true"
             aria-label="컬렉션 모음"
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900 p-4"
+            className="max-h-[70vh] w-full max-w-sm overflow-y-auto rounded-3xl border border-hairline bg-[rgba(8,15,33,0.92)] p-4 backdrop-blur-xl"
           >
             <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-50">컬렉션 모음</p>
+              <p className="text-sm font-semibold text-ink">컬렉션 모음</p>
               <button
                 type="button"
                 onClick={() => setCollectionSheetOpen(false)}
                 aria-label="닫기"
-                className="rounded-md px-2 py-1 text-xs text-slate-400 hover:bg-slate-800"
+                className="rounded-full px-3 py-1.5 text-xs text-ink-dim transition-colors hover:text-ink"
               >
                 닫기
               </button>
@@ -432,18 +426,18 @@ export function EntriesPage() {
                     swipeViewRef.current?.scrollToKey(group.key);
                     setCollectionSheetOpen(false);
                   }}
-                  className={`group relative flex items-center justify-between overflow-hidden rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-700 focus-visible:bg-slate-700 focus-visible:outline-none ${
-                    group.key === UNASSIGNED_KEY ? 'text-slate-400' : 'text-slate-100'
+                  className={`group relative flex items-center justify-between overflow-hidden rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-[rgba(130,160,220,0.14)] focus-visible:bg-[rgba(130,160,220,0.14)] focus-visible:outline-none ${
+                    group.key === UNASSIGNED_KEY ? 'text-ink-dim' : 'text-ink'
                   }`}
                 >
                   <span
                     aria-hidden="true"
-                    className="absolute inset-y-1.5 left-0 w-1 origin-left scale-x-0 rounded-full bg-sky-400 transition-transform group-hover:scale-x-100 group-focus-visible:scale-x-100"
+                    className="absolute inset-y-1.5 left-0 w-1 origin-left scale-x-0 rounded-full bg-cosmic-violet transition-transform group-hover:scale-x-100 group-focus-visible:scale-x-100"
                   />
                   <span className="flex min-w-0 items-center pl-2">
                     <span className="truncate">{group.label}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-slate-500">{group.entries.length}개</span>
+                  <span className="shrink-0 text-xs text-ink-muted">{group.entries.length}개</span>
                 </button>
               ))}
             </div>
@@ -454,14 +448,15 @@ export function EntriesPage() {
       {showBulkBar && (
         <div
           ref={bulkBarRef}
-          className="fixed inset-x-0 bottom-[var(--bottom-nav-total)] z-30 flex flex-col gap-2 border-t border-slate-800 bg-slate-900 p-3"
+          className="fixed inset-x-0 bottom-[var(--bottom-nav-total)] z-30 flex flex-col gap-2 border-t border-hairline bg-[rgba(6,12,28,0.92)] p-3 backdrop-blur-xl"
         >
-          <p className="text-xs text-slate-400">{selectedIds.size}개 선택됨</p>
+          <p className="text-xs text-ink-dim">{selectedIds.size}개 선택됨</p>
           <div className="flex gap-2">
             <select
               value={bulkCollectionChoice}
+              aria-label="컬렉션 선택"
               onChange={(e) => setBulkCollectionChoice(e.target.value)}
-              className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-50"
+              className="min-h-[2.75rem] flex-1 rounded-xl border border-hairline bg-[rgba(10,20,40,0.6)] px-3 text-sm text-ink focus:border-hairline-active focus:outline-none"
             >
               <option value="">컬렉션 선택</option>
               {collections.map((c) => (
@@ -471,14 +466,14 @@ export function EntriesPage() {
               ))}
               <option value={NEW_COLLECTION_VALUE}>+ 새 컬렉션 만들기</option>
             </select>
-            <button
+            <GradientButton
               type="button"
               onClick={handleBulkAddToCollection}
               disabled={bulkSaving || !bulkCollectionChoice}
-              className="rounded-md bg-gradient-to-r from-orange-400 to-pink-500 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+              className="min-h-[2.75rem] w-auto shrink-0 px-6"
             >
               추가
-            </button>
+            </GradientButton>
           </div>
           {bulkCollectionChoice === NEW_COLLECTION_VALUE && (
             <input
@@ -486,12 +481,12 @@ export function EntriesPage() {
               placeholder="새 컬렉션 이름"
               value={newBulkCollectionName}
               onChange={(e) => setNewBulkCollectionName(e.target.value)}
-              className="w-full rounded-md border border-slate-700 bg-slate-800 px-2 py-1.5 text-sm text-slate-50"
+              className="min-h-[2.75rem] w-full rounded-xl border border-hairline bg-[rgba(10,20,40,0.6)] px-3 text-sm text-ink placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
             />
           )}
-          {bulkError && <p className="text-xs text-red-400">{bulkError}</p>}
+          {bulkError && <p className="text-xs text-echo-coral">{bulkError}</p>}
         </div>
       )}
-    </div>
+    </CosmicPage>
   );
 }

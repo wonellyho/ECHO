@@ -1,5 +1,5 @@
 // 마이크 주파수 스펙트럼을 "화면에 쓸 수 있는 몇 개의 값"으로 줄이는 순수 함수들.
-// AnalyserNode를 직접 다루는 부분(useMicAnalyser)과 그리는 부분(AmbientVoiceField)에서
+// AnalyserNode를 직접 다루는 부분(useMicAnalyser)과 그리는 부분(VoiceWaveform)에서
 // 분리해둬서 단위 테스트가 가능하다.
 
 export interface BandEnergies {

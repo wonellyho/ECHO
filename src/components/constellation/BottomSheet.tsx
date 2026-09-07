@@ -24,7 +24,7 @@ export function BottomSheet({ scroll = true, children }: BottomSheetProps) {
 
   return (
     <div
-      className="absolute inset-x-0 bottom-0 z-20 border-t border-slate-800 bg-slate-900/95 backdrop-blur"
+      className="absolute inset-x-0 bottom-0 z-20 border-t border-hairline bg-[rgba(8,15,33,0.92)] backdrop-blur-xl"
       style={{
         height: SHEET_HEIGHT,
         borderTopLeftRadius: '1rem',
@@ -42,7 +42,7 @@ export function BottomSheet({ scroll = true, children }: BottomSheetProps) {
 
       {/* 시트임을 알려주는 손잡이 */}
       <div aria-hidden className="flex justify-center pt-2">
-        <span className="h-1 w-9 rounded-full bg-slate-700" />
+        <span className="h-1 w-9 rounded-full bg-[rgba(130,160,220,0.4)]" />
       </div>
 
       {/*

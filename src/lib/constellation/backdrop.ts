@@ -65,16 +65,6 @@ export interface DeviceProfile {
  * 기기 사양에 따라 배경 별 개수를 줄인다. 배경 별은 순수 장식이라 저사양 기기에서 가장 먼저
  * 깎아야 하는 대상이다(경험 별은 데이터라서 개수를 임의로 줄일 수 없다).
  */
-/**
- * 배경 장식(은하수 겹, 먼지 띠, 천체)을 얼마나 그릴지. 개수(backdropScale)와 따로 두는 이유는
- * 이쪽 비용이 별 개수가 아니라 **큰 면적에 걸린 blur 레이어 수**에서 나오기 때문이다.
- * 모션 최소화는 여기에 영향을 주지 않는다 — 정지한 배경은 디테일이 많아도 부담이 아니다.
- */
-export function backgroundDetail(profile: DeviceProfile): 'full' | 'lite' {
-  const lowCore = profile.cores !== undefined && profile.cores <= 4;
-  return lowCore || profile.minViewport < 480 ? 'lite' : 'full';
-}
-
 export function backdropScale(profile: DeviceProfile): number {
   if (profile.reduceMotion) return 0.5;
   const lowCore = profile.cores !== undefined && profile.cores <= 4;

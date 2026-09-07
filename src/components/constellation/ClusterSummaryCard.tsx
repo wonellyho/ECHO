@@ -44,7 +44,7 @@ export function ClusterSummaryCard({
           className="h-2 w-2 rounded-full"
           style={{ backgroundColor: CLUSTER_COLORS[cluster] }}
         />
-        <h3 className="text-sm font-semibold text-slate-100">{CLUSTER_LABELS[cluster]}</h3>
+        <h3 className="text-sm font-semibold text-ink">{CLUSTER_LABELS[cluster]}</h3>
       </div>
       <div className="flex items-center gap-1">
         {/* 카드 한 줄을 통째로 차지하던 큰 버튼 대신 머리말의 작은 아이콘으로 옮겼다 —
@@ -56,7 +56,7 @@ export function ClusterSummaryCard({
             disabled={regenerating}
             aria-label="다시 분석하기"
             title="다시 분석하기"
-            className="rounded-md px-2 py-1 text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50"
+            className="rounded-full px-2.5 py-1.5 text-xs text-ink-dim transition-colors hover:text-ink disabled:opacity-50"
           >
             {regenerating ? '분석 중...' : '↻'}
           </button>
@@ -66,7 +66,7 @@ export function ClusterSummaryCard({
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="rounded-md px-2 py-1 text-slate-400 hover:text-slate-200"
+            className="rounded-full px-2.5 py-1.5 text-ink-dim transition-colors hover:text-ink"
           >
             ✕
           </button>
@@ -77,15 +77,15 @@ export function ClusterSummaryCard({
 
   const list =
     insights.length === 0 ? (
-      <p className="text-sm text-slate-400">아직 이 패턴으로 정리된 게 없어요.</p>
+      <p className="text-sm text-ink-dim">아직 이 패턴으로 정리된 게 없어요.</p>
     ) : (
       <ul className="space-y-2">
         {insights.map((insight) => {
           const active = insight.id === activeInsightId;
           const expanded = insight.id === expandedInsightId;
-          const summary = <p className="text-sm text-slate-100">{insight.summary}</p>;
+          const summary = <p className="text-[15px] leading-relaxed text-ink">{insight.summary}</p>;
           return (
-            <li key={insight.id} className="overflow-hidden rounded-lg bg-slate-800/60">
+            <li key={insight.id} className="overflow-hidden rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)]">
               {/* 요약 줄을 누르면 근거 별만 밝게 남는다 (별자리가 있을 때만). */}
               {onSelectInsight ? (
                 <button
@@ -93,11 +93,11 @@ export function ClusterSummaryCard({
                   aria-pressed={active}
                   onClick={() => onSelectInsight(active ? null : insight.id)}
                   className={`w-full p-3 text-left transition-colors ${
-                    active ? 'bg-slate-700' : 'hover:bg-slate-800'
+                    active ? 'bg-[rgba(167,110,255,0.16)]' : 'hover:bg-[rgba(130,160,220,0.1)]'
                   }`}
                 >
                   {summary}
-                  {active && <p className="mt-1 text-xs text-slate-400">근거 별만 밝게 표시 중</p>}
+                  {active && <p className="mt-1 text-xs text-cosmic-violet">근거 별만 밝게 표시 중</p>}
                 </button>
               ) : (
                 <div className="w-full p-3 text-left">{summary}</div>
@@ -108,7 +108,7 @@ export function ClusterSummaryCard({
                 type="button"
                 aria-expanded={expanded}
                 onClick={() => onToggleEvidence(insight.id)}
-                className="flex w-full items-center justify-between gap-2 px-3 pb-2 text-left text-xs text-slate-400 hover:text-slate-200"
+                className="flex w-full items-center justify-between gap-2 px-3 pb-2.5 text-left text-xs text-ink-dim transition-colors hover:text-ink"
               >
                 <span>근거 기록 {insight.evidence_entry_ids.length}건</span>
                 <span aria-hidden>{expanded ? '접기 ▴' : '펼치기 ▾'}</span>
@@ -130,7 +130,7 @@ export function ClusterSummaryCard({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {list}
           {!onRegenerate && (
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-3 text-xs text-ink-muted">
               기록이 3개 이상 정리되면 다시 분석할 수 있어요.
             </p>
           )}
@@ -140,7 +140,7 @@ export function ClusterSummaryCard({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/95 p-4 backdrop-blur">
+    <div className="rounded-2xl border border-hairline bg-[rgba(10,20,40,0.7)] p-4 backdrop-blur-md">
       {header}
       <div className="mt-3">{list}</div>
       {onRegenerate ? (
@@ -148,12 +148,12 @@ export function ClusterSummaryCard({
           type="button"
           onClick={onRegenerate}
           disabled={regenerating}
-          className="mt-4 rounded-md bg-slate-700 px-3 py-2 text-xs font-medium text-white hover:bg-slate-600 disabled:opacity-50"
+          className="mt-4 rounded-full border border-hairline px-4 py-2 text-xs font-medium text-ink transition-colors hover:border-hairline-active disabled:opacity-50"
         >
           {regenerating ? '분석 중...' : '다시 분석하기'}
         </button>
       ) : (
-        <p className="mt-4 text-xs text-slate-500">기록이 3개 이상 정리되면 다시 분석할 수 있어요.</p>
+        <p className="mt-4 text-xs text-ink-muted">기록이 3개 이상 정리되면 다시 분석할 수 있어요.</p>
       )}
     </div>
   );

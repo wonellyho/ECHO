@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateStars, starfieldBudget } from './starfield';
+import { backgroundDetail, generateStars, starfieldBudget } from './starfield';
 
 describe('generateStars', () => {
   it('요청한 개수만큼 만든다', () => {
@@ -78,5 +78,20 @@ describe('starfieldBudget', () => {
 
   it('코어 정보를 모르면 저사양으로 단정하지 않는다', () => {
     expect(starfieldBudget({ base: 200, viewportWidth: 1200, reduceMotion: false }).count).toBe(200);
+  });
+});
+
+describe('backgroundDetail', () => {
+  it('여유 있는 기기에서는 배경 장식을 다 그린다', () => {
+    expect(backgroundDetail({ cores: 8, minViewport: 900 })).toBe('full');
+  });
+
+  it('모바일 폭이거나 코어가 적으면 장식 겹 수를 줄인다', () => {
+    expect(backgroundDetail({ cores: 8, minViewport: 390 })).toBe('lite');
+    expect(backgroundDetail({ cores: 4, minViewport: 900 })).toBe('lite');
+  });
+
+  it('코어 정보를 모르면 저사양으로 단정하지 않는다', () => {
+    expect(backgroundDetail({ minViewport: 900 })).toBe('full');
   });
 });

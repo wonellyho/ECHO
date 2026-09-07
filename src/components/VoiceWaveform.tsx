@@ -9,7 +9,7 @@ import { bandEnergies, envelopeCoefficient, followEnvelope, type BandEnergies } 
 //
 // 형태 계산은 standingWave.ts가 맡고(흐르지 않는 정상파), 여기서는 마이크 스펙트럼으로 진폭만
 // 밀어준다. 세 겹(LAYERS)은 전체 음량 하나가 아니라 voiceEnergy.ts의 저/중/고 대역별 에너지로
-// 각각 따로 움직인다(AmbientVoiceField와 같은 대역 정의) — 그래서 목소리 톤에 따라 세 겹이
+// 각각 따로 움직인다(voiceEnergy.ts의 대역 정의) — 그래서 목소리 톤에 따라 세 겹이
 // 서로 다르게 반응한다. React 상태를 거치지 않고 rAF 루프에서 path의 d 속성만 직접 쓴다.
 
 // 기준선의 세로 위치 (viewBox 0~100). 봉우리가 위로 솟을 공간을 넉넉히 남긴다.
@@ -27,13 +27,16 @@ const ATTACK = 0.22;
 const RELEASE = 0.06;
 
 // 이전엔 세 겹 모두 같은 전체 음량(RMS) 하나로 움직여, 위상만 다를 뿐 사실상 한 덩어리처럼
-// 보였다. 이제 AmbientVoiceField(배경 시각화)와 같은 방식으로 각 겹을 저/중/고 대역에 따로
+// 보였다. 이제 각 겹을 저/중/고 대역에 따로
 // 물려, 대역별로 실제로 다르게 반응한다 — 예를 들어 낮은 목소리는 안쪽 겹만, 치찰음 섞인
 // 말은 바깥 겹까지 크게 움직인다.
+// 색은 안쪽(작고 밝은 코어) → 바깥(넓고 옅은 코럴·바이올렛) 순으로 겹친다. 이 겹침 자체가
+// glow 역할을 한다 — blur 필터를 쓰면 파형이 매 프레임 바뀌므로 필터가 매 프레임 다시
+// 계산되어 모바일에서 바로 체감된다. 반투명 레이어를 포개는 쪽이 사실상 공짜다.
 const LAYERS: { band: keyof BandEnergies; amplitude: number; phase: number; fill: string }[] = [
-  { band: 'low', amplitude: 1, phase: 0, fill: 'rgba(255, 255, 255, 0.5)' },
-  { band: 'mid', amplitude: 0.72, phase: 1.9, fill: 'rgba(255, 255, 255, 0.34)' },
-  { band: 'high', amplitude: 0.46, phase: 3.7, fill: 'rgba(255, 252, 240, 0.24)' },
+  { band: 'low', amplitude: 1, phase: 0, fill: 'rgba(255, 226, 214, 0.5)' },
+  { band: 'mid', amplitude: 0.72, phase: 1.9, fill: 'rgba(255, 122, 158, 0.34)' },
+  { band: 'high', amplitude: 0.46, phase: 3.7, fill: 'rgba(186, 140, 255, 0.28)' },
 ];
 
 // 봉우리 높이 배열을 선 기준의 닫힌 path로 바꾼다.
@@ -145,7 +148,7 @@ export function VoiceWaveform({
         y1={LINE_Y}
         x2="100"
         y2={LINE_Y}
-        stroke="rgba(255, 255, 255, 0.75)"
+        stroke="rgba(255, 232, 224, 0.8)"
         strokeWidth={1}
         vectorEffect="non-scaling-stroke"
       />

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { backgroundDetail } from '../../lib/cosmic/starfield';
 import { Starfield } from './Starfield';
 import { MilkyWay } from './MilkyWay';
 import { Nebula, type NebulaBlob } from './Nebula';
@@ -187,13 +188,17 @@ export function SpaceScene({ variant, dim = 0 }: SpaceSceneProps) {
   const config = VARIANTS[variant];
 
   // matchMedia와 hardwareConcurrency는 렌더마다 읽을 이유가 없다.
-  const { reducedMotion, lite } = useMemo(() => {
-    const cores = navigator.hardwareConcurrency;
-    return {
+  const { reducedMotion, lite } = useMemo(
+    () => ({
       reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-      lite: (cores !== undefined && cores <= 4) || window.innerWidth < 480,
-    };
-  }, []);
+      lite:
+        backgroundDetail({
+          cores: navigator.hardwareConcurrency,
+          minViewport: Math.min(window.innerWidth, window.innerHeight),
+        }) === 'lite',
+    }),
+    [],
+  );
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

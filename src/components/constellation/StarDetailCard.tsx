@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { TAG_COLORS } from '../../lib/tagColors';
+import { TagChip } from '../ui/TagChip';
 import { CLUSTER_COLORS } from '../../lib/constellation/layout';
 import type { StarNode } from '../../lib/constellation/buildGraph';
 
@@ -38,13 +38,13 @@ export function StarDetailCard({ node, detail, onClose }: StarDetailCardProps) {
             className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: CLUSTER_COLORS[node.cluster] }}
           />
-          <h3 className="text-sm font-semibold text-slate-100">{node.label}</h3>
+          <h3 className="text-[15px] font-semibold text-ink">{node.label}</h3>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="닫기"
-          className="shrink-0 rounded-md px-2 py-1 text-slate-400 hover:text-slate-200"
+          className="shrink-0 rounded-full px-2.5 py-1.5 text-ink-dim transition-colors hover:text-ink"
         >
           ✕
         </button>
@@ -53,34 +53,33 @@ export function StarDetailCard({ node, detail, onClose }: StarDetailCardProps) {
       {node.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {node.tags.map((tag) => (
-            <span key={tag} className={`rounded-full px-2 py-0.5 text-xs ${TAG_COLORS[tag]}`}>
-              {tag}
-            </span>
+            <TagChip key={tag} tag={tag} />
           ))}
         </div>
       )}
 
       {detail === null ? (
-        <p className="mt-3 text-sm text-slate-400">불러오는 중...</p>
+        <p className="mt-3 text-sm text-ink-dim">불러오는 중...</p>
       ) : ready ? (
         <dl className="mt-3 space-y-2">
           {FIELDS.filter((field) => detail[field.key]).map((field) => (
             <div key={field.key}>
-              <dt className="text-xs text-slate-500">{field.label}</dt>
-              <dd className="text-sm text-slate-200">{String(detail[field.key])}</dd>
+              <dt className="text-xs text-ink-muted">{field.label}</dt>
+              <dd className="mt-0.5 text-[15px] leading-relaxed text-ink">{String(detail[field.key])}</dd>
             </div>
           ))}
         </dl>
       ) : (
         <>
-          <p className="mt-3 text-sm text-slate-300">{detail.rawText.slice(0, 160)}</p>
-          <p className="mt-2 text-xs text-slate-500">아직 정리 중이에요.</p>
+          <p className="mt-3 text-[15px] leading-relaxed text-ink">{detail.rawText.slice(0, 160)}</p>
+          <p className="mt-2 text-xs text-ink-muted">아직 정리 중이에요.</p>
         </>
       )}
 
       <Link
         to={`/entries/${node.id}`}
-        className="mt-4 inline-block rounded-md bg-slate-700 px-3 py-2 text-xs font-medium text-white hover:bg-slate-600"
+        className="mt-4 inline-flex min-h-[2.75rem] items-center rounded-full px-5 text-xs font-semibold text-white"
+        style={{ background: 'var(--echo-gradient)' }}
       >
         자세히 보기
       </Link>

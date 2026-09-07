@@ -1,28 +1,75 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState, type ReactElement } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { ALL_TAGS, TAG_COLORS, TAG_COLORS_ACTIVE } from '../lib/tagColors';
+import { ALL_TAGS } from '../lib/tagColors';
+import { Logo } from '../components/Logo';
+import { CosmicPage } from '../components/cosmic/CosmicPage';
+import { GlassCard } from '../components/ui/GlassCard';
+import { CosmicIconButton, GradientButton, OutlineButton } from '../components/ui/CosmicButton';
+import { CosmicTextarea } from '../components/ui/CosmicInput';
+import { TagChip } from '../components/ui/TagChip';
+import {
+  AlertIcon,
+  BulbIcon,
+  ChartIcon,
+  ChevronLeftIcon,
+  DocumentIcon,
+  EditIcon,
+  GearIcon,
+  HeartIcon,
+  QuestionIcon,
+  UserIcon,
+} from '../components/icons';
 import type { EntryStructured, ExperienceTag, StarWlConversion } from '../types';
 
-const STRUCTURED_FIELDS: { key: keyof EntryStructured; label: string }[] = [
-  { key: 'situation', label: '상황' },
-  { key: 'role', label: '내 역할' },
-  { key: 'conflict', label: '문제·갈등' },
-  { key: 'action', label: '행동' },
-  { key: 'result', label: '결과' },
-  { key: 'emotion', label: '감정' },
-  { key: 'emotion_reason', label: '감정의 이유' },
-  { key: 'realization', label: '깨달음' },
+// 항목마다 왼쪽에 도는 원형 아이콘 오브를 둔다 (레퍼런스 05). 미니멀 라인 아이콘만 쓴다.
+const STRUCTURED_FIELDS: {
+  key: keyof EntryStructured;
+  label: string;
+  Icon: (props: { className?: string }) => ReactElement;
+}[] = [
+  { key: 'situation', label: '상황', Icon: DocumentIcon },
+  { key: 'role', label: '내 역할', Icon: UserIcon },
+  { key: 'conflict', label: '문제·갈등', Icon: AlertIcon },
+  { key: 'action', label: '행동', Icon: GearIcon },
+  { key: 'result', label: '결과', Icon: ChartIcon },
+  { key: 'emotion', label: '감정', Icon: HeartIcon },
+  { key: 'emotion_reason', label: '감정의 이유', Icon: QuestionIcon },
+  { key: 'realization', label: '깨달음', Icon: BulbIcon },
 ];
 
-const STARWL_FIELDS: { key: keyof StarWlConversion; label: string }[] = [
-  { key: 'situation', label: 'Situation' },
-  { key: 'task', label: 'Task' },
-  { key: 'action', label: 'Action' },
-  { key: 'result', label: 'Result' },
-  { key: 'why', label: 'Why' },
-  { key: 'learning', label: 'Learning' },
+// STARWL 카드는 형태가 모두 같고 accent만 다르다 (레퍼런스 06). 오른쪽의 작은 궤도 표식은
+// 순수 장식이라 텍스트보다 눈에 띄면 안 된다 — 그래서 불투명도를 낮게 유지한다.
+const STARWL_FIELDS: { key: keyof StarWlConversion; label: string; accent: string }[] = [
+  { key: 'situation', label: 'Situation', accent: '104, 167, 255' },
+  { key: 'task', label: 'Task', accent: '255, 160, 90' },
+  { key: 'action', label: 'Action', accent: '167, 110, 255' },
+  { key: 'result', label: 'Result', accent: '79, 214, 231' },
+  { key: 'why', label: 'Why', accent: '255, 122, 140' },
+  { key: 'learning', label: 'Learning', accent: '186, 130, 255' },
 ];
+
+/** STARWL 카드 오른쪽의 아주 작은 궤도 표식. 별 하나가 타원 궤도 위에 놓인 모양. */
+function OrbitMark({ accent }: { accent: string }) {
+  return (
+    <span aria-hidden className="relative hidden h-14 w-16 shrink-0 min-[380px]:block">
+      <span
+        className="absolute inset-0 rounded-[50%] border"
+        style={{ borderColor: `rgba(${accent}, 0.28)`, transform: 'rotate(-24deg)' }}
+      />
+      <span
+        className="absolute left-[62%] top-[30%] h-1.5 w-1.5 rounded-full"
+        style={{ background: `rgb(${accent})`, boxShadow: `0 0 10px 3px rgba(${accent}, 0.55)` }}
+      />
+    </span>
+  );
+}
+
+const TABS = [
+  { key: 'structure', label: '구조화' },
+  { key: 'starwl', label: 'STARWL' },
+  { key: 'pattern', label: '패턴' },
+] as const;
 
 interface RelatedInsight {
   id: string;
@@ -33,6 +80,7 @@ interface RelatedInsight {
 
 export function EntryDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [rawText, setRawText] = useState('');
   const [structured, setStructured] = useState<EntryStructured | null>(null);
   const [draft, setDraft] = useState<Partial<EntryStructured>>({});
@@ -165,182 +213,198 @@ export function EntryDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-      <h2 className="text-xl font-semibold text-slate-50">기록 상세</h2>
+    <CosmicPage variant="detail" width="wide">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <CosmicIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로">
+            <ChevronLeftIcon className="h-5 w-5" />
+          </CosmicIconButton>
+          <Logo />
+        </div>
+        <p className="hidden shrink-0 pt-1 text-right text-[10px] leading-relaxed tracking-[0.18em] text-ink-muted min-[420px]:block">
+          <span className="block">A SMALL</span>
+          <span className="block">EXPERIENCE</span>
+          <span className="block">A BRIGHTER YOU</span>
+        </p>
+      </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.2fr]">
-        {/* sticky 위치와 높이는 사라진 상단 nav 기준으로 잡혀 있었다. 이제 위쪽은 여백만 두고,
-            높이는 하단 네비게이션을 비켜야 패널 아래쪽이 nav에 깔리지 않는다. */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-4 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100dvh-var(--bottom-nav-total)-3rem)] lg:overflow-y-auto">
-          <p className="whitespace-pre-wrap text-sm text-slate-100">{rawText}</p>
-          <div className="mt-3">
-            <p className="text-xs font-medium text-slate-400">
-              태그 <span className="font-normal text-slate-500">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
-            </p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {ALL_TAGS.map((tag) => {
-                const active = tags.includes(tag);
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => toggleTag(tag)}
-                    disabled={tagSaving === tag}
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                      active ? TAG_COLORS_ACTIVE[tag] : TAG_COLORS[tag]
-                    }`}
+      <h1 className="mt-7 text-[27px] font-bold tracking-tight text-ink">기록 상세</h1>
+
+      {/* 원문 + 태그 — 이 화면에서 관측 대상이 되는 "하나의 별" */}
+      <GlassCard tone="strong" accent="167, 110, 255" active className="mt-5 p-4">
+        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{rawText}</p>
+        <p className="mt-4 text-xs text-ink-muted">
+          태그 <span className="text-ink-muted">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {ALL_TAGS.map((tag) => (
+            <TagChip
+              key={tag}
+              tag={tag}
+              active={tags.includes(tag)}
+              onClick={() => toggleTag(tag)}
+              disabled={tagSaving === tag}
+            />
+          ))}
+        </div>
+        {tagError && <p className="mt-2 text-xs text-echo-coral">{tagError}</p>}
+      </GlassCard>
+
+      {/* 탭 — 활성 탭 아래에만 얇은 그라디언트 밑줄 */}
+      <div className="mt-7 flex gap-1 border-b border-hairline">
+        {TABS.map((item) => {
+          const active = tab === item.key;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setTab(item.key)}
+              aria-current={active ? 'true' : undefined}
+              className={`relative px-4 py-3 text-[15px] font-semibold transition-colors ${
+                active ? 'text-ink' : 'text-ink-muted hover:text-ink-dim'
+              }`}
+            >
+              {item.label}
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-x-2 -bottom-px h-[2px] rounded-full"
+                  style={{ background: 'var(--echo-gradient)' }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'structure' && (
+        <div className="mt-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[15px] font-semibold text-ink">구조화 결과</h2>
+            {structured &&
+              (editing ? (
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={savingEdit}
+                  className="rounded-full border border-hairline-active px-4 py-2 text-xs font-semibold text-ink transition-colors disabled:opacity-50"
+                >
+                  {savingEdit ? '저장 중...' : '저장'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="flex items-center gap-1.5 rounded-full border border-hairline px-4 py-2 text-xs font-medium text-ink-dim transition-colors hover:border-hairline-active hover:text-ink"
+                >
+                  <EditIcon className="h-3.5 w-3.5" />
+                  수정
+                </button>
+              ))}
+          </div>
+
+          {structured ? (
+            <dl className="mt-3 space-y-2.5">
+              {STRUCTURED_FIELDS.map(({ key, label, Icon }) => (
+                <GlassCard key={key} className="flex items-start gap-3.5 p-3.5">
+                  <span
+                    aria-hidden
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-hairline text-cosmic-indigo"
+                    style={{ background: 'rgba(90, 110, 190, 0.12)' }}
                   >
-                    #{tag}
-                  </button>
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <dt className="text-xs text-ink-muted">{label}</dt>
+                    {editing ? (
+                      <CosmicTextarea
+                        value={draft[key] ?? ''}
+                        onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
+                        rows={2}
+                        aria-label={label}
+                        className="mt-1.5 !p-3 text-sm"
+                      />
+                    ) : (
+                      <dd className="mt-1 break-words text-[15px] leading-relaxed text-ink">
+                        {structured[key] ?? '-'}
+                      </dd>
+                    )}
+                  </div>
+                </GlassCard>
+              ))}
+            </dl>
+          ) : (
+            <p className="mt-3 text-sm text-ink-dim">구조화 결과를 불러오는 중입니다...</p>
+          )}
+
+          <GradientButton
+            type="button"
+            onClick={handleStarwlConvert}
+            disabled={starwlLoading || !structured}
+            className="mt-5"
+          >
+            {starwlLoading ? '추출 중...' : starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
+          </GradientButton>
+          {error && <p className="mt-2 text-sm text-echo-coral">{error}</p>}
+        </div>
+      )}
+
+      {tab === 'starwl' && (
+        <div className="mt-5">
+          {starwl ? (
+            <dl className="space-y-3">
+              {STARWL_FIELDS.map(({ key, label, accent }) => (
+                <GlassCard key={key} accent={accent} className="flex items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <dt className="text-[15px] font-semibold" style={{ color: `rgb(${accent})` }}>
+                      {label}
+                    </dt>
+                    <dd className="mt-1.5 break-words text-[14px] leading-relaxed text-ink">
+                      {starwl[key] ?? '-'}
+                    </dd>
+                  </div>
+                  <OrbitMark accent={accent} />
+                </GlassCard>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-sm text-ink-dim">아직 추출한 STARWL이 없습니다.</p>
+          )}
+        </div>
+      )}
+
+      {tab === 'pattern' && (
+        <div className="mt-5">
+          {relatedInsights.length === 0 ? (
+            <GlassCard className="p-4">
+              <p className="text-sm leading-relaxed text-ink-dim">
+                이 기록과 관련된 패턴이 아직 없어요.
+              </p>
+              <Link to="/insights">
+                <OutlineButton type="button" className="mt-3">
+                  전체 패턴 분석 보러가기
+                </OutlineButton>
+              </Link>
+            </GlassCard>
+          ) : (
+            <ul className="space-y-2.5">
+              {relatedInsights.map((item) => {
+                const accent = item.type === 'energizer' ? '255, 178, 90' : '124, 137, 168';
+                return (
+                  <li key={item.id}>
+                    <GlassCard accent={accent} className="p-4">
+                      <p className="text-xs font-medium" style={{ color: `rgb(${accent})` }}>
+                        {item.type === 'energizer' ? '에너지를 얻는 조건' : '소진되는 조건'}
+                      </p>
+                      <p className="mt-1.5 text-[15px] leading-relaxed text-ink">{item.summary}</p>
+                    </GlassCard>
+                  </li>
                 );
               })}
-            </div>
-            {tagError && <p className="mt-1.5 text-xs text-red-400">{tagError}</p>}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex gap-2 border-b border-slate-800">
-            <button
-              type="button"
-              onClick={() => setTab('structure')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                tab === 'structure'
-                  ? 'border-b-2 border-slate-50 text-slate-50'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              구조화
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('starwl')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                tab === 'starwl' ? 'border-b-2 border-slate-50 text-slate-50' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              STARWL
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('pattern')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                tab === 'pattern'
-                  ? 'border-b-2 border-slate-50 text-slate-50'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              패턴
-            </button>
-          </div>
-
-          {tab === 'structure' && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-slate-300">구조화 결과</h3>
-                {structured &&
-                  (editing ? (
-                    <button
-                      type="button"
-                      onClick={saveEdit}
-                      disabled={savingEdit}
-                      className="rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-600 disabled:opacity-50"
-                    >
-                      {savingEdit ? '저장 중...' : '저장'}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={startEdit}
-                      className="rounded-md border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800"
-                    >
-                      수정
-                    </button>
-                  ))}
-              </div>
-
-              {structured ? (
-                <dl className="mt-2 space-y-2">
-                  {STRUCTURED_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="rounded-lg border border-slate-800 bg-slate-900 p-3">
-                      <dt className="text-xs font-medium text-slate-400">{label}</dt>
-                      {editing ? (
-                        <textarea
-                          value={draft[key] ?? ''}
-                          onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
-                          rows={2}
-                          className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 p-2 text-sm text-slate-50"
-                        />
-                      ) : (
-                        <dd className="mt-1 text-sm text-slate-100">{structured[key] ?? '-'}</dd>
-                      )}
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                <p className="mt-2 text-sm text-slate-400">구조화 결과를 불러오는 중입니다...</p>
-              )}
-
-              <button
-                type="button"
-                onClick={handleStarwlConvert}
-                disabled={starwlLoading || !structured}
-                className="mt-4 rounded-md bg-slate-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
-              >
-                {starwlLoading ? '추출 중...' : starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
-              </button>
-              {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
-            </div>
-          )}
-
-          {tab === 'starwl' && (
-            <div className="mt-4">
-              {starwl ? (
-                <dl className="space-y-2">
-                  {STARWL_FIELDS.map(({ key, label }) => (
-                    <div key={key} className="rounded-lg border border-slate-800 bg-slate-900 p-3">
-                      <dt className="text-xs font-medium text-slate-400">{label}</dt>
-                      <dd className="mt-1 text-sm text-slate-100">{starwl[key] ?? '-'}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                <p className="text-sm text-slate-400">아직 추출한 STARWL이 없습니다.</p>
-              )}
-            </div>
-          )}
-
-          {tab === 'pattern' && (
-            <div className="mt-4">
-              {relatedInsights.length === 0 ? (
-                <p className="text-sm text-slate-400">
-                  이 기록과 관련된 패턴이 아직 없어요.{' '}
-                  <Link to="/insights" className="font-medium text-slate-50 underline">
-                    전체 패턴 분석 보러가기
-                  </Link>
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {relatedInsights.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`rounded-lg border-l-4 p-3 ${
-                        item.type === 'energizer' ? 'border-amber-400 bg-amber-500/10' : 'border-slate-400 bg-slate-500/10'
-                      }`}
-                    >
-                      <p className="text-xs font-medium text-slate-400">
-                        {item.type === 'energizer' ? '⚡ 에너지를 얻는 조건' : '🔋 소진되는 조건'}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-100">{item.summary}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            </ul>
           )}
         </div>
-      </div>
-    </div>
+      )}
+    </CosmicPage>
   );
 }

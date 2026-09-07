@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { backdropScale, backgroundDetail, generateBackdropStars } from './backdrop';
+import { backdropScale, generateBackdropStars } from './backdrop';
 
 describe('generateBackdropStars', () => {
   it('요청한 개수만큼 좌표와 색을 만든다', () => {
@@ -63,20 +63,5 @@ describe('backdropScale', () => {
 
   it('코어 정보를 모르면 저사양으로 단정하지 않는다', () => {
     expect(backdropScale({ minViewport: 900, reduceMotion: false })).toBe(1);
-  });
-});
-
-describe('backgroundDetail', () => {
-  it('여유 있는 기기에서는 배경 장식을 다 그린다', () => {
-    expect(backgroundDetail({ cores: 8, minViewport: 900, reduceMotion: false })).toBe('full');
-  });
-
-  it('모바일 폭이거나 코어가 적으면 장식을 줄인다', () => {
-    expect(backgroundDetail({ cores: 8, minViewport: 390, reduceMotion: false })).toBe('lite');
-    expect(backgroundDetail({ cores: 4, minViewport: 900, reduceMotion: false })).toBe('lite');
-  });
-
-  it('모션 최소화만으로는 장식을 줄이지 않는다 (정지한 배경은 부담이 아니다)', () => {
-    expect(backgroundDetail({ cores: 8, minViewport: 900, reduceMotion: true })).toBe('full');
   });
 });

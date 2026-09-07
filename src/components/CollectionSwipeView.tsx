@@ -103,10 +103,10 @@ export const CollectionSwipeView = forwardRef<CollectionSwipeViewHandle, { group
             마운트시키면 넘길 때마다 살짝 아래에서 페이드인 — 그냥 텍스트가 뚝 바뀌는 것보다
             지금 페이지가 바뀌었다는 걸 분명히 알 수 있다. */}
         <div className="flex flex-col items-center gap-0.5 px-1 pb-3 text-center">
-          <p key={activeGroup?.key} className="fade-in-up-enter text-base font-semibold text-slate-50">
+          <p key={activeGroup?.key} className="fade-in-up-enter text-[17px] font-bold text-ink">
             {activeGroup?.label}
           </p>
-          <p key={`${activeGroup?.key}-count`} className="fade-in-up-enter text-xs text-slate-400">
+          <p key={`${activeGroup?.key}-count`} className="fade-in-up-enter text-xs text-ink-dim">
             {activeGroup?.entries.length}개
           </p>
         </div>
@@ -156,8 +156,9 @@ export const CollectionSwipeView = forwardRef<CollectionSwipeViewHandle, { group
               aria-label={`${group.label}로 이동`}
               aria-current={i === activePage ? 'page' : undefined}
               className={`h-2 rounded-full transition-all ${
-                i === activePage ? 'w-5 bg-slate-50' : 'w-2 bg-slate-600 hover:bg-slate-400'
+                i === activePage ? 'w-6' : 'w-2 bg-[rgba(130,160,220,0.35)] hover:bg-ink-muted'
               }`}
+              style={i === activePage ? { background: 'var(--echo-gradient)' } : undefined}
             />
           ))}
         </div>

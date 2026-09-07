@@ -7,10 +7,19 @@ import {
   normalizeNickname,
 } from '../lib/profileValidation';
 import { readNickname } from '../lib/useNickname';
+import { Logo } from '../components/Logo';
+import { CosmicPage } from '../components/cosmic/CosmicPage';
+import { GlassCard } from '../components/ui/GlassCard';
+import { GradientButton, OutlineButton } from '../components/ui/CosmicButton';
+import { DocumentIcon, MailIcon } from '../components/icons';
 
 // 내 정보 화면. 닉네임은 별도 테이블 없이 Supabase Auth의 user_metadata에 저장한다 —
 // PRD §6에서 SNS/공유를 스코프 밖으로 두었으므로 다른 사용자가 이 값을 읽을 일이 없고,
 // 그렇다면 profiles 테이블 + RLS를 만들 이유도 없다 (스펙 문서 참고).
+//
+// 화면 분위기는 다른 탭보다 차분하다 (레퍼런스 08) — 은하수가 없고, 오른쪽 위 큰 행성의
+// 가장자리와 아래쪽 작은 위성만 남긴 조용한 궤도 공간이다. 여기서는 배경이 아니라
+// 폼 카드가 주인공이다.
 export function ProfilePage() {
   const { user } = useAuth();
 
@@ -64,23 +73,50 @@ export function ProfilePage() {
   const changed = normalizeNickname(nickname) !== savedNickname;
 
   return (
-    <div className="mx-auto max-w-md px-4 py-6 pb-[calc(var(--bottom-nav-total)+1.5rem)]">
-      <h2 className="text-xl font-semibold text-slate-50">내 정보</h2>
+    <CosmicPage variant="profile">
+      <Logo />
 
-      <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900 p-4">
-        <p className="text-xs text-slate-400">로그인 계정</p>
-        <p className="mt-1 break-all text-sm text-slate-100">{user?.email ?? '-'}</p>
+      <h1 className="mt-9 text-[30px] font-bold tracking-tight text-ink">내 정보</h1>
+      <p className="mt-2.5 text-[13px] text-ink-dim">나의 경험이 더 나은 나를 만듭니다.</p>
 
-        <div className="mt-4 border-t border-slate-800 pt-4">
-          <p className="text-xs text-slate-400">지금까지 남긴 기록</p>
-          <p className="mt-1 text-sm text-slate-100">
-            {entryCount === null ? '—' : `${entryCount}개`}
-          </p>
+      {/* 계정 요약 — 항목마다 아이콘 오브 + 라벨 + 값 */}
+      <GlassCard className="mt-6 px-4 py-2">
+        <div className="flex items-center gap-4 py-3">
+          <span
+            aria-hidden
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-hairline text-cosmic-blue"
+            style={{ background: 'rgba(90, 120, 200, 0.12)' }}
+          >
+            <MailIcon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs text-ink-muted">로그인 계정</p>
+            <p className="mt-0.5 break-all text-[15px] font-medium text-ink">{user?.email ?? '-'}</p>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
-        <label htmlFor="nickname" className="text-xs text-slate-400">
+        <div className="h-px bg-hairline" />
+
+        <div className="flex items-center gap-4 py-3">
+          <span
+            aria-hidden
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-hairline text-cosmic-indigo"
+            style={{ background: 'rgba(120, 110, 210, 0.12)' }}
+          >
+            <DocumentIcon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs text-ink-muted">지금까지 남긴 기록</p>
+            <p className="mt-0.5 text-[15px] font-medium text-ink">
+              {entryCount === null ? '—' : `${entryCount}개`}
+            </p>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* 닉네임 패널 — 이 화면의 주인공 */}
+      <GlassCard active accent="167, 110, 255" className="mt-4 p-4">
+        <label htmlFor="nickname" className="text-sm font-semibold text-ink">
           닉네임
         </label>
         <input
@@ -93,33 +129,34 @@ export function ProfilePage() {
             setSaved(false);
           }}
           placeholder="어떻게 불러드릴까요?"
-          className="mt-1.5 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none"
+          className="mt-2.5 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.55)] px-4 text-[15px] text-ink backdrop-blur-md placeholder:text-ink-muted focus:border-hairline-active focus:outline-none"
         />
-        <p className="mt-1.5 text-xs text-slate-500">최대 {NICKNAME_MAX_LENGTH}자</p>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="text-xs text-ink-muted">다른 사용자에게 표시될 이름이에요.</p>
+          <p className="shrink-0 text-xs tabular-nums text-ink-muted">
+            {normalizeNickname(nickname).length}/{NICKNAME_MAX_LENGTH}
+          </p>
+        </div>
 
         {/* 저장 결과는 화면에만 바뀌므로, 보조기술에도 알려야 눌린 결과를 알 수 있다. */}
         <div aria-live="polite">
-          {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
-          {saved && !changed && <p className="mt-2 text-xs text-green-400">저장했습니다.</p>}
+          {error && <p className="mt-2 text-xs text-echo-coral">{error}</p>}
+          {saved && !changed && <p className="mt-2 text-xs text-cosmic-cyan">저장했습니다.</p>}
         </div>
 
-        <button
+        <GradientButton
           type="button"
           onClick={handleSave}
           disabled={saving || !canSubmitNickname(nickname) || !changed}
-          className="mt-3 w-full rounded-md bg-slate-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-600 disabled:opacity-50"
+          className="mt-4"
         >
           {saving ? '저장 중...' : '닉네임 저장'}
-        </button>
-      </div>
+        </GradientButton>
+      </GlassCard>
 
-      <button
-        type="button"
-        onClick={() => supabase.auth.signOut()}
-        className="mt-4 w-full rounded-md border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800"
-      >
+      <OutlineButton type="button" onClick={() => supabase.auth.signOut()} className="mt-4">
         로그아웃
-      </button>
-    </div>
+      </OutlineButton>
+    </CosmicPage>
   );
 }
