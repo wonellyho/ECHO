@@ -416,6 +416,9 @@ export function InsightsPage() {
         selectedId={selectedId}
         highlightedIds={highlightedIds}
         cameraFocus={cameraFocus}
+        // 배경 사진에 이미 별이 가득하다 — 3D 씬의 배경 별까지 원래대로 뿌리면 두 겹이 겹쳐
+        // 지저분해진다. 시차를 만들 정도만 남긴다.
+        density={0.35}
         onSelect={(id) => {
           setSelectedId(id);
           // 별 하나를 골랐다면 인사이트 강조/군집 카드는 정리한다 — 안 그러면 별 카드 뒤에서
