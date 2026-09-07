@@ -29,7 +29,8 @@ export function StarDetailCard({ node, detail, onClose }: StarDetailCardProps) {
   const ready = detail?.status === 'done';
 
   return (
-    <div className="absolute inset-x-3 bottom-3 z-20 max-h-[55dvh] overflow-y-auto rounded-2xl border border-slate-800 bg-slate-900/95 p-4 backdrop-blur">
+    // 위치·배경·스크롤은 BottomSheet가 갖는다 — 이 컴포넌트는 내용만 그린다.
+    <div className="px-4 pb-6 pt-2">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           <span

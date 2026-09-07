@@ -18,20 +18,21 @@ export interface ClusterLabel {
 }
 
 /**
- * 군집으로 시점을 옮겨달라는 요청. 같은 군집을 다시 눌러도 다시 이동해야 하므로 값이 아니라
+ * 카메라를 옮겨달라는 요청. 같은 대상을 다시 눌러도 다시 이동해야 하므로 값이 아니라
  * token으로 "새 요청인지"를 판단한다.
+ *
+ * `raise`는 "이 군집을 화면 아래쪽 카드에 가리지 않게 위로 올려 달라"는 뜻이다.
  */
-export interface ClusterFocusRequest {
-  cluster: ClusterId;
-  token: number;
-}
+export type CameraFocusRequest =
+  | { kind: 'overview'; token: number }
+  | { kind: 'cluster'; cluster: ClusterId; raise: boolean; token: number };
 
 export interface ConstellationCanvasProps {
   graph: ConstellationGraph;
   clusterLabels: ClusterLabel[];
   selectedId: string | null;
   highlightedIds: string[] | null;
-  clusterFocus: ClusterFocusRequest | null;
+  cameraFocus: CameraFocusRequest | null;
   /** 배경 별 개수 배수. 0이면 배경 별 없이 경험 별만 남는다. */
   density?: number;
   onSelect: (id: string | null) => void;
@@ -45,6 +46,9 @@ const STAR_FOCUS_DISTANCE = 6;
 // 트윈이 어떤 이유로든 수렴하지 않아도 반드시 끝나게 하는 상한. 이게 없으면 트윈이 매 프레임
 // 카메라 위치를 덮어써서 휠 줌·드래그가 영원히 먹지 않는다 (실제로 겪었던 버그).
 const FOCUS_MAX_FRAMES = 120;
+// 카드(BottomSheet)가 화면 아래 40%를 덮는다. 남는 60%의 한가운데(위에서 30%)에 군집이 오려면
+// 화면 높이의 20%, 즉 반높이의 40%만큼 위로 올려야 한다. BottomSheet.SHEET_HEIGHT와 짝이다.
+const CARD_RAISE = 0.4;
 
 // 별 하나의 그림. 외부 이미지 파일 없이 런타임에 그려서 CSP나 배포 경로 문제를 아예 없앤다.
 // 중심은 작고 아주 밝게, 주변은 넓고 옅게 — 단순한 원(disc)처럼 보이지 않게 하는 핵심이다.
@@ -118,7 +122,7 @@ export function ConstellationCanvas({
   clusterLabels,
   selectedId,
   highlightedIds,
-  clusterFocus,
+  cameraFocus,
   density = 1,
   onSelect,
   onWebglFailure,
@@ -130,12 +134,12 @@ export function ConstellationCanvas({
   // 오래된 클로저를 붙들게 된다 — ref로 최신 값만 넘긴다.
   const selectedIdRef = useRef(selectedId);
   const highlightedIdsRef = useRef(highlightedIds);
-  const clusterFocusRef = useRef(clusterFocus);
+  const cameraFocusRef = useRef(cameraFocus);
   const onSelectRef = useRef(onSelect);
   const onWebglFailureRef = useRef(onWebglFailure);
   selectedIdRef.current = selectedId;
   highlightedIdsRef.current = highlightedIds;
-  clusterFocusRef.current = clusterFocus;
+  cameraFocusRef.current = cameraFocus;
   onSelectRef.current = onSelect;
   onWebglFailureRef.current = onWebglFailure;
 
@@ -413,15 +417,35 @@ export function ConstellationCanvas({
     const focusTarget = new THREE.Vector3();
     const focusCamera = new THREE.Vector3();
     const direction = new THREE.Vector3();
+    const screenRight = new THREE.Vector3();
+    const screenUp = new THREE.Vector3();
+    const worldUp = new THREE.Vector3(0, 1, 0);
     let focusing = false;
     let focusFrames = 0;
 
-    function beginFocus(target: Vec3, distance: number) {
+    /**
+     * @param raise 0이면 대상이 화면 한가운데. 0.5면 화면 높이의 절반만큼 위로 올라간다.
+     *   아래 40%를 카드가 덮으므로, 남은 60%의 한가운데(위에서 30%)에 오게 하려면 0.4가 필요하다
+     *   (화면 높이의 20% = 반높이의 40%).
+     */
+    function beginFocus(target: Vec3, distance: number, raise = 0) {
       focusTarget.set(target.x, target.y, target.z);
       // 지금 보고 있는 방향을 유지한 채 거리만 좁힌다 — 시점이 갑자기 뒤집히면 방향 감각을 잃는다.
       direction.copy(camera.position).sub(controls.target);
       if (direction.lengthSq() < 1e-6) direction.set(0, 0, 1);
       direction.normalize();
+
+      if (raise !== 0) {
+        // 대상이 화면 위쪽에 보이게 하려면 카메라가 바라보는 지점을 대상보다 "아래"에 둬야 한다.
+        // 그 아래쪽은 월드 y축이 아니라 지금 카메라 기준의 화면 아래 방향이어야 한다.
+        screenRight.crossVectors(worldUp, direction);
+        if (screenRight.lengthSq() < 1e-6) screenRight.set(1, 0, 0); // 정확히 위/아래를 내려다볼 때
+        screenRight.normalize();
+        screenUp.crossVectors(direction, screenRight).normalize();
+        // fov 55°에서 화면 반높이는 거리 × tan(27.5°) ≈ 0.52d.
+        focusTarget.addScaledVector(screenUp, -distance * 0.52 * raise);
+      }
+
       focusCamera.copy(focusTarget).addScaledVector(direction, distance);
       focusing = true;
       focusFrames = 0;
@@ -436,7 +460,7 @@ export function ConstellationCanvas({
     }
 
     let lastFocusedId: string | null = selectedIdRef.current;
-    let lastClusterToken = clusterFocusRef.current?.token ?? -1;
+    let lastClusterToken = cameraFocusRef.current?.token ?? -1;
 
     function updateFocus() {
       const id = selectedIdRef.current;
@@ -447,7 +471,8 @@ export function ConstellationCanvas({
           // 선택 해제 — 전체가 보이는 원래 거리로 물러난다(보던 방향은 유지).
           beginFocus({ x: 0, y: 0, z: 0 }, DEFAULT_DISTANCE);
         } else {
-          beginFocus(graph.nodes[index].position, STAR_FOCUS_DISTANCE);
+          // 별 카드도 아래 40%를 덮으므로 별을 그 위로 올린다.
+          beginFocus(graph.nodes[index].position, STAR_FOCUS_DISTANCE * 1.25, CARD_RAISE);
         }
         // 별을 보는 동안에는 회전을 잠가 카드와 별이 어긋나지 않게 한다.
         controls.enableRotate = id === null;
@@ -458,12 +483,22 @@ export function ConstellationCanvas({
         }
       }
 
-      const request = clusterFocusRef.current;
+      const request = cameraFocusRef.current;
       if (request && request.token !== lastClusterToken) {
         lastClusterToken = request.token;
-        // 군집 보기는 둘러볼 수 있어야 한다.
+        // 카메라 요청으로 보는 화면은 언제나 둘러볼 수 있어야 한다.
         controls.enableRotate = true;
-        beginFocus(CLUSTER_CENTERS[request.cluster], clusterViewDistance(graph.counts[request.cluster]));
+        if (request.kind === 'overview') {
+          beginFocus({ x: 0, y: 0, z: 0 }, DEFAULT_DISTANCE);
+        } else {
+          const distance = clusterViewDistance(graph.counts[request.cluster]);
+          beginFocus(
+            CLUSTER_CENTERS[request.cluster],
+            // 카드가 아래 40%를 덮으면 보이는 영역이 좁아지므로 조금 더 물러난다.
+            request.raise ? distance * 1.25 : distance,
+            request.raise ? CARD_RAISE : 0,
+          );
+        }
         if (reduceMotion) {
           camera.position.copy(focusCamera);
           controls.target.copy(focusTarget);

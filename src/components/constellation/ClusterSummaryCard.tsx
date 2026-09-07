@@ -13,6 +13,8 @@ export interface ClusterSummaryCardProps {
   regenerating: boolean;
   // null이면 닫기 버튼을 숨긴다 (WebGL 폴백에서 카드가 화면 본문일 때).
   onClose: (() => void) | null;
+  // true면 자기 테두리/배경을 그리지 않는다 — BottomSheet 안에 들어갈 때 껍데기가 겹치지 않게.
+  bare?: boolean;
 }
 
 export function ClusterSummaryCard({
@@ -23,9 +25,16 @@ export function ClusterSummaryCard({
   onRegenerate,
   regenerating,
   onClose,
+  bare = false,
 }: ClusterSummaryCardProps) {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/95 p-4 backdrop-blur">
+    <div
+      className={
+        bare
+          ? 'px-4 pb-6 pt-2'
+          : 'rounded-2xl border border-slate-800 bg-slate-900/95 p-4 backdrop-blur'
+      }
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span

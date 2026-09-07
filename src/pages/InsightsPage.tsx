@@ -7,10 +7,11 @@ import { buildGraph, type GraphInputEntry, type GraphInputInsight } from '../lib
 import { CLUSTER_LABELS, type ClusterId } from '../lib/constellation/layout';
 import {
   ConstellationCanvas,
-  type ClusterFocusRequest,
+  type CameraFocusRequest,
   type ClusterLabel,
 } from '../components/constellation/ConstellationCanvas';
 import { ExperienceGalaxyBackground } from '../components/constellation/ExperienceGalaxyBackground';
+import { BottomSheet } from '../components/constellation/BottomSheet';
 import { StarDetailCard, type StarDetail } from '../components/constellation/StarDetailCard';
 import { ClusterSummaryCard } from '../components/constellation/ClusterSummaryCard';
 import type { ExperienceTag } from '../types';
@@ -37,7 +38,26 @@ export function InsightsPage() {
   const [activeInsightId, setActiveInsightId] = useState<string | null>(null);
   const [webglFailed, setWebglFailed] = useState(false);
   // 같은 라벨을 다시 눌러도 다시 이동해야 하므로 값 비교가 아니라 token으로 요청을 구분한다.
-  const [clusterFocus, setClusterFocus] = useState<ClusterFocusRequest | null>(null);
+  const [cameraFocus, setCameraFocus] = useState<CameraFocusRequest | null>(null);
+
+  // Omit을 유니온에 그냥 씌우면 공통 키만 남으므로(= cluster가 사라진다) 분배되게 감싼다.
+  type CameraFocusIntent = CameraFocusRequest extends infer T
+    ? T extends CameraFocusRequest
+      ? Omit<T, 'token'>
+      : never
+    : never;
+
+  function requestCamera(next: CameraFocusIntent) {
+    setCameraFocus((previous) => ({ ...next, token: (previous?.token ?? 0) + 1 }) as CameraFocusRequest);
+  }
+
+  // 첫 화면(모든 별무리가 보이는 시점)으로 돌아간다 — 열려 있던 카드도 함께 정리한다.
+  function goToOverview() {
+    setSelectedId(null);
+    setOpenCluster(null);
+    setActiveInsightId(null);
+    requestCamera({ kind: 'overview' });
+  }
 
   // 인사이트 하나를 고르면 그 근거 별만 밝게 남긴다.
   const highlightedIds = useMemo(() => {
@@ -207,11 +227,13 @@ export function InsightsPage() {
       text: `${CLUSTER_LABELS[cluster]} ${graph.counts[cluster]}`,
       onTap: () => {
         setSelectedId(null);
-        // 어느 군집이든 시점은 그 별무리로 옮겨간다.
-        setClusterFocus((previous) => ({ cluster, token: (previous?.token ?? 0) + 1 }));
-        // 전체 경험 군집은 인사이트가 없으므로 요약 카드는 열지 않는다.
-        setOpenCluster(cluster === 'neutral' ? null : cluster);
-        if (cluster === 'neutral') setActiveInsightId(null);
+        // 전체 경험 군집은 인사이트가 없으므로 요약 카드를 열지 않고, 따라서 시점을 올릴 필요도 없다.
+        const opensCard = cluster !== 'neutral';
+        setOpenCluster(opensCard ? cluster : null);
+        if (!opensCard) setActiveInsightId(null);
+        // 카드가 열릴 때는 별무리가 카드 위쪽에 오도록 시점을 올려 준다 — 사용자가 지금 무엇을
+        // 고른 건지 보이지 않으면 카드의 내용이 어디서 나온 건지 알 수 없다.
+        requestCamera({ kind: 'cluster', cluster, raise: opensCard });
       },
     }));
 
@@ -276,6 +298,9 @@ export function InsightsPage() {
     );
   }
 
+  // 카드가 떠 있으면 화면 아래 40dvh가 가려진다 — 그 위에 떠야 하는 것들이 이 값을 본다.
+  const sheetOpen = selectedNode !== null || (openCluster !== null && selectedId === null);
+
   return (
     <div className="relative h-[calc(100dvh-var(--bottom-nav-total))] overflow-hidden bg-[#05070f]">
       <ExperienceGalaxyBackground />
@@ -289,7 +314,7 @@ export function InsightsPage() {
         clusterLabels={clusterLabels}
         selectedId={selectedId}
         highlightedIds={highlightedIds}
-        clusterFocus={clusterFocus}
+        cameraFocus={cameraFocus}
         onSelect={(id) => {
           setSelectedId(id);
           // 별 하나를 골랐다면 인사이트 강조/군집 카드는 정리한다 — 안 그러면 별 카드 뒤에서
@@ -303,12 +328,15 @@ export function InsightsPage() {
       />
 
       {selectedNode && (
-        <StarDetailCard node={selectedNode} detail={detail} onClose={() => setSelectedId(null)} />
+        <BottomSheet>
+          <StarDetailCard node={selectedNode} detail={detail} onClose={() => setSelectedId(null)} />
+        </BottomSheet>
       )}
 
       {openCluster !== null && selectedId === null && (
-        <div className="absolute inset-x-3 bottom-3 z-20 max-h-[55dvh] overflow-y-auto">
+        <BottomSheet>
           <ClusterSummaryCard
+            bare
             cluster={openCluster}
             insights={insights.filter((i) => i.type === openCluster)}
             activeInsightId={activeInsightId}
@@ -320,11 +348,23 @@ export function InsightsPage() {
               setActiveInsightId(null);
             }}
           />
-        </div>
+        </BottomSheet>
       )}
 
+      {/* 첫 화면으로 돌아가는 버튼. 카드가 열려 있으면 카드(40dvh) 바로 위로 올라간다 —
+          카드 뒤에 깔리면 "다음 라벨을 고르러 나가는" 유일한 통로가 사라진다. */}
+      <button
+        type="button"
+        onClick={goToOverview}
+        className={`absolute left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full border border-slate-700/70 bg-slate-950/80 px-3.5 py-1.5 text-xs font-medium text-slate-300 backdrop-blur-sm hover:text-slate-100 ${
+          sheetOpen ? 'bottom-[calc(40dvh+0.75rem)]' : 'bottom-4'
+        }`}
+      >
+        전체 별자리 보기
+      </button>
+
       {structuredCount < MIN_ENTRIES_FOR_INSIGHTS && (
-        <p className="absolute inset-x-4 bottom-4 z-10 rounded-lg bg-slate-900/80 p-3 text-center text-xs text-slate-400">
+        <p className="absolute inset-x-4 bottom-14 z-10 rounded-lg bg-slate-900/80 p-3 text-center text-xs text-slate-400">
           기록이 {MIN_ENTRIES_FOR_INSIGHTS}개 이상 정리되면 별무리가 나뉘어요. (현재 {structuredCount}개)
         </p>
       )}
@@ -334,7 +374,7 @@ export function InsightsPage() {
           type="button"
           onClick={regenerate}
           disabled={regenerating}
-          className="absolute inset-x-4 bottom-4 z-10 rounded-lg bg-slate-700 px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+          className="absolute inset-x-4 bottom-14 z-10 rounded-lg bg-slate-700 px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
         >
           {regenerating ? '분석 중...' : '패턴 분석하기'}
         </button>
