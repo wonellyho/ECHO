@@ -14,6 +14,7 @@ import { ExperienceGalaxyBackground } from '../components/constellation/Experien
 import { BottomSheet } from '../components/constellation/BottomSheet';
 import { StarDetailCard, type StarDetail } from '../components/constellation/StarDetailCard';
 import { ClusterSummaryCard } from '../components/constellation/ClusterSummaryCard';
+import type { EvidenceState } from '../components/constellation/EvidenceList';
 import type { ExperienceTag } from '../types';
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
@@ -39,6 +40,8 @@ export function InsightsPage() {
   const [webglFailed, setWebglFailed] = useState(false);
   // 같은 라벨을 다시 눌러도 다시 이동해야 하므로 값 비교가 아니라 token으로 요청을 구분한다.
   const [cameraFocus, setCameraFocus] = useState<CameraFocusRequest | null>(null);
+  const [expandedInsightId, setExpandedInsightId] = useState<string | null>(null);
+  const [evidence, setEvidence] = useState<Record<string, EvidenceState>>({});
 
   // Omit을 유니온에 그냥 씌우면 공통 키만 남으므로(= cluster가 사라진다) 분배되게 감싼다.
   type CameraFocusIntent = CameraFocusRequest extends infer T
@@ -51,11 +54,76 @@ export function InsightsPage() {
     setCameraFocus((previous) => ({ ...next, token: (previous?.token ?? 0) + 1 }) as CameraFocusRequest);
   }
 
+  async function toggleEvidence(insightId: string) {
+    if (expandedInsightId === insightId) {
+      setExpandedInsightId(null);
+      return;
+    }
+    setExpandedInsightId(insightId);
+    // 한 번 불러온 근거는 다시 부르지 않는다 — 접었다 폈다 할 때마다 왕복하면 느리다.
+    if (evidence[insightId]?.status === 'ready') return;
+
+    const ids = insights.find((i) => i.id === insightId)?.evidence_entry_ids ?? [];
+    if (ids.length === 0) {
+      setEvidence((prev) => ({ ...prev, [insightId]: { status: 'ready', entries: [] } }));
+      return;
+    }
+
+    setEvidence((prev) => ({ ...prev, [insightId]: { status: 'loading' } }));
+    try {
+      const [
+        { data: entryRows, error: entryError },
+        { data: structuredRows, error: structuredError },
+      ] = await Promise.all([
+        supabase.from('entries').select('id, raw_text, audio_url').in('id', ids),
+        supabase
+          .from('entries_structured')
+          .select('entry_id, situation, action, result, emotion, status')
+          .in('entry_id', ids),
+      ]);
+      if (entryError) throw entryError;
+      if (structuredError) throw structuredError;
+
+      const entryById = new Map((entryRows ?? []).map((row) => [row.id, row]));
+      const structuredById = new Map((structuredRows ?? []).map((row) => [row.entry_id, row]));
+
+      // 근거 id 순서를 그대로 지킨다. 지워진 기록을 가리키는 id는 조용히 건너뛴다.
+      const entries = ids.flatMap((id) => {
+        const entry = entryById.get(id);
+        if (!entry) return [];
+        const structured = structuredById.get(id);
+        return [
+          {
+            id,
+            rawText: entry.raw_text,
+            situation: structured?.situation ?? null,
+            action: structured?.action ?? null,
+            result: structured?.result ?? null,
+            emotion: structured?.emotion ?? null,
+            status: (structured?.status ?? null) as 'pending' | 'done' | 'failed' | null,
+            hasAudio: entry.audio_url !== null,
+          },
+        ];
+      });
+
+      setEvidence((prev) => ({ ...prev, [insightId]: { status: 'ready', entries } }));
+    } catch (err) {
+      setEvidence((prev) => ({
+        ...prev,
+        [insightId]: {
+          status: 'error',
+          message: err instanceof Error ? err.message : '근거 기록을 불러오지 못했습니다.',
+        },
+      }));
+    }
+  }
+
   // 첫 화면(모든 별무리가 보이는 시점)으로 돌아간다 — 열려 있던 카드도 함께 정리한다.
   function goToOverview() {
     setSelectedId(null);
     setOpenCluster(null);
     setActiveInsightId(null);
+    setExpandedInsightId(null);
     requestCamera({ kind: 'overview' });
   }
 
@@ -167,6 +235,9 @@ export function InsightsPage() {
 
       setInsights((insertedRows ?? []) as GraphInputInsight[]);
       setActiveInsightId(null);
+      // 인사이트 id가 통째로 바뀌었으니 이전 근거 캐시는 가리키는 곳이 없다.
+      setExpandedInsightId(null);
+      setEvidence({});
 
       if (oldIds.length > 0) {
         const { error: deleteError } = await supabase.from('insights').delete().in('id', oldIds);
@@ -287,6 +358,9 @@ export function InsightsPage() {
               insights={insights.filter((i) => i.type === cluster)}
               activeInsightId={null}
               onSelectInsight={null}
+              expandedInsightId={expandedInsightId}
+              evidence={evidence}
+              onToggleEvidence={toggleEvidence}
               onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
               regenerating={regenerating}
               onClose={null}
@@ -334,18 +408,22 @@ export function InsightsPage() {
       )}
 
       {openCluster !== null && selectedId === null && (
-        <BottomSheet>
+        <BottomSheet scroll={false}>
           <ClusterSummaryCard
             bare
             cluster={openCluster}
             insights={insights.filter((i) => i.type === openCluster)}
             activeInsightId={activeInsightId}
             onSelectInsight={setActiveInsightId}
+            expandedInsightId={expandedInsightId}
+            evidence={evidence}
+            onToggleEvidence={toggleEvidence}
             onRegenerate={structuredCount >= MIN_ENTRIES_FOR_INSIGHTS ? regenerate : null}
             regenerating={regenerating}
             onClose={() => {
               setOpenCluster(null);
               setActiveInsightId(null);
+              setExpandedInsightId(null);
             }}
           />
         </BottomSheet>

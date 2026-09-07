@@ -146,18 +146,24 @@ export function ExperienceGalaxyBackground({
         />
       ))}
 
-      {/* 4. 천체 (1~2개만). 오른쪽 위 구석의 작은 달 — 빛은 왼쪽 위에서 온다 */}
+      {/*
+        4. 천체 (1~2개만). 오른쪽 위의 먼 달 — 빛은 왼쪽 위에서 온다.
+        크고 또렷하면 별이 아니라 UI 요소(빈 원)처럼 읽힌다. 그래서 작게, 옅게, 가장자리를
+        살짝 뭉개고, 바깥 glow로 감싸서 "멀리 있는 천체"로 읽히게 한다.
+      */}
       <div
-        className="absolute rounded-full"
+        className="absolute"
         style={{
-          right: '9%',
-          top: '11%',
-          width: 'clamp(30px, 6vmin, 52px)',
-          height: 'clamp(30px, 6vmin, 52px)',
+          right: '11%',
+          top: '13%',
+          width: 'clamp(18px, 3.4vmin, 30px)',
+          height: 'clamp(18px, 3.4vmin, 30px)',
+          borderRadius: '9999px',
           background:
-            'radial-gradient(circle at 34% 30%, #c9d1e6 0%, #98a3bf 40%, #4a5470 68%, #1d2334 100%)',
-          boxShadow: '0 0 22px 5px rgba(150,175,230,0.10)',
-          opacity: 0.5,
+            'radial-gradient(circle at 36% 32%, #b8c2da 0%, #8b95b2 44%, #3f4864 72%, #191e2c 100%)',
+          boxShadow: '0 0 18px 7px rgba(150,175,230,0.07)',
+          filter: 'blur(0.4px)',
+          opacity: 0.34,
         }}
       />
 

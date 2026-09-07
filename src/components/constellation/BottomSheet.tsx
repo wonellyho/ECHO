@@ -10,10 +10,15 @@ import type { ReactNode } from 'react';
 export const SHEET_HEIGHT = '40dvh';
 
 export interface BottomSheetProps {
+  /**
+   * false면 시트가 스크롤을 맡지 않고 내용에 넘긴다 — 머리말은 고정하고 가운데 목록만
+   * 스크롤시켜야 하는 카드가 직접 영역을 나눌 수 있게.
+   */
+  scroll?: boolean;
   children: ReactNode;
 }
 
-export function BottomSheet({ children }: BottomSheetProps) {
+export function BottomSheet({ scroll = true, children }: BottomSheetProps) {
   const reducedMotion =
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -45,7 +50,13 @@ export function BottomSheet({ children }: BottomSheetProps) {
         모바일 관성(momentum)이 그대로 살아 있고 커스텀 물리 엔진이 필요 없다.
         overscroll-y-contain: 시트 끝까지 내려도 뒤의 페이지가 따라 스크롤되지 않는다.
       */}
-      <div className="h-[calc(100%-0.75rem)] overflow-y-auto overscroll-y-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className={`h-[calc(100%-0.75rem)] ${
+          scroll
+            ? 'overflow-y-auto overscroll-y-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+            : 'overflow-hidden'
+        }`}
+      >
         {children}
       </div>
     </div>

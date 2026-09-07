@@ -1,5 +1,6 @@
 import { CLUSTER_COLORS, CLUSTER_LABELS, type ClusterId } from '../../lib/constellation/layout';
 import type { GraphInputInsight } from '../../lib/constellation/buildGraph';
+import { EvidenceList, type EvidenceState } from './EvidenceList';
 
 export interface ClusterSummaryCardProps {
   cluster: ClusterId;
@@ -8,12 +9,17 @@ export interface ClusterSummaryCardProps {
   // null이면 선택 기능 자체가 없다는 뜻 — WebGL 폴백처럼 별을 밝게 표시할 화면이 없을 때다.
   // 이때는 버튼이 아니라 div로 그려서 스크린리더가 "눌러도 반응 없는 토글"을 안내하지 않게 한다.
   onSelectInsight: ((id: string | null) => void) | null;
+  // 근거 기록 펼치기 — 어느 인사이트가 펼쳐져 있는지, 그 근거 기록을 어디까지 불러왔는지.
+  expandedInsightId: string | null;
+  evidence: Record<string, EvidenceState>;
+  onToggleEvidence: (id: string) => void;
   // null이면 재생성 버튼을 숨긴다 (기록이 부족할 때).
   onRegenerate: (() => void) | null;
   regenerating: boolean;
   // null이면 닫기 버튼을 숨긴다 (WebGL 폴백에서 카드가 화면 본문일 때).
   onClose: (() => void) | null;
-  // true면 자기 테두리/배경을 그리지 않는다 — BottomSheet 안에 들어갈 때 껍데기가 겹치지 않게.
+  // true면 BottomSheet 안에 들어간다 — 자기 테두리를 그리지 않고, 머리말/꼬리말은 고정하고
+  // 인사이트 목록만 스크롤시킨다.
   bare?: boolean;
 }
 
@@ -22,28 +28,39 @@ export function ClusterSummaryCard({
   insights,
   activeInsightId,
   onSelectInsight,
+  expandedInsightId,
+  evidence,
+  onToggleEvidence,
   onRegenerate,
   regenerating,
   onClose,
   bare = false,
 }: ClusterSummaryCardProps) {
-  return (
-    <div
-      className={
-        bare
-          ? 'px-4 pb-6 pt-2'
-          : 'rounded-2xl border border-slate-800 bg-slate-900/95 p-4 backdrop-blur'
-      }
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="h-2 w-2 rounded-full"
-            style={{ backgroundColor: CLUSTER_COLORS[cluster] }}
-          />
-          <h3 className="text-sm font-semibold text-slate-100">{CLUSTER_LABELS[cluster]}</h3>
-        </div>
+  const header = (
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: CLUSTER_COLORS[cluster] }}
+        />
+        <h3 className="text-sm font-semibold text-slate-100">{CLUSTER_LABELS[cluster]}</h3>
+      </div>
+      <div className="flex items-center gap-1">
+        {/* 카드 한 줄을 통째로 차지하던 큰 버튼 대신 머리말의 작은 아이콘으로 옮겼다 —
+            자주 쓰는 기능은 아니지만, 기록이 쌓인 뒤 다시 분석할 길이 아예 없으면 안 된다. */}
+        {bare && onRegenerate && (
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={regenerating}
+            aria-label="다시 분석하기"
+            title="다시 분석하기"
+            className="rounded-md px-2 py-1 text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50"
+          >
+            {regenerating ? '분석 중...' : '↻'}
+          </button>
+        )}
         {onClose && (
           <button
             type="button"
@@ -55,44 +72,77 @@ export function ClusterSummaryCard({
           </button>
         )}
       </div>
+    </div>
+  );
 
-      {insights.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-400">아직 이 패턴으로 정리된 게 없어요.</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {insights.map((insight) => {
-            const active = insight.id === activeInsightId;
-            const body = (
-              <>
-                <p className="text-sm text-slate-100">{insight.summary}</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  근거 기록 {insight.evidence_entry_ids.length}건
-                  {active && ' · 근거 별만 밝게 표시 중'}
-                </p>
-              </>
-            );
-            return (
-              <li key={insight.id}>
-                {onSelectInsight ? (
-                  <button
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => onSelectInsight(active ? null : insight.id)}
-                    className={`w-full rounded-lg p-3 text-left transition-colors ${
-                      active ? 'bg-slate-700' : 'bg-slate-800/60 hover:bg-slate-800'
-                    }`}
-                  >
-                    {body}
-                  </button>
-                ) : (
-                  <div className="w-full rounded-lg bg-slate-800/60 p-3 text-left">{body}</div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+  const list =
+    insights.length === 0 ? (
+      <p className="text-sm text-slate-400">아직 이 패턴으로 정리된 게 없어요.</p>
+    ) : (
+      <ul className="space-y-2">
+        {insights.map((insight) => {
+          const active = insight.id === activeInsightId;
+          const expanded = insight.id === expandedInsightId;
+          const summary = <p className="text-sm text-slate-100">{insight.summary}</p>;
+          return (
+            <li key={insight.id} className="overflow-hidden rounded-lg bg-slate-800/60">
+              {/* 요약 줄을 누르면 근거 별만 밝게 남는다 (별자리가 있을 때만). */}
+              {onSelectInsight ? (
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onSelectInsight(active ? null : insight.id)}
+                  className={`w-full p-3 text-left transition-colors ${
+                    active ? 'bg-slate-700' : 'hover:bg-slate-800'
+                  }`}
+                >
+                  {summary}
+                  {active && <p className="mt-1 text-xs text-slate-400">근거 별만 밝게 표시 중</p>}
+                </button>
+              ) : (
+                <div className="w-full p-3 text-left">{summary}</div>
+              )}
 
+              {/* 근거 기록 펼치기. 위 버튼 안에 넣으면 버튼 중첩이라 HTML이 깨진다 — 형제로 둔다. */}
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => onToggleEvidence(insight.id)}
+                className="flex w-full items-center justify-between gap-2 px-3 pb-2 text-left text-xs text-slate-400 hover:text-slate-200"
+              >
+                <span>근거 기록 {insight.evidence_entry_ids.length}건</span>
+                <span aria-hidden>{expanded ? '접기 ▴' : '펼치기 ▾'}</span>
+              </button>
+
+              {expanded && <EvidenceList state={evidence[insight.id]} />}
+            </li>
+          );
+        })}
+      </ul>
+    );
+
+  if (bare) {
+    // 머리말은 위에, 목록만 가운데에서 스크롤 — 시트 높이가 고정이라 머리말이 같이 밀려
+    // 올라가면 지금 어느 별무리를 보고 있는지 알 수 없게 된다.
+    return (
+      <div className="flex h-full flex-col">
+        <div className="shrink-0 px-4 pb-2 pt-1">{header}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {list}
+          {!onRegenerate && (
+            <p className="mt-3 text-xs text-slate-500">
+              기록이 3개 이상 정리되면 다시 분석할 수 있어요.
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/95 p-4 backdrop-blur">
+      {header}
+      <div className="mt-3">{list}</div>
       {onRegenerate ? (
         <button
           type="button"
