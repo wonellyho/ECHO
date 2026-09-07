@@ -213,7 +213,8 @@ export function EntryDetailPage() {
   }
 
   return (
-    <CosmicPage variant="detail" width="wide">
+    // STARWL 탭은 구조화 탭보다 조금 더 대기감 있는 하늘을 쓴다 (레퍼런스 05 vs 06).
+    <CosmicPage variant={tab === 'starwl' ? 'detail-starwl' : 'detail'} width="wide">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <CosmicIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로">
