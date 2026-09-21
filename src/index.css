@@ -4,8 +4,154 @@
   --font-sans:
     'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto,
     'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+
+  /* ── 우주 base ──────────────────────────────────────────────
+     순수 검정을 쓰지 않는다. 검정 위의 별은 오려붙인 것처럼 납작해 보인다. */
+  --color-space-black: #02040d;
+  --color-space-navy: #050a18;
+
+  /* ── glass surface ──────────────────────────────────────────
+     카드는 "우주 위에 얇게 떠 있는 유리"다. 불투명한 남색 사각형이 아니다.
+     배경 자체의 알파는 GlassCard가 톤별로 들고 있다 (여기 두면 두 곳이 어긋난다). */
+  --color-hairline: rgba(130, 160, 220, 0.24);
+  --color-hairline-active: rgba(190, 170, 255, 0.55);
+
+  /* ── 텍스트 ─────────────────────────────────────────────────
+     우주 배경 위에서도 대비를 지켜야 하므로 muted도 너무 어둡게 내리지 않는다. */
+  --color-ink: #f5f7ff;
+  --color-ink-dim: #9aa8c5;
+  --color-ink-muted: #66738f;
+
+  /* ── ECHO primary accent: orange → coral → pink → magenta ── */
+  --color-echo-orange: #ff8a4c;
+  --color-echo-coral: #ff667a;
+  --color-echo-magenta: #f14ab4;
+
+  /* ── 보조 우주색 ───────────────────────────────────────────── */
+  --color-cosmic-blue: #68a7ff;
+  --color-cosmic-indigo: #818cf8;
+  --color-cosmic-violet: #a76eff;
+  --color-cosmic-cyan: #4fd6e7;
+}
+
+:root {
+  /* 하단 네비게이션(BottomNav) 자체의 높이. floating dock이라 실제 pill 높이 + 띄운 여백이다. */
+  --bottom-nav-height: 4.25rem;
+  /* 네비게이션이 실제로 가리는 총 높이 — iOS 홈 인디케이터 영역까지 포함한다.
+     각 화면은 이 값만큼 아래 여백을 두거나(스크롤형) 높이에서 빼서(전체화면형) 쓴다.
+     값을 화면마다 하드코딩하면 어느 한 곳에서 콘텐츠가 가려도 눈치채기 어려우므로
+     여기 한 곳에서만 정의한다. */
+  --bottom-nav-total: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+
+  /* ECHO 그라디언트 — 로고, primary CTA, active nav가 같은 각도로 공유한다. */
+  --echo-gradient: linear-gradient(
+    100deg,
+    var(--color-echo-orange) 0%,
+    var(--color-echo-coral) 45%,
+    var(--color-echo-magenta) 100%
+  );
 }
 
 body {
   font-family: var(--font-sans);
+  background-color: var(--color-space-black);
+  color: var(--color-ink);
+  color-scheme: dark;
+  /* 배경이 화면 밖까지 이어져 보이도록 — iOS 오버스크롤 때 흰 띠가 뜨는 것을 막는다. */
+  overscroll-behavior-y: none;
+}
+
+/* 브라우저가 이전에 입력했던 값을 기억한 입력칸(로그인 이메일/비밀번호 등)에 강제로
+   회색/노란 배경을 입힌다 — CosmicInput의 투명한 유리 배경을 아무리 낮춰도 이 자동완성
+   스타일이 덮어써서 "입력창에 회색 표시가 뜬다"는 결과를 낳았다. box-shadow inset을
+   극단적으로 크게 줘서 그 배경을 우리 테마 색으로 바꿔치기하는 것이 표준적인 우회법이다. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  -webkit-box-shadow: 0 0 0 1000px rgba(10, 20, 40, 0.05) inset;
+  box-shadow: 0 0 0 1000px rgba(10, 20, 40, 0.05) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* 짧게 나타났다 사라지는 텍스트/배지용 범용 페이드인. 다시 마운트시킬 때(key 교체) 재생된다.
+   컬렉션 스와이프 뷰의 컬렉션 이름 표시, 녹음 화면의 커서-이어녹음 안내 등에서 쓴다. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up-enter {
+  animation: fade-in-up 180ms ease-out;
+}
+
+/* 바텀시트가 아래에서 올라온다. */
+@keyframes echo-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 마이크 오브 둘레의 나선 궤도 위를 입자가 지나간다. 궤도 자체는 돌지 않는다 —
+   기울어진 궤도면을 통째로 회전시키면 접시처럼 흔들려 어지럽다. */
+@keyframes echo-orbit-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+
+/* 녹음 중 오브가 숨 쉬듯 밝아졌다 어두워진다. */
+@keyframes echo-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.06);
+  }
+}
+
+/* 궤도를 도는 별이 반짝인다 — echo-orbit-travel(위치 이동)과 함께 걸려 별이 움직이면서도
+   깜빡인다. "너무 과하다"는 피드백으로 진폭을 확 줄였다 — 밝기/크기 변화 폭 모두
+   절반 이하로, 아주 은은하게만 깜빡이게 한다. */
+@keyframes echo-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+/* prefers-reduced-motion: 배경의 모든 움직임을 멈춘다.
+   컴포넌트 쪽에서도 개별적으로 끄지만, 여기서 한 번 더 막아 빠뜨린 곳이 없게 한다. */
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up-enter {
+    animation: none;
+  }
+  [style*='echo-orbit-travel'],
+  [style*='echo-pulse'],
+  [style*='echo-star-twinkle'],
+  [style*='echo-sheet-up'] {
+    animation: none !important;
+  }
 }
