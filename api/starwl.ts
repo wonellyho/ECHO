@@ -1,5 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callLlmJson } from './_lib/llm.js';
+import { requireUser } from './_lib/auth.js';
+import { checkRateLimit, LLM_RATE_LIMIT } from './_lib/rateLimit.js';
+
+/**
+ * 입력으로 받는 구조화 데이터 전체의 길이 상한(JSON 직렬화 기준).
+ * structure.ts의 MAX_RAW_TEXT_LENGTH와 같은 이유 — 입력 길이에 요금이 비례한다.
+ * 여기 들어오는 건 이미 구조화된 8개 필드라 원문보다 짧다.
+ */
+const MAX_INPUT_LENGTH = 8000;
 
 interface StarWlResult {
   situation: string;
@@ -35,6 +44,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // 이 아래로는 전부 요금이 나가는 경로다 (structure.ts와 같은 관문).
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const limit = checkRateLimit(`${user.id}:starwl`, LLM_RATE_LIMIT);
+  if (!limit.allowed) {
+    res.setHeader('retry-after', String(limit.retryAfterSeconds));
+    res.status(429).json({ error: '요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.' });
+    return;
+  }
+
   try {
     const structured = req.body as {
       situation?: string | null;
@@ -48,6 +68,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     const input = JSON.stringify(structured, null, 2);
+    if (input.length > MAX_INPUT_LENGTH) {
+      res.status(413).json({ error: '변환할 내용이 너무 깁니다.' });
+      return;
+    }
 
     const { data: parsed } = await callLlmJson<StarWlResult>({
       system: SYSTEM_PROMPT,

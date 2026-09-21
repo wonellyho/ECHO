@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { postJson } from '../lib/apiClient';
 import { useSpeechInput } from '../lib/useSpeechInput';
 import { useMicAnalyser } from '../lib/useMicAnalyser';
 import { VoiceWaveform } from '../components/VoiceWaveform';
@@ -23,6 +24,7 @@ import {
 import { canSubmitRecord } from '../lib/recordValidation';
 import { formatDuration } from '../lib/formatDuration';
 import { useNickname } from '../lib/useNickname';
+import { ROUTES } from '../lib/routes';
 import { CARD_COLOR_HEX, CARD_COLOR_KEYS, CARD_COLOR_LABELS } from '../lib/tagColors';
 import type { CardColorKey, ExperienceTag } from '../types';
 
@@ -397,13 +399,9 @@ export function RecordPage() {
   async function runStructuring(entryId: string, rawText: string) {
     setStatusMessage('AI가 구조화하는 중...');
     try {
-      const res = await fetch('/api/structure', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ raw_text: rawText }),
-      });
-      if (!res.ok) throw new Error('구조화 요청에 실패했습니다.');
-      const structured: StructureResponse = await res.json();
+      // postJson이 로그인 토큰을 실어 보내고, 서버 에러 메시지를 그대로 던져준다
+      // ("요청이 너무 잦습니다", "기록이 너무 깁니다" 등). src/lib/apiClient.ts 참고.
+      const structured = await postJson<StructureResponse>('/api/structure', { raw_text: rawText });
 
       const { error: structuredError } = await supabase.from('entries_structured').upsert(
         {
@@ -431,7 +429,7 @@ export function RecordPage() {
 
       setStatusMessage(null);
       setStructureFailed(false);
-      navigate(`/entries/${entryId}`);
+      navigate(ROUTES.entry(entryId));
     } catch (err) {
       // 기록 자체는 이미 저장돼 있으므로, 구조화 실패 기록만 남기고 저장 정보 화면에 머문다.
       await supabase
@@ -494,7 +492,7 @@ export function RecordPage() {
 
   function handleSkipStructuring() {
     if (!savedEntryIdRef.current) return;
-    navigate(`/entries/${savedEntryIdRef.current}`);
+    navigate(ROUTES.entry(savedEntryIdRef.current));
   }
 
   if (step === 'choice') {

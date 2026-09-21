@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { TagChip } from '../ui/TagChip';
+import { ROUTES } from '../../lib/routes';
 import { CLUSTER_COLORS } from '../../lib/constellation/layout';
 import type { StarNode } from '../../lib/constellation/buildGraph';
 
@@ -82,7 +83,7 @@ export function StarDetailCard({ node, detail, onClose }: StarDetailCardProps) {
       {/* 우측 하단에 배치("자세히 보기 버튼은 우측하단에" 요청). */}
       <div className="mt-4 flex justify-end">
         <Link
-          to={`/entries/${node.entryId}`}
+          to={ROUTES.entry(node.entryId)}
           className="inline-flex min-h-[2.75rem] items-center rounded-full px-5 text-xs font-semibold text-white"
           style={{ background: 'var(--echo-gradient)' }}
         >

@@ -25,11 +25,15 @@
 ```
 /api                  Vercel 서버리스 함수 (LLM 호출 등 키가 필요한 로직만)
   /_lib/llm.ts         LLM 호출 공통 헬퍼 (OpenRouter 무료 모델 → Claude Haiku 폴백)
+  /_lib/auth.ts        호출자 인증 — Supabase 세션 토큰 검증 (아래 "API 보호" 참고)
+  /_lib/rateLimit.ts   사용자별 호출 제한 (인메모리, best-effort)
   structure.ts         기록 → 상황/역할/갈등/행동/결과/감정/이유 + 태그 구조화
   starwl.ts             구조화 데이터 → STARWL(Why/Learning 포함) 변환
   (예정) insights.ts     반복 기록 → 에너지원/소진요인 요약(근거 entry_id 포함)
 /src
   /lib/supabaseClient.ts  프론트에서 쓰는 Supabase 클라이언트 (anon key)
+  /lib/apiClient.ts       /api 호출 단일 창구 — 세션 토큰을 자동으로 실어 보낸다
+  /lib/routes.ts          라우트 경로 상수 (앱은 /app 아래, "/"는 공개 랜딩)
   /types/index.ts         공용 타입 (Entry, EntryStructured, Insight, StarWlConversion 등)
   /pages                  화면 단위 컴포넌트
   /components             재사용 UI 컴포넌트
@@ -45,6 +49,22 @@ PRD_ECHO.md            원본 요구사항 (변경 금지, 항상 최신 기준�
   프롬프트 작성 시 이 규칙을 항상 시스템 프롬프트에 명시할 것.
 - 태그는 `협업/갈등/주도성/실패/성취/문제해결` 6종으로 고정(DB CHECK 제약 있음). LLM이 이 외의 값을 반환하면
   서버 함수에서 필터링해서 버린다.
+
+## API 보호 (요금이 나가는 경로)
+`/api/*`는 호출 한 번마다 LLM 요금이 발생한다. 그래서 **모든 LLM 엔드포인트는 다음 3단 관문을
+순서대로 거친 뒤에야 `callLlmJson()`에 도달한다.** 새 엔드포인트를 추가할 때도 같은 순서를 지킬 것.
+
+1. **인증** — `requireUser(req, res)` (`api/_lib/auth.ts`). 클라이언트가 보낸 Supabase 세션
+   토큰을 Supabase에 되물어 확인한다. 이게 없으면 인터넷 누구나 curl로 크레딧을 태울 수 있다.
+   설정이 빠지면 통과시키지 않고 **막는다**(fail closed).
+2. **호출 제한** — `checkRateLimit("<user.id>:<endpoint>", LLM_RATE_LIMIT)`.
+3. **입력 길이 상한** — 입력 길이에 요금이 비례하므로 상한이 없으면 1회 비용에 상한이 없다.
+
+프론트는 `fetch`를 직접 쓰지 말고 반드시 `src/lib/apiClient.ts`의 `postJson()`을 쓴다 —
+토큰을 붙이는 곳이 흩어지면 어느 화면 하나만 조용히 401을 받는다.
+
+⚠️ 호출 제한은 인메모리라 서버리스 인스턴스 단위다(정확한 쿼터가 아님). **금액의 실제 상한은
+Anthropic Console의 지출 한도(spend limit)** 이므로 반드시 함께 설정해 둘 것.
 
 ## 만들지 않는 것 (PRD §6 재확인)
 완성형 자소서 자동 작성, 면접 음성 평가, SNS/공유/랭킹, MBTI식 고정 유형 분류,

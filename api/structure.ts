@@ -1,7 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { callLlmJson } from './_lib/llm.js';
+import { requireUser } from './_lib/auth.js';
+import { checkRateLimit, LLM_RATE_LIMIT } from './_lib/rateLimit.js';
 
 const VALID_TAGS = ['협업', '갈등', '주도성', '실패', '성취', '문제해결'] as const;
+
+/**
+ * 한 번에 구조화할 수 있는 원문 길이 상한.
+ *
+ * LLM 요금은 입력 길이에 비례하므로, 상한이 없으면 호출 1회의 비용에 상한이 없다는 뜻이 된다
+ * (Vercel은 요청 본문을 100MB까지 받는다). 실제 기록은 길어야 수천 자이므로 넉넉한 값이다.
+ */
+const MAX_RAW_TEXT_LENGTH = 4000;
 
 interface StructureResult {
   situation: string | null;
@@ -42,10 +52,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  // 이 아래로는 전부 요금이 나가는 경로다. 인증 → 호출 제한 → 입력 검증 순으로 먼저 거른다.
+  const user = await requireUser(req, res);
+  if (!user) return;
+
+  const limit = checkRateLimit(`${user.id}:structure`, LLM_RATE_LIMIT);
+  if (!limit.allowed) {
+    res.setHeader('retry-after', String(limit.retryAfterSeconds));
+    res.status(429).json({ error: '요청이 너무 잦습니다. 잠시 후 다시 시도해주세요.' });
+    return;
+  }
+
   try {
     const { raw_text } = req.body as { raw_text?: string };
     if (!raw_text || !raw_text.trim()) {
       res.status(400).json({ error: 'raw_text가 필요합니다.' });
+      return;
+    }
+    if (raw_text.length > MAX_RAW_TEXT_LENGTH) {
+      res.status(413).json({
+        error: `기록이 너무 깁니다. ${MAX_RAW_TEXT_LENGTH}자 이내로 줄여주세요.`,
+      });
       return;
     }
 

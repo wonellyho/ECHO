@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useNickname, withNickname } from '../lib/useNickname';
+import { ROUTES } from '../lib/routes';
 import {
   applyClusterCenters,
   applyClusterScales,
@@ -290,7 +291,7 @@ export function InsightsPage() {
           <p className="text-[15px] text-ink">아직 별이 하나도 없어요.</p>
           <p className="mt-1.5 text-sm text-ink-dim">첫 기록을 남기면 첫 별이 뜹니다.</p>
           <Link
-            to="/"
+            to={ROUTES.app}
             className="mt-6 inline-flex min-h-[3rem] items-center gap-2 rounded-full px-6 text-[15px] font-semibold text-white"
             style={{ background: 'var(--echo-gradient)' }}
           >
@@ -329,7 +330,7 @@ export function InsightsPage() {
                   .filter((node) => node.cluster === cluster)
                   .map((node) => (
                     <li key={node.id}>
-                      <Link to={`/entries/${node.entryId}`} className="text-sm text-ink-dim hover:text-ink">
+                      <Link to={ROUTES.entry(node.entryId)} className="text-sm text-ink-dim hover:text-ink">
                         {node.label}
                       </Link>
                     </li>
