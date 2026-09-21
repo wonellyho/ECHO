@@ -63,11 +63,15 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
               // 이동시킨다.
               if (!isActive) e.preventDefault();
             }}
-            className="relative flex h-full flex-col overflow-hidden rounded-3xl border backdrop-blur-md transition-[border-color,box-shadow] duration-200"
+            // blur를 완전히 뺐더니 이번엔 반대로 뒤에 겹친 다른 카드들까지 비쳐 보여
+            // 가시성이 떨어졌다("너무 투명해서 뒤 카드가 비친다" 피드백). 아주 약한 blur만
+            // 되살려서 — 배경 사진은 여전히 또렷이 비치되, 뒤로 겹친 카드끼리는 서로 구분되게 한다.
+            className="relative flex h-full flex-col overflow-hidden rounded-3xl border backdrop-blur-[3px] transition-[border-color,box-shadow] duration-200"
             style={{
-              // 어두운 유리 바탕 위에 사용자가 고른 색을 좌상단에서만 아주 옅게 번지게 한다.
-              // 바탕이 늘 어둡기 때문에 흰 텍스트 대비가 카드 색과 무관하게 일정하다.
-              background: `radial-gradient(120% 110% at 8% 0%, rgba(${cardTint(entry.card_color)}, 0.34) 0%, rgba(${cardTint(entry.card_color)}, 0.12) 38%, rgba(7, 13, 30, 0.86) 78%)`,
+              // "완전히 투명해서 배경이 보였으면" 요청으로 낮췄던 알파를 아주 조금만 다시
+              // 올렸다 — 여전히 배경이 또렷이 비치는 수준을 유지하면서 카드 자체의 존재감(과
+              // 뒤 카드와의 구분)만 살짝 더한다.
+              background: `radial-gradient(120% 110% at 8% 0%, rgba(${cardTint(entry.card_color)}, 0.1) 0%, rgba(${cardTint(entry.card_color)}, 0.04) 38%, rgba(7, 13, 30, 0.12) 78%)`,
               // 스택에서 가운데 카드만 또렷하다 — 앞뒤 카드는 테두리도 흐리고 glow도 없다.
               borderColor: isActive ? 'rgba(255, 170, 190, 0.6)' : 'rgba(130, 160, 220, 0.2)',
               boxShadow: isActive
@@ -75,16 +79,21 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
                 : 'none',
             }}
           >
-            <div className="relative z-10 flex h-full flex-col justify-between gap-2 px-5 py-4">
+            <div
+              className="relative z-10 flex h-full flex-col justify-between gap-2 px-5 py-4 text-white"
+              // 카드가 거의 투명해진 만큼, 글자 자체는 색 대신 그림자로 대비를 만든다 —
+              // 밝은 배경 조각 위에 놓여도 흰 글자가 묻히지 않는다.
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.85), 0 0 14px rgba(0,0,0,0.5)' }}
+            >
               <div className="flex items-start justify-between gap-3">
-                <p className="truncate text-[17px] font-bold text-ink">
+                <p className="truncate text-[17px] font-bold text-white">
                   {entry.project_title || '제목 없음'}
                 </p>
-                <p className="shrink-0 pt-1 text-[11px] text-ink-dim">
+                <p className="shrink-0 pt-1 text-[11px] text-white">
                   {new Date(entry.created_at).toLocaleDateString('ko-KR')}
                 </p>
               </div>
-              <p className="line-clamp-3 flex-1 text-[13px] leading-relaxed text-ink-dim">
+              <p className="line-clamp-3 flex-1 text-[13px] leading-relaxed text-white">
                 {entry.situation ?? entry.raw_text}
               </p>
               {entry.tags.length > 0 && (
@@ -92,7 +101,7 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
                   {entry.tags.slice(0, 3).map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-hairline bg-[rgba(4,8,20,0.6)] px-2 py-0.5 text-[10px] font-medium text-ink-dim"
+                      className="rounded-full border border-hairline bg-[rgba(4,8,20,0.5)] px-2 py-0.5 text-[10px] font-medium text-white"
                     >
                       #{tag}
                     </span>

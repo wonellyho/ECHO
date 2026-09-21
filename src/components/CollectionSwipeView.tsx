@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type ReactNode } from 'react';
 import { EntryCardStack, type StackEntry } from './EntryCardStack';
 import { pageFromScrollLeft, scrollLeftForPage } from '../lib/swipePaging';
 import type { EntryGroup } from '../lib/entryGrouping';
@@ -14,8 +14,20 @@ export interface CollectionSwipeViewHandle {
 // 내 컬렉션에 모아둔 기록들 넘어가게 함"). 한 페이지 = 컬렉션 하나, 그 안에서는 기존 세로
 // 카드 스택(EntryCardStack)을 그대로 재사용한다 — "컬렉션별로 나뉜 여러 개의 세로 스택을
 // 가로로 넘긴다"는 구조라, 각 스택의 순환·페이드 등 기존 동작을 다시 만들 필요가 없다.
-export const CollectionSwipeView = forwardRef<CollectionSwipeViewHandle, { groups: EntryGroup<StackEntry>[] }>(
-  function CollectionSwipeView({ groups }, ref) {
+export interface CollectionSwipeViewProps {
+  groups: EntryGroup<StackEntry>[];
+  /**
+   * 제목 줄 오른쪽에 나란히 얹을 보조 버튼("컬렉션 모음" 진입점 등). 예전엔 이 버튼이
+   * 제목 위에 따로 한 줄을 차지해서, 그 줄 + 제목 줄 + 개수 줄까지 세 줄이 스와이프 카드
+   * 위쪽 공간을 다 먹어 카드 뭉치가 화면 아래로 밀려났다(모바일에서 스크롤해야 스와이프
+   * 도트까지 보이는 문제, 요청사항). 제목/개수를 한 줄로 합치고 그 줄에 버튼을 같이
+   * 두면 두 줄만큼 공간이 줄어 카드 뭉치 전체가 위로 올라온다.
+   */
+  headerAction?: ReactNode;
+}
+
+export const CollectionSwipeView = forwardRef<CollectionSwipeViewHandle, CollectionSwipeViewProps>(
+  function CollectionSwipeView({ groups, headerAction }, ref) {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const rafRef = useRef<number | null>(null);
     const [activePage, setActivePage] = useState(0);
@@ -101,14 +113,21 @@ export const CollectionSwipeView = forwardRef<CollectionSwipeViewHandle, { group
         {/* 지금 보고 있는 컬렉션 이름 — 상단에 아이콘 토글이 없어졌으니(항상 스와이프가 기본 동작),
             "지금 어디를 보고 있는지"를 알려줄 곳이 여기뿐이다. key를 컬렉션마다 바꿔 매번 다시
             마운트시키면 넘길 때마다 살짝 아래에서 페이드인 — 그냥 텍스트가 뚝 바뀌는 것보다
-            지금 페이지가 바뀌었다는 걸 분명히 알 수 있다. */}
-        <div className="flex flex-col items-center gap-0.5 px-1 pb-3 text-center">
-          <p key={activeGroup?.key} className="fade-in-up-enter text-[17px] font-bold text-ink">
-            {activeGroup?.label}
-          </p>
-          <p key={`${activeGroup?.key}-count`} className="fade-in-up-enter text-xs text-ink-dim">
-            {activeGroup?.entries.length}개
-          </p>
+            지금 페이지가 바뀌었다는 걸 분명히 알 수 있다.
+            제목·개수를 한 줄로 합치고 headerAction과 같은 줄에 둔다 — 양쪽 폭을 맞춰야
+            가운데 텍스트가 실제로 가운데에 온다(버튼이 오른쪽에만 있으면 텍스트가 왼쪽으로
+            쏠려 보인다). */}
+        <div className="flex items-center gap-2 px-1 pb-2">
+          <div className="h-11 w-11 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1 text-center">
+            <p key={activeGroup?.key} className="fade-in-up-enter truncate text-[15px] font-bold text-ink">
+              {activeGroup?.label}
+              <span key={`${activeGroup?.key}-count`} className="ml-1.5 text-xs font-medium text-ink-dim">
+                {activeGroup?.entries.length}개
+              </span>
+            </p>
+          </div>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center">{headerAction}</div>
         </div>
 
         <div
@@ -146,7 +165,8 @@ export const CollectionSwipeView = forwardRef<CollectionSwipeViewHandle, { group
         <div
           role="group"
           aria-label="컬렉션 목록"
-          className="mt-3 flex flex-wrap items-center justify-center gap-1.5"
+          // 카드 뭉치에 너무 붙어 있어 내려달라는 요청 — mt-3 → mt-5.
+          className="mt-5 flex flex-wrap items-center justify-center gap-1.5"
         >
           {groups.map((group, i) => (
             <button

@@ -61,6 +61,20 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* 브라우저가 이전에 입력했던 값을 기억한 입력칸(로그인 이메일/비밀번호 등)에 강제로
+   회색/노란 배경을 입힌다 — CosmicInput의 투명한 유리 배경을 아무리 낮춰도 이 자동완성
+   스타일이 덮어써서 "입력창에 회색 표시가 뜬다"는 결과를 낳았다. box-shadow inset을
+   극단적으로 크게 줘서 그 배경을 우리 테마 색으로 바꿔치기하는 것이 표준적인 우회법이다. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  -webkit-box-shadow: 0 0 0 1000px rgba(10, 20, 40, 0.05) inset;
+  box-shadow: 0 0 0 1000px rgba(10, 20, 40, 0.05) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* 짧게 나타났다 사라지는 텍스트/배지용 범용 페이드인. 다시 마운트시킬 때(key 교체) 재생된다.
    컬렉션 스와이프 뷰의 컬렉션 이름 표시, 녹음 화면의 커서-이어녹음 안내 등에서 쓴다. */
 @keyframes fade-in-up {
@@ -113,6 +127,21 @@ body {
   }
 }
 
+/* 궤도를 도는 별이 반짝인다 — echo-orbit-travel(위치 이동)과 함께 걸려 별이 움직이면서도
+   깜빡인다. "너무 과하다"는 피드백으로 진폭을 확 줄였다 — 밝기/크기 변화 폭 모두
+   절반 이하로, 아주 은은하게만 깜빡이게 한다. */
+@keyframes echo-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
 /* prefers-reduced-motion: 배경의 모든 움직임을 멈춘다.
    컴포넌트 쪽에서도 개별적으로 끄지만, 여기서 한 번 더 막아 빠뜨린 곳이 없게 한다. */
 @media (prefers-reduced-motion: reduce) {
@@ -120,7 +149,9 @@ body {
     animation: none;
   }
   [style*='echo-orbit-travel'],
-  [style*='echo-pulse'] {
+  [style*='echo-pulse'],
+  [style*='echo-star-twinkle'],
+  [style*='echo-sheet-up'] {
     animation: none !important;
   }
 }

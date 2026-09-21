@@ -3,6 +3,7 @@ import {
   CLUSTER_CENTERS,
   CLUSTER_COLORS,
   CLUSTER_LABELS,
+  CLUSTER_ORDER,
   MAX_CLUSTER_RADIUS,
   clusterRadius,
   hashId,
@@ -51,34 +52,34 @@ describe('clusterRadius', () => {
 
 describe('starPosition', () => {
   test('같은 입력이면 항상 같은 좌표 — 새로고침해도 별이 같은 자리에 있어야 한다', () => {
-    const a = starPosition('entry-1', 'neutral', 10);
-    const b = starPosition('entry-1', 'neutral', 10);
+    const a = starPosition('entry-1', '협업', 10);
+    const b = starPosition('entry-1', '협업', 10);
     expect(a).toEqual(b);
   });
 
   test('다른 기록은 다른 자리에 놓인다', () => {
-    const a = starPosition('entry-1', 'neutral', 10);
-    const b = starPosition('entry-2', 'neutral', 10);
+    const a = starPosition('entry-1', '협업', 10);
+    const b = starPosition('entry-2', '협업', 10);
     expect(distance(a, b)).toBeGreaterThan(0);
   });
 
   test('같은 id라도 군집이 다르면 그 군집 중심 근처로 간다', () => {
-    const e = starPosition('entry-1', 'energizer', 10);
-    const d = starPosition('entry-1', 'drainer', 10);
-    expect(distance(e, CLUSTER_CENTERS.energizer)).toBeLessThanOrEqual(clusterRadius(10) + 1e-9);
-    expect(distance(d, CLUSTER_CENTERS.drainer)).toBeLessThanOrEqual(clusterRadius(10) + 1e-9);
+    const e = starPosition('entry-1', '협업', 10);
+    const d = starPosition('entry-1', '갈등', 10);
+    expect(distance(e, CLUSTER_CENTERS.협업)).toBeLessThanOrEqual(clusterRadius(10) + 1e-9);
+    expect(distance(d, CLUSTER_CENTERS.갈등)).toBeLessThanOrEqual(clusterRadius(10) + 1e-9);
   });
 
   test('어떤 id를 넣어도 군집 반경을 벗어나지 않는다', () => {
     const radius = clusterRadius(50);
     for (let i = 0; i < 200; i += 1) {
-      const pos = starPosition(`entry-${i}`, 'neutral', 50);
-      expect(distance(pos, CLUSTER_CENTERS.neutral)).toBeLessThanOrEqual(radius + 1e-9);
+      const pos = starPosition(`entry-${i}`, 'unassigned', 50);
+      expect(distance(pos, CLUSTER_CENTERS.unassigned)).toBeLessThanOrEqual(radius + 1e-9);
     }
   });
 
   test('좌표에 NaN이 없다', () => {
-    const pos = starPosition('한글-아이디-😀', 'drainer', 7);
+    const pos = starPosition('한글-아이디-😀', '갈등', 7);
     expect(Number.isFinite(pos.x)).toBe(true);
     expect(Number.isFinite(pos.y)).toBe(true);
     expect(Number.isFinite(pos.z)).toBe(true);
@@ -87,20 +88,25 @@ describe('starPosition', () => {
   test('군집이 아주 커져도 클램프된 반경 안에 머문다', () => {
     const radius = clusterRadius(100000);
     for (let i = 0; i < 50; i += 1) {
-      const pos = starPosition(`entry-${i}`, 'energizer', 100000);
-      expect(distance(pos, CLUSTER_CENTERS.energizer)).toBeLessThanOrEqual(radius + 1e-9);
+      const pos = starPosition(`entry-${i}`, '협업', 100000);
+      expect(distance(pos, CLUSTER_CENTERS.협업)).toBeLessThanOrEqual(radius + 1e-9);
     }
   });
 });
 
 describe('군집 상수', () => {
-  test('세 군집이 서로 다른 자리에 있다', () => {
-    expect(distance(CLUSTER_CENTERS.neutral, CLUSTER_CENTERS.energizer)).toBeGreaterThan(5);
-    expect(distance(CLUSTER_CENTERS.energizer, CLUSTER_CENTERS.drainer)).toBeGreaterThan(5);
+  test('일곱 군집(태그 6종 + 미분류)이 서로 다른 자리에, 넉넉한 간격으로 있다', () => {
+    for (let i = 0; i < CLUSTER_ORDER.length; i += 1) {
+      for (let j = i + 1; j < CLUSTER_ORDER.length; j += 1) {
+        const d = distance(CLUSTER_CENTERS[CLUSTER_ORDER[i]], CLUSTER_CENTERS[CLUSTER_ORDER[j]]);
+        // 군집 최대 반경(6.5)의 2배보다 가까우면 옆 군집과 겹쳐 보일 수 있다.
+        expect(d).toBeGreaterThan(MAX_CLUSTER_RADIUS * 2);
+      }
+    }
   });
 
-  test('세 군집 모두 색과 이름을 갖는다', () => {
-    for (const key of ['neutral', 'energizer', 'drainer'] as const) {
+  test('모든 군집이 색과 이름을 갖는다', () => {
+    for (const key of CLUSTER_ORDER) {
       expect(CLUSTER_COLORS[key]).toMatch(/^#[0-9A-Fa-f]{6}$/);
       expect(CLUSTER_LABELS[key].length).toBeGreaterThan(0);
     }

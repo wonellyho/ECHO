@@ -41,7 +41,9 @@ export function CosmicPage({
       <SpaceScene variant={variant} />
       <div
         className={`relative mx-auto w-full px-5 ${width === 'wide' ? 'max-w-2xl' : 'max-w-md'} ${
-          fullHeight ? 'flex h-full flex-col' : 'pt-7'
+          // fullHeight 화면은 상단 패딩이 아예 없었다 — 패턴 탭(InsightsPage, 자체 오버레이라
+          // pt-5를 직접 준다)과 맞춰 여기서도 pt-5를 준다("경험탭도 패턴탭 정도의 상단 패딩" 요청).
+          fullHeight ? 'flex h-full flex-col pt-5' : 'pt-7'
         } ${className}`}
         style={
           fullHeight

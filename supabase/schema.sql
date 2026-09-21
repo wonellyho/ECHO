@@ -80,6 +80,27 @@ create table if not exists starwl_conversions (
   created_at timestamptz not null default now()
 );
 
+-- 패턴(별자리) 탭에서 사용자가 직접 옮긴 별무리(군집) 3D 위치. 군집은 태그 6종 + 태그 없는
+-- 기록을 위한 'unassigned', 총 7개마다 최대 1행 — 옮긴 적 없으면 행이 없고, 그러면 프론트가
+-- lib/constellation/layout.ts의 기본 CLUSTER_CENTERS를 그대로 쓴다
+-- (buildGraph.ts의 applyClusterCenters 참고).
+-- 2026-09-21: 군집 기준을 에너지원/소진요인(neutral/energizer/drainer)에서 태그로 바꿨다.
+-- 기존에 저장된 neutral/energizer/drainer 행은 새 CLUSTER_CENTERS 키와 맞지 않아 조용히
+-- 무시된다(에러는 아니다) — 필요하면 `delete from cluster_positions;`로 정리해도 된다.
+-- scale: 편집 모드에서 손잡이로 조절한 별무리 크기 배율(기본 1). 기존 테이블에는
+-- `alter table cluster_positions add column if not exists scale double precision not null default 1;`
+-- 을 한 번 실행해줘야 한다.
+create table if not exists cluster_positions (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  cluster text not null check (cluster in ('협업', '갈등', '주도성', '실패', '성취', '문제해결', 'unassigned')),
+  x double precision not null,
+  y double precision not null,
+  z double precision not null,
+  scale double precision not null default 1,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, cluster)
+);
+
 -- RLS: 각 사용자는 자기 데이터만
 alter table entries enable row level security;
 alter table collections enable row level security;
@@ -87,6 +108,7 @@ alter table entries_structured enable row level security;
 alter table entry_tags enable row level security;
 alter table insights enable row level security;
 alter table starwl_conversions enable row level security;
+alter table cluster_positions enable row level security;
 
 create policy "entries_owner" on entries
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -108,3 +130,6 @@ create policy "insights_owner" on insights
 create policy "starwl_conversions_owner" on starwl_conversions
   for all using (exists (select 1 from entries e where e.id = entry_id and e.user_id = auth.uid()))
   with check (exists (select 1 from entries e where e.id = entry_id and e.user_id = auth.uid()));
+
+create policy "cluster_positions_owner" on cluster_positions
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

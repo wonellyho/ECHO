@@ -138,6 +138,9 @@ describe('toRealIndex', () => {
 describe('recenterShift', () => {
   const count = 10;
   const range = circularRange(count);
+  // 임계값은 이제 baseOffset(뒤쪽 여유)의 절반 — circularRange(10)은 half가 커서(항목이
+  // 적을수록 half가 크다) baseOffset도 크다. 아래 테스트들은 그 실제 값을 기준으로 삼는다.
+  const threshold = Math.floor(range.baseOffset / 2);
 
   it('기준점 근처에서는 움직이지 않는다', () => {
     expect(recenterShift(range.baseOffset, range, count)).toBe(0);
@@ -145,28 +148,32 @@ describe('recenterShift', () => {
   });
 
   it('멀어지면 항목 수의 배수만큼 되돌린다', () => {
-    const shift = recenterShift(range.baseOffset + count * 4, range, count);
-    expect(shift).toBe(-count * 4);
+    const farOffset = threshold + count * 2;
+    const shift = recenterShift(range.baseOffset + farOffset, range, count);
+    expect(shift).toBe(-Math.round(farOffset / count) * count);
     // 배수여야 화면에 보이는 카드가 바뀌지 않는다 (-0도 배수이므로 절댓값으로 본다).
     expect(Math.abs(shift % count)).toBe(0);
   });
 
   it('반대 방향도 대칭으로 되돌린다', () => {
-    expect(recenterShift(range.baseOffset - count * 4, range, count)).toBe(count * 4);
+    const farOffset = threshold + count * 2;
+    expect(recenterShift(range.baseOffset - farOffset, range, count)).toBe(
+      Math.round(farOffset / count) * count,
+    );
   });
 
   it('되돌려도 중앙에 있던 카드는 그대로다 — 이게 되돌리기가 보이지 않는 이유', () => {
     // 정확한 배수가 아닌 위치에서도 성립해야 한다 (기준점으로 딱 돌아오는 것과는 다른 성질).
-    for (const offset of [count * 3, count * 3 + 2, count * 7 - 1, -count * 4 + 3]) {
-      const current = range.baseOffset + offset;
+    for (const extra of [0, 2, count * 4 - 1, -3]) {
+      const current = range.baseOffset + threshold + count + extra;
       const shifted = current + recenterShift(current, range, count);
       expect(toRealIndex(shifted, count)).toBe(toRealIndex(current, count));
     }
   });
 
   it('임계값 바로 아래에서는 움직이지 않고, 도달하면 움직인다', () => {
-    const below = range.baseOffset + count * 3 - 1;
-    const at = range.baseOffset + count * 3;
+    const below = range.baseOffset + threshold - 1;
+    const at = range.baseOffset + threshold;
     expect(recenterShift(below, range, count)).toBe(0);
     expect(recenterShift(at, range, count)).not.toBe(0);
   });
@@ -174,5 +181,28 @@ describe('recenterShift', () => {
   it('순환하지 않는 스택은 되돌리지 않는다', () => {
     const single = circularRange(1);
     expect(recenterShift(999, single, 1)).toBe(0);
+  });
+
+  it('카드 수가 많아 half가 1까지 줄어도 실제 DOM 끝에 닿기 전에 되돌린다 (회귀 테스트)', () => {
+    // itemCount가 커지면 circularRange의 half가 1로 줄어(loops=3), 예전 임계값(itemCount*3)은
+    // 뒤쪽 여유(baseOffset === itemCount)보다 커서 영원히 발동하지 않았다 — 그 결과 계속 한
+    // 방향으로 스크롤하면 진짜 스크롤 끝에 닿아 카드가 제자리를 잃었다.
+    for (const itemCount of [300, 1000, 5000]) {
+      const bigRange = circularRange(itemCount);
+      expect(bigRange.loops).toBe(3); // half === 1인 구간임을 확인
+      const backwardBuffer = bigRange.baseOffset; // 뒤쪽으로 남은 전체 여유
+      // 뒤쪽 끝(가상 인덱스 0)에 닿기 전에 되돌리기가 반드시 한 번은 발동해야 한다.
+      let triggered = false;
+      for (let virtual = bigRange.baseOffset; virtual >= 0; virtual -= 1) {
+        if (recenterShift(virtual, bigRange, itemCount) !== 0) {
+          triggered = true;
+          break;
+        }
+      }
+      expect(triggered).toBe(true);
+      // 그것도 끝에 아슬아슬하게 닿아서가 아니라, 여유가 남아 있을 때 미리 발동해야 한다.
+      const distanceAtTrigger = backwardBuffer; // 위 루프의 시작점 기준 최대 탐색 범위
+      expect(distanceAtTrigger).toBeGreaterThan(0);
+    }
   });
 });

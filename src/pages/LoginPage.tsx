@@ -8,7 +8,6 @@ import { CosmicInput } from '../components/ui/CosmicInput';
 import { GradientButton, OutlineButton } from '../components/ui/CosmicButton';
 import {
   ArrowRightIcon,
-  ChevronRightIcon,
   EyeIcon,
   EyeOffIcon,
   GoogleIcon,
@@ -97,7 +96,7 @@ export function LoginPage() {
   const shell = (children: React.ReactNode) => (
     <div className="relative min-h-[100dvh] overflow-hidden">
       <SpaceScene variant="login" />
-      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-8">
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-10 pt-4">
         {children}
       </div>
     </div>
@@ -106,9 +105,11 @@ export function LoginPage() {
   if (signupPendingEmail) {
     return shell(
       <>
-        <Logo />
         <div className="flex flex-1 flex-col justify-center">
-          <GlassPanel className="p-6">
+          <div className="mb-4 flex justify-center">
+            <Logo size="lg" />
+          </div>
+          <GlassPanel tone="ghost" className="p-6">
             <p className="text-[15px] leading-relaxed text-ink">
               <span className="font-semibold">{signupPendingEmail}</span>로 확인 메일을 보냈습니다.
             </p>
@@ -126,16 +127,7 @@ export function LoginPage() {
 
   return shell(
     <>
-      <div className="flex items-start justify-between gap-3">
-        <Logo />
-        <p className="hidden shrink-0 pt-1 text-right text-[11px] leading-relaxed text-ink-muted min-[380px]:block">
-          <span className="block">오늘도</span>
-          <span className="block">조금 더</span>
-          <span className="block">나답게</span>
-        </p>
-      </div>
-
-      <h1 className="mt-9 text-[30px] font-bold leading-[1.28] tracking-tight text-ink">
+      <h1 className="mt-4 text-[30px] font-bold leading-[1.28] tracking-tight text-ink">
         경험을 기록하고,
         <br />
         <span
@@ -145,13 +137,19 @@ export function LoginPage() {
           나를 발견하다.
         </span>
       </h1>
-      <p className="mt-4 text-[13px] leading-relaxed text-ink-dim">
+      <p className="mt-2.5 text-[13px] leading-relaxed text-ink-dim">
         작은 경험이 모여
         <br />
         특별한 나를 만듭니다.
       </p>
 
-      <GlassPanel className="mt-8 p-4">
+      {/* ECHO 로고를 로그인 카드 바로 위, 가운데에 크게 둔다 — lg의 2배인 xl로 키웠다.
+          로고 위 여백을 다시 넉넉히 줬다("로고 위에 여백을 좀" 요청). */}
+      <div className="mt-7 flex justify-center">
+        <Logo size="xl" />
+      </div>
+
+      <GlassPanel tone="ghost" className="mt-2 p-4">
         {/* 로그인/회원가입 세그먼티드 컨트롤 — 활성 쪽만 그라디언트 pill */}
         <div
           className="flex rounded-full border border-hairline p-1"
@@ -246,47 +244,36 @@ export function LoginPage() {
           <div className="h-px flex-1 bg-hairline" />
         </div>
 
-        <div className="space-y-2.5">
-          <OutlineButton
+        {/* 아이콘만 남겨 심플하게 — 텍스트 라벨 없이 브랜드 아이콘만으로 충분히 알아볼 수
+            있다(요청사항). */}
+        <div className="flex justify-center gap-3">
+          <button
             type="button"
             onClick={() => handleSocialLogin('google')}
             disabled={socialLoading !== null}
-            leading={<GoogleIcon className="h-5 w-5" />}
-            trailing={<ChevronRightIcon className="h-4 w-4 text-ink-muted" />}
+            aria-label="Google로 계속하기"
+            title="Google로 계속하기"
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-hairline transition-colors hover:border-hairline-active disabled:opacity-45"
+            style={{ background: 'rgba(10, 20, 40, 0.12)' }}
           >
-            {socialLoading === 'google' ? '연결 중...' : 'Google로 계속하기'}
-          </OutlineButton>
-          <OutlineButton
+            <GoogleIcon className="h-5 w-5" />
+          </button>
+          <button
             type="button"
             onClick={() => handleSocialLogin('kakao')}
             disabled={socialLoading !== null}
-            leading={
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FEE500]">
-                <KakaoIcon className="h-3.5 w-3.5" />
-              </span>
-            }
-            trailing={<ChevronRightIcon className="h-4 w-4 text-ink-muted" />}
+            aria-label="카카오로 계속하기"
+            title="카카오로 계속하기"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FEE500] transition-opacity hover:opacity-90 disabled:opacity-45"
           >
-            {socialLoading === 'kakao' ? '연결 중...' : '카카오로 계속하기'}
-          </OutlineButton>
+            <KakaoIcon className="h-4 w-4" />
+          </button>
         </div>
 
         <p className="mt-3 text-center text-[11px] text-ink-muted">
           소셜 로그인은 설정 완료 후 사용할 수 있어요.
         </p>
       </GlassPanel>
-
-      <button
-        type="button"
-        onClick={() => switchMode(mode === 'login' ? 'signup' : 'login')}
-        className="mx-auto mt-7 flex items-center gap-1.5 text-[13px] text-ink-dim transition-colors hover:text-ink"
-      >
-        {mode === 'login' ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}
-        <span className="font-semibold text-ink underline underline-offset-4">
-          {mode === 'login' ? '회원가입' : '로그인'}
-        </span>
-        <ChevronRightIcon className="h-3.5 w-3.5" />
-      </button>
     </>,
   );
 }

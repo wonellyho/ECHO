@@ -2,17 +2,15 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { ALL_TAGS } from '../lib/tagColors';
-import { Logo } from '../components/Logo';
 import { CosmicPage } from '../components/cosmic/CosmicPage';
 import { GlassCard } from '../components/ui/GlassCard';
-import { CosmicIconButton, GradientButton, OutlineButton } from '../components/ui/CosmicButton';
+import { BackButton, GradientButton, OutlineButton } from '../components/ui/CosmicButton';
 import { CosmicTextarea } from '../components/ui/CosmicInput';
 import { TagChip } from '../components/ui/TagChip';
 import {
   AlertIcon,
   BulbIcon,
   ChartIcon,
-  ChevronLeftIcon,
   DocumentIcon,
   EditIcon,
   GearIcon,
@@ -49,22 +47,6 @@ const STARWL_FIELDS: { key: keyof StarWlConversion; label: string; accent: strin
   { key: 'learning', label: 'Learning', accent: '186, 130, 255' },
 ];
 
-/** STARWL 카드 오른쪽의 아주 작은 궤도 표식. 별 하나가 타원 궤도 위에 놓인 모양. */
-function OrbitMark({ accent }: { accent: string }) {
-  return (
-    <span aria-hidden className="relative hidden h-14 w-16 shrink-0 min-[380px]:block">
-      <span
-        className="absolute inset-0 rounded-[50%] border"
-        style={{ borderColor: `rgba(${accent}, 0.28)`, transform: 'rotate(-24deg)' }}
-      />
-      <span
-        className="absolute left-[62%] top-[30%] h-1.5 w-1.5 rounded-full"
-        style={{ background: `rgb(${accent})`, boxShadow: `0 0 10px 3px rgba(${accent}, 0.55)` }}
-      />
-    </span>
-  );
-}
-
 const TABS = [
   { key: 'structure', label: '구조화' },
   { key: 'starwl', label: 'STARWL' },
@@ -91,6 +73,7 @@ export function EntryDetailPage() {
   const [tagError, setTagError] = useState<string | null>(null);
   const [starwl, setStarwl] = useState<StarWlConversion | null>(null);
   const [starwlLoading, setStarwlLoading] = useState(false);
+  const [starwlProgress, setStarwlProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'structure' | 'starwl' | 'pattern'>('structure');
   const [relatedInsights, setRelatedInsights] = useState<RelatedInsight[]>([]);
@@ -188,7 +171,13 @@ export function EntryDetailPage() {
   async function handleStarwlConvert() {
     if (!structured || !id) return;
     setStarwlLoading(true);
+    setStarwlProgress(8);
     setError(null);
+    // 실제 진행률을 알 수 없는 단일 요청이라, 완료 전까지 서서히 채워지는 척 하다가
+    // 응답이 오면 100%로 마무리한다 ("게이지바가 나오면서 추출완료까지 동작" 요청).
+    const progressTimer = window.setInterval(() => {
+      setStarwlProgress((prev) => (prev < 90 ? prev + (90 - prev) * 0.15 : prev));
+    }, 220);
     try {
       const res = await fetch('/api/starwl', {
         method: 'POST',
@@ -204,80 +193,86 @@ export function EntryDetailPage() {
         .select()
         .single();
       if (insertError) throw insertError;
+      window.clearInterval(progressTimer);
       setStarwl(data as StarWlConversion);
+      setStarwlProgress(100);
+      // 완료 표시를 잠깐 보여준 뒤 STARWL 탭으로 자동 이동한다 (요청사항).
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+      setTab('starwl');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'STARWL 변환에 실패했습니다.');
     } finally {
+      window.clearInterval(progressTimer);
       setStarwlLoading(false);
+      setStarwlProgress(0);
     }
   }
 
   return (
     // STARWL 탭은 구조화 탭보다 조금 더 대기감 있는 하늘을 쓴다 (레퍼런스 05 vs 06).
-    <CosmicPage variant={tab === 'starwl' ? 'detail-starwl' : 'detail'} width="wide">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <CosmicIconButton type="button" onClick={() => navigate(-1)} aria-label="뒤로">
-            <ChevronLeftIcon className="h-5 w-5" />
-          </CosmicIconButton>
-          <Logo />
+    // fullHeight로 바꿔 머리말(뒤로가기·제목·원문·탭)은 화면에 고정하고, 아래 탭 내용만
+    // 그 안에서 스크롤한다 — 예전에는 페이지 전체가 늘어나 뒤로가기 버튼을 보려고
+    // 위로 다시 스크롤해야 했다(요청사항).
+    <CosmicPage variant={tab === 'starwl' ? 'detail-starwl' : 'detail'} width="wide" fullHeight>
+      <div className="shrink-0">
+        <BackButton onClick={() => navigate(-1)} />
+
+        <h1 className="mt-5 text-[27px] font-bold tracking-tight text-ink">기록 상세</h1>
+
+        {/* 원문 + 태그 — 이 화면에서 관측 대상이 되는 "하나의 별" */}
+        <GlassCard tone="strong" accent="167, 110, 255" active className="mt-5 p-4">
+          <p className="text-xs text-ink-muted">기록 원문</p>
+          <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{rawText}</p>
+          <p className="mt-4 text-xs text-ink-muted">
+            태그 <span className="text-ink-muted">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {ALL_TAGS.map((tag) => (
+              <TagChip
+                key={tag}
+                tag={tag}
+                active={tags.includes(tag)}
+                onClick={() => toggleTag(tag)}
+                disabled={tagSaving === tag}
+              />
+            ))}
+          </div>
+          {tagError && <p className="mt-2 text-xs text-echo-coral">{tagError}</p>}
+        </GlassCard>
+
+        {/* 탭 — 활성 탭 아래에만 얇은 그라디언트 밑줄 */}
+        <div className="mt-7 flex gap-1 border-b border-hairline">
+          {TABS.map((item) => {
+            const active = tab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setTab(item.key)}
+                aria-current={active ? 'true' : undefined}
+                className={`relative px-4 py-3 text-[15px] font-semibold transition-colors ${
+                  active ? 'text-ink' : 'text-ink-muted hover:text-ink-dim'
+                }`}
+              >
+                {item.label}
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-2 -bottom-px h-[2px] rounded-full"
+                    style={{ background: 'var(--echo-gradient)' }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
-        <p className="hidden shrink-0 pt-1 text-right text-[10px] leading-relaxed tracking-[0.18em] text-ink-muted min-[420px]:block">
-          <span className="block">A SMALL</span>
-          <span className="block">EXPERIENCE</span>
-          <span className="block">A BRIGHTER YOU</span>
-        </p>
       </div>
 
-      <h1 className="mt-7 text-[27px] font-bold tracking-tight text-ink">기록 상세</h1>
-
-      {/* 원문 + 태그 — 이 화면에서 관측 대상이 되는 "하나의 별" */}
-      <GlassCard tone="strong" accent="167, 110, 255" active className="mt-5 p-4">
-        <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">{rawText}</p>
-        <p className="mt-4 text-xs text-ink-muted">
-          태그 <span className="text-ink-muted">(AI가 자동으로 붙이지만 직접 고를 수도 있어요)</span>
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {ALL_TAGS.map((tag) => (
-            <TagChip
-              key={tag}
-              tag={tag}
-              active={tags.includes(tag)}
-              onClick={() => toggleTag(tag)}
-              disabled={tagSaving === tag}
-            />
-          ))}
-        </div>
-        {tagError && <p className="mt-2 text-xs text-echo-coral">{tagError}</p>}
-      </GlassCard>
-
-      {/* 탭 — 활성 탭 아래에만 얇은 그라디언트 밑줄 */}
-      <div className="mt-7 flex gap-1 border-b border-hairline">
-        {TABS.map((item) => {
-          const active = tab === item.key;
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setTab(item.key)}
-              aria-current={active ? 'true' : undefined}
-              className={`relative px-4 py-3 text-[15px] font-semibold transition-colors ${
-                active ? 'text-ink' : 'text-ink-muted hover:text-ink-dim'
-              }`}
-            >
-              {item.label}
-              {active && (
-                <span
-                  aria-hidden
-                  className="absolute inset-x-2 -bottom-px h-[2px] rounded-full"
-                  style={{ background: 'var(--echo-gradient)' }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
-
+      {/* 탭 내용 — 남은 높이 안에서만 스크롤한다. 위 머리말(뒤로가기 포함)은 항상 고정. */}
+      <div
+        className="min-h-0 flex-1 overflow-y-auto"
+        style={{ paddingBottom: 'calc(var(--bottom-nav-total) + 1.5rem)' }}
+      >
       {tab === 'structure' && (
         <div className="mt-5">
           <div className="flex items-center justify-between gap-3">
@@ -338,14 +333,31 @@ export function EntryDetailPage() {
             <p className="mt-3 text-sm text-ink-dim">구조화 결과를 불러오는 중입니다...</p>
           )}
 
-          <GradientButton
-            type="button"
-            onClick={handleStarwlConvert}
-            disabled={starwlLoading || !structured}
-            className="mt-5"
-          >
-            {starwlLoading ? '추출 중...' : starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
-          </GradientButton>
+          {starwlLoading ? (
+            <div className="mt-5">
+              <div
+                className="h-2.5 w-full overflow-hidden rounded-full border border-hairline"
+                style={{ background: 'rgba(10, 20, 40, 0.4)' }}
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-200 ease-out"
+                  style={{ width: `${Math.min(starwlProgress, 100)}%`, background: 'var(--echo-gradient)' }}
+                />
+              </div>
+              <p className="mt-2 text-center text-xs text-ink-dim">
+                {starwlProgress >= 100 ? '추출 완료! STARWL 탭으로 이동합니다...' : 'STARWL로 추출하는 중...'}
+              </p>
+            </div>
+          ) : (
+            <GradientButton
+              type="button"
+              onClick={handleStarwlConvert}
+              disabled={!structured}
+              className="mt-5"
+            >
+              {starwl ? 'STARWL로 다시 추출' : 'STARWL로 추출'}
+            </GradientButton>
+          )}
           {error && <p className="mt-2 text-sm text-echo-coral">{error}</p>}
         </div>
       )}
@@ -355,16 +367,15 @@ export function EntryDetailPage() {
           {starwl ? (
             <dl className="space-y-3">
               {STARWL_FIELDS.map(({ key, label, accent }) => (
-                <GlassCard key={key} accent={accent} className="flex items-center gap-3 p-4">
-                  <div className="min-w-0 flex-1">
-                    <dt className="text-[15px] font-semibold" style={{ color: `rgb(${accent})` }}>
-                      {label}
-                    </dt>
-                    <dd className="mt-1.5 break-words text-[14px] leading-relaxed text-ink">
-                      {starwl[key] ?? '-'}
-                    </dd>
-                  </div>
-                  <OrbitMark accent={accent} />
+                // ghost 톤 + blur 없음 — 뒤 배경이 그대로 비치게 하고(요청사항), 오른쪽의
+                // 장식용 궤도 표식은 없앴다(요청사항).
+                <GlassCard key={key} tone="ghost" blur={false} accent={accent} className="p-4">
+                  <dt className="text-[15px] font-semibold" style={{ color: `rgb(${accent})` }}>
+                    {label}
+                  </dt>
+                  <dd className="mt-1.5 break-words text-[14px] leading-relaxed text-ink">
+                    {starwl[key] ?? '-'}
+                  </dd>
                 </GlassCard>
               ))}
             </dl>
@@ -406,6 +417,7 @@ export function EntryDetailPage() {
           )}
         </div>
       )}
+      </div>
     </CosmicPage>
   );
 }

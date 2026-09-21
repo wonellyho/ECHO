@@ -39,7 +39,10 @@ export interface CardStackCarouselProps<T> {
   className?: string;
 }
 
-const DEFAULT_MAX_VISIBLE = 6;
+// 5로 줄였다 — 컬렉션 스와이프 뷰 전체(제목 줄 + 카드 뭉치 + 도트)가 내비게이션 바 위
+// 화면 안에 다 들어와야 한다는 요청 때문에, 카드 뭉치가 차지하는 세로 폭(step * maxVisible)
+// 자체를 줄인 것. 6일 때는 작은 화면에서 도트 인디케이터까지 보려면 페이지를 내려야 했다.
+const DEFAULT_MAX_VISIBLE = 5;
 // 본문 3줄은 들어가되, 컨테이너 전체 높이(step * maxVisible)가 모바일 화면 안에 넉넉히 들어오도록
 // 이전보다 낮춤 — 컨테이너가 뷰포트보다 커지면 "중앙"이 화면상 중앙과 어긋나 보이는 문제가 있었다.
 const DEFAULT_CARD_HEIGHT = 160;
@@ -237,11 +240,21 @@ export function CardStackCarousel<T>({
 
   // 제어 컴포넌트: 외부에서 activeIndex(실제 인덱스)를 바꾸면 지금 위치에서 가장 가까운
   // 같은 항목의 가상 인덱스로 스무스 스크롤한다 — 순환 중에도 최단 경로로 움직인다.
+  //
+  // 이 effect는 activeIndex 자체가 바뀔 때뿐 아니라 items.length가 바뀔 때도 다시 실행된다
+  // (필터링으로 목록이 줄어드는 경우 등). 그런데 부모(EntryCardStack 등)가 들고 있는
+  // activeIndex state는 목록이 줄어든 바로 그 렌더에서는 아직 새 길이에 맞게 갱신되지
+  // 않은 채로 내려온다 — onActiveChange가 상태를 고쳐주는 건 다음 렌더부터다. 그 사이에
+  // activeIndex가 새 items.length보다 큰 "범위 밖" 값으로 들어오면, shortestWrappedStep이
+  // to를 미리 접지 않고 그대로 빼 엄청나게 큰(때로는 itemCount의 몇 배인) 이동량을 계산해
+  // 버렸다 — 카드가 몇 바퀴씩 돌고 나서야 멈추는 버그의 원인. 넘겨받은 목표 인덱스를 항상
+  // 먼저 현재 항목 수로 접어(toRealIndex) 유효 범위 안으로 넣은 뒤에만 최단 경로를 계산한다.
   useEffect(() => {
     if (activeIndex === undefined || items.length === 0) return;
+    const target = toRealIndex(activeIndex, items.length);
     const current = lastReportedRef.current;
-    if (toRealIndex(current, items.length) === activeIndex) return;
-    const step = shortestWrappedStep(current, activeIndex, items.length);
+    if (toRealIndex(current, items.length) === target) return;
+    const step = shortestWrappedStep(current, target, items.length);
     scrollToIndex(clamp(current + step, 0, lastVirtual));
   }, [activeIndex, items.length, lastVirtual, scrollToIndex]);
 
@@ -349,7 +362,13 @@ export function CardStackCarousel<T>({
                   height: cardHeight,
                   transform: `scale(${scale})`,
                   opacity,
-                  transition: 'transform 150ms ease-out, opacity 150ms ease-out',
+                  // CSS transition을 일부러 두지 않는다. scale/opacity는 scrollTop(state)에서
+                  // 그대로 계산되므로, 손가락 드래그·네이티브 smooth 스크롤 중에는 스크롤
+                  // 자체가 매 프레임 recompute를 부르며 이미 매끄럽게 따라온다. 반대로 마운트,
+                  // 목록 변경(필터), 되돌리기(recenter)처럼 스크롤 위치를 코드로 "순간 이동"
+                  // 시키는 곳에서는 이 값도 함께 순간 이동해야 하는데, transition이 있으면
+                  // 그 순간 이동을 150ms짜리 애니메이션으로 그려버려 카드가 실제로는 안
+                  // 움직였는데도 스르륵/빙 도는 것처럼 보였다("카드가 도는 버그"의 정체).
                   pointerEvents: isActive ? undefined : 'none',
                 } satisfies CSSProperties
               }

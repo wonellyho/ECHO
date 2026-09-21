@@ -87,16 +87,26 @@ export function shortestWrappedStep(from: number, to: number, itemCount: number)
  * 기준점에서 너무 멀어졌을 때 되돌릴 거리(가상 인덱스 단위)를 구한다.
  * 항목 수의 배수만큼만 움직이므로 화면에 보이는 카드는 그대로다 — 사용자는 눈치채지 못한다.
  * 되돌릴 필요가 없으면 0.
+ *
+ * 임계값은 **항목 수의 고정 배수가 아니라 실제로 남은 여유(baseOffset)에 비례**해야 한다.
+ * 기준점(baseOffset)은 뒤쪽으로 정확히 그만큼의 여유만 갖는데, 항목이 많아지면
+ * `circularRange`의 `half`가 1까지 줄어들어 baseOffset이 itemCount와 같아진다 —
+ * 이때 예전처럼 `itemCount * 3`을 임계값으로 쓰면 뒤쪽 여유(itemCount)보다 커서 **영원히
+ * 되돌리기가 발동하지 않는다**. 그러면 되돌리기가 없는 채로 계속 한 방향으로 스크롤하다
+ * 진짜 DOM 스크롤 끝(가상 인덱스 0 또는 virtualCount-1)에 닿게 되고, 거기서는 우리 계산과
+ * 무관하게 브라우저가 스크롤을 강제로 멈춰 카드가 중앙을 벗어난 채 멈추거나 스냅 위치가
+ * 어긋나 보인다 — "카드가 많은 컬렉션에서 가끔 카드가 제자리를 못 잡는" 버그의 원인.
+ * baseOffset의 절반을 임계값으로 쓰면 항목 수가 아무리 많아 half=1로 줄어도 항상 뒤쪽
+ * 여유의 절반이 남은 채로 되돌릴 수 있다.
  */
 export function recenterShift(
   currentVirtual: number,
   { loop, baseOffset }: CircularRange,
   itemCount: number,
-  /** 기준점에서 이 배수 이상 벗어나면 되돌린다. */
-  thresholdLoops = 3,
 ): number {
   if (!loop || itemCount <= 0) return 0;
   const distance = currentVirtual - baseOffset;
-  if (Math.abs(distance) < itemCount * thresholdLoops) return 0;
+  const threshold = Math.floor(baseOffset / 2);
+  if (Math.abs(distance) < threshold) return 0;
   return -Math.round(distance / itemCount) * itemCount;
 }

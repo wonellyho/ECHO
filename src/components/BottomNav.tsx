@@ -22,7 +22,9 @@ interface NavItem {
 const ITEMS: NavItem[] = [
   { to: '/', label: '기록', Icon: MicIcon, accent: '255, 138, 76' },
   { to: '/entries', label: '내 경험', Icon: CardsIcon, matchPrefix: true, accent: '255, 160, 110' },
-  { to: '/insights', label: '패턴', Icon: PulseIcon, accent: '167, 110, 255' },
+  // "패턴탭 이름도 바꿔야 할 것 같다"는 요청 — 이제 소진/에너지 순간이 아니라 태그별
+  // 별무리를 보여주는 화면이라 '별자리'로 바꿨다.
+  { to: '/insights', label: '별자리', Icon: PulseIcon, accent: '167, 110, 255' },
   { to: '/profile', label: '내 정보', Icon: UserIcon, accent: '241, 74, 180' },
 ];
 

@@ -50,8 +50,9 @@ export function StarDetailCard({ node, detail, onClose }: StarDetailCardProps) {
         </button>
       </div>
 
+      {/* 상단바와 본문 사이가 너무 좁아 보였다는 피드백으로 간격을 넉넉히 키웠다. */}
       {node.tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-5 flex flex-wrap gap-1.5">
           {node.tags.map((tag) => (
             <TagChip key={tag} tag={tag} />
           ))}
@@ -59,30 +60,35 @@ export function StarDetailCard({ node, detail, onClose }: StarDetailCardProps) {
       )}
 
       {detail === null ? (
-        <p className="mt-3 text-sm text-ink-dim">불러오는 중...</p>
+        <p className={`text-sm text-ink-dim ${node.tags.length > 0 ? 'mt-3' : 'mt-5'}`}>불러오는 중...</p>
       ) : ready ? (
-        <dl className="mt-3 space-y-2">
+        // 각 항목을 테두리로 감싸 상황/행동/결과/감정이 서로 뚜렷하게 구분되게 하고,
+        // 라벨도 흰색(text-ink)으로 올려 눈에 잘 띄게 했다("글씨가 잘 안 보인다" 피드백).
+        <dl className={`space-y-2.5 ${node.tags.length > 0 ? 'mt-3' : 'mt-5'}`}>
           {FIELDS.filter((field) => detail[field.key]).map((field) => (
-            <div key={field.key}>
-              <dt className="text-xs text-ink-muted">{field.label}</dt>
-              <dd className="mt-0.5 text-[15px] leading-relaxed text-ink">{String(detail[field.key])}</dd>
+            <div key={field.key} className="rounded-xl border border-hairline p-3">
+              <dt className="text-xs font-semibold text-ink">{field.label}</dt>
+              <dd className="mt-1 text-[15px] leading-relaxed text-ink">{String(detail[field.key])}</dd>
             </div>
           ))}
         </dl>
       ) : (
-        <>
-          <p className="mt-3 text-[15px] leading-relaxed text-ink">{detail.rawText.slice(0, 160)}</p>
+        <div className={node.tags.length > 0 ? 'mt-3' : 'mt-5'}>
+          <p className="text-[15px] leading-relaxed text-ink">{detail.rawText.slice(0, 160)}</p>
           <p className="mt-2 text-xs text-ink-muted">아직 정리 중이에요.</p>
-        </>
+        </div>
       )}
 
-      <Link
-        to={`/entries/${node.id}`}
-        className="mt-4 inline-flex min-h-[2.75rem] items-center rounded-full px-5 text-xs font-semibold text-white"
-        style={{ background: 'var(--echo-gradient)' }}
-      >
-        자세히 보기
-      </Link>
+      {/* 우측 하단에 배치("자세히 보기 버튼은 우측하단에" 요청). */}
+      <div className="mt-4 flex justify-end">
+        <Link
+          to={`/entries/${node.entryId}`}
+          className="inline-flex min-h-[2.75rem] items-center rounded-full px-5 text-xs font-semibold text-white"
+          style={{ background: 'var(--echo-gradient)' }}
+        >
+          자세히 보기
+        </Link>
+      </div>
     </div>
   );
 }

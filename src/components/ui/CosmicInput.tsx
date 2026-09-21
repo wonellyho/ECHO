@@ -16,8 +16,10 @@ export interface CosmicInputProps extends InputHTMLAttributes<HTMLInputElement> 
 export function CosmicInput({ leading, trailing, className = '', ...props }: CosmicInputProps) {
   return (
     <div
-      className={`flex items-center gap-3 rounded-2xl border border-hairline px-4 backdrop-blur-xl transition-colors duration-200 focus-within:border-hairline-active ${className}`}
-      style={{ background: 'rgba(10, 20, 40, 0.38)' }}
+      className={`flex items-center gap-3 rounded-2xl border border-hairline px-4 transition-colors duration-200 focus-within:border-hairline-active ${className}`}
+      // blur를 sm까지 낮춰도 여전히 배경이 안 비친다는 피드백 — blur를 아예 없애고
+      // 알파도 GlassPanel ghost 톤과 맞춰 더 낮췄다(뒤 배경이 진짜로 비치게).
+      style={{ background: 'rgba(10, 20, 40, 0.05)' }}
     >
       {leading && <span className="shrink-0 text-ink-muted">{leading}</span>}
       <input

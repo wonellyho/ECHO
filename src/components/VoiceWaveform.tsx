@@ -14,14 +14,17 @@ import { bandEnergies, envelopeCoefficient, followEnvelope, type BandEnergies } 
 
 // 기준선의 세로 위치 (viewBox 0~100). 봉우리가 위로 솟을 공간을 넉넉히 남긴다.
 const LINE_Y = 62;
-// 봉우리가 선 위로 솟는 최대 높이.
-const PEAK_HEIGHT = 58;
+// 봉우리가 선 위로 솟는 최대 높이. LINE_Y(62)가 주는 headroom 안에서 최대한 키웠다
+// ("파동이 더 크게, 지금의 3배까지 움직이게" 요청 — 나머지는 BAND_GAIN이 담당한다).
+const PEAK_HEIGHT = 78;
 // 선 아래 반사의 높이 비율 — 물에 비친 것처럼 훨씬 낮고 흐리게.
 const REFLECTION_RATIO = 0.34;
 // 무음일 때도 남겨두는 아주 작은 일렁임 — 화면이 죽어 보이지 않게.
 const IDLE_DRIVE = 0.12;
 // bandEnergies()가 돌려주는 0~1 값에 곱해 평범한 말소리에서도 곡선이 크게 요동치게 만드는 게인.
-const BAND_GAIN = 1.5;
+// 예전(1.5)에는 보통 크기로 말해도 최대치 근처까지 잘 안 갔다 — 3배 가까이 올려서 같은
+// 목소리 크기에도 훨씬 크게 움직이게 했다(1.0에서 clamp되므로 조용할 때는 그대로 작다).
+const BAND_GAIN = 4.2;
 // 어택은 빠르고 릴리즈는 느리게 (60fps 한 프레임 기준값 — envelopeCoefficient로 환산해서 쓴다).
 const ATTACK = 0.22;
 const RELEASE = 0.06;

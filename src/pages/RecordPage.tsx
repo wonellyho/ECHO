@@ -8,12 +8,11 @@ import { Logo } from '../components/Logo';
 import { SpaceScene } from '../components/cosmic/SpaceScene';
 import { CosmicPage } from '../components/cosmic/CosmicPage';
 import { GlassCard, GlassPanel } from '../components/ui/GlassCard';
-import { GradientButton, OutlineButton, CosmicIconButton } from '../components/ui/CosmicButton';
+import { GradientButton, OutlineButton, CosmicIconButton, BackButton } from '../components/ui/CosmicButton';
 import { CosmicTextarea } from '../components/ui/CosmicInput';
 import { RecordOrb } from '../components/record/RecordOrb';
 import {
   CheckIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   KeyboardIcon,
   MicIcon,
@@ -125,6 +124,29 @@ export function RecordPage() {
   const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [collectionChoice, setCollectionChoice] = useState('');
   const [newCollectionName, setNewCollectionName] = useState('');
+  // 네이티브 <select>는 모바일에서 여는 순간 OS 피커가 화면 기준을 넘어가 버렸다
+  // ("컬렉션 토글을 열면 휴대폰 화면 기준 넘어가" 요청) — 직접 그린 드롭다운으로 바꿔
+  // 카드 너비 안에서만 아래로 펼쳐지게 한다.
+  const [collectionDropdownOpen, setCollectionDropdownOpen] = useState(false);
+  const collectionDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!collectionDropdownOpen) return;
+    function handlePointerDown(e: PointerEvent) {
+      if (!collectionDropdownRef.current?.contains(e.target as Node)) {
+        setCollectionDropdownOpen(false);
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [collectionDropdownOpen]);
+
+  // "기록 저장하기" 버튼을 nav바 바로 위에 고정한다 — 예전엔 본문 맨 아래에 있어
+  // 화면이 길어지면(컬렉션 목록이 늘어나는 등) 스크롤해야 보였다(요청사항). 버튼 바(구조화
+  // 재시도 상태에서는 버튼이 두 개)의 실제 높이만큼 본문 아래 여백을 더 줘야 마지막
+  // 카드가 바에 가리지 않는다.
+  const [saveBarHeight, setSaveBarHeight] = useState(0);
+  const saveBarRef = useRef<HTMLDivElement | null>(null);
   // 카드 색상 — 5색 팔레트 중 하나를 저장 시점에 직접 고른다 (design.md 참고). 안 골라도
   // 저장은 되게 첫 번째 색을 기본 선택값으로 둔다.
   const [cardColor, setCardColor] = useState<CardColorKey>(CARD_COLOR_KEYS[0]);
@@ -133,6 +155,18 @@ export function RecordPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [structureFailed, setStructureFailed] = useState(false);
+
+  useEffect(() => {
+    const el = saveBarRef.current;
+    if (!el) {
+      setSaveBarHeight(0);
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) => setSaveBarHeight(entry.contentRect.height));
+    observer.observe(el);
+    setSaveBarHeight(el.getBoundingClientRect().height);
+    return () => observer.disconnect();
+  }, [step, structureFailed]);
 
   // 저장 단계(entries insert)까지는 성공했지만 구조화가 실패한 경우, 재시도를 위해 기록해둔다.
   const savedEntryIdRef = useRef<string | null>(null);
@@ -465,18 +499,21 @@ export function RecordPage() {
 
   if (step === 'choice') {
     return (
-      <CosmicPage variant="record-home" className="flex min-h-[100dvh] flex-col">
-        <div className="flex items-start justify-between gap-3">
-          <Logo />
-          <p className="hidden shrink-0 pt-1 text-right text-[11px] leading-relaxed text-ink-muted min-[380px]:block">
-            <span className="block">작은</span>
-            <span className="block">경험이 모여</span>
-            <span className="block">특별한 나를 만듭니다.</span>
-          </p>
+      // fullHeight로 바꿨다 — 예전엔 min-h-[100dvh]라 내용이 조금만 길어져도(닉네임 줄 추가 등)
+      // 페이지 자체가 스크롤됐다("한 화면에서 스크롤되면 안 된다"는 요청). fullHeight는 높이를
+      // 정확히 화면(내비게이션 제외)에 맞추고 넘치는 부분은 스크롤 대신 안에서 잘리게 한다 —
+      // 배경 사진의 지구도 이제 이 고정된 화면 안에서만 그려지므로 항상 화면 아래쪽에 보인다
+      // (예전엔 배경이 스크롤 가능한 전체 높이만큼 늘어나 지구가 화면 밖 아래로 밀려났었다).
+      <CosmicPage variant="record-home" fullHeight>
+        <div className="shrink-0">
+          <Logo size="lg" />
         </div>
 
-        {/* 닉네임을 설정했으면 이름을 윗줄에 따로 두어 인사처럼 읽히게 한다. */}
-        <h1 className="mt-9 text-[30px] font-bold leading-[1.25] tracking-tight text-ink">
+        {/* 로고 이미지 여백을 줄여서 로고 자체의 시각적 아래 공백이 줄었고, 로고도 커졌다 —
+            원래 간격(mt-6)을 그대로 두면 로고와 제목 사이가 예전보다 더 벌어져 보여서 좁혔다
+            ("여백이 준 만큼 멘트도 위로" 요청). 닉네임을 설정했으면 이름을 윗줄에 따로 두어
+            인사처럼 읽히게 한다. */}
+        <h1 className="mt-3 shrink-0 text-[28px] font-bold leading-[1.25] tracking-tight text-ink">
           {nickname && <span className="block text-lg font-semibold text-ink-dim">{nickname}님</span>}
           <span
             className="mt-1 block bg-clip-text text-transparent"
@@ -486,29 +523,32 @@ export function RecordPage() {
           </span>
           남겨보세요
         </h1>
-        <p className="mt-4 text-[13px] leading-relaxed text-ink-dim">
-          말하거나 적으면 AI가 구조화해
+        <p className="mt-3 shrink-0 text-[13px] leading-relaxed text-ink-dim">
+          오늘의 경험을 기록하면 AI가 생각과 감정을 구조화해
           <br />
-          소중한 내 경험으로 정리해드립니다.
+          나만의 인사이트로 정리합니다.
         </p>
 
-        <div className="mt-7 flex flex-col gap-3">
+        <div className="mt-5 flex shrink-0 flex-col gap-2.5">
           <button
             type="button"
             onClick={goToVoice}
             disabled={!speech.isSupported}
             className="text-left disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <GlassCard accent="255, 138, 76" className="flex items-center gap-4 px-4 py-4">
+            {/* "카드도 투명하게, blur 없이" 요청 — ghost 톤 + blur={false}로 거의 순수한
+                테두리만 남기고 뒤 배경이 그대로 비치게 한다. */}
+            <GlassCard tone="ghost" blur={false} accent="255, 138, 76" className="flex items-center gap-4 px-4 py-4">
               <span
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
                 style={{
                   // 레퍼런스의 아이콘 오브 — 왼쪽 위에서 빛을 받는 주황이 코럴을 지나
-                  // 마젠타·자주로 떨어진다. 반투명이라 뒤의 우주가 살짝 비친다.
+                  // 마젠타·자주로 떨어진다. 뒤가 너무 비치면 비활성 버튼처럼 읽힌다는
+                  // 피드백으로 알파를 다시 올렸다(RecordOrb와 같은 조정).
                   background:
-                    'radial-gradient(circle at 32% 26%, rgba(255,196,140,0.95) 0%, rgba(255,126,96,0.9) 34%, rgba(232,74,142,0.85) 66%, rgba(126,46,132,0.78) 100%)',
+                    'radial-gradient(circle at 32% 26%, rgba(255,200,148,0.86) 0%, rgba(255,130,100,0.82) 34%, rgba(232,78,146,0.78) 66%, rgba(126,50,136,0.72) 100%)',
                   boxShadow:
-                    '0 0 0 1px rgba(255,190,160,0.35), 0 0 26px -4px rgba(255,110,140,0.75)',
+                    '0 0 0 1px rgba(255,190,160,0.32), 0 0 26px -4px rgba(255,110,140,0.55)',
                 }}
               >
                 <MicIcon className="h-6 w-6 text-white" />
@@ -524,14 +564,15 @@ export function RecordPage() {
           </button>
 
           <button type="button" onClick={goToTyping} className="text-left">
-            <GlassCard accent="104, 167, 255" className="flex items-center gap-4 px-4 py-4">
+            <GlassCard tone="ghost" blur={false} accent="104, 167, 255" className="flex items-center gap-4 px-4 py-4">
               <span
                 className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
                 style={{
+                  // 마찬가지로 알파를 낮춰 투명도를 살렸다.
                   background:
-                    'radial-gradient(circle at 32% 26%, rgba(186,214,255,0.95) 0%, rgba(112,146,230,0.88) 38%, rgba(74,78,178,0.82) 70%, rgba(44,44,110,0.75) 100%)',
+                    'radial-gradient(circle at 32% 26%, rgba(186,214,255,0.5) 0%, rgba(112,146,230,0.46) 38%, rgba(74,78,178,0.42) 70%, rgba(44,44,110,0.36) 100%)',
                   boxShadow:
-                    '0 0 0 1px rgba(170,200,255,0.3), 0 0 26px -6px rgba(120,150,255,0.7)',
+                    '0 0 0 1px rgba(170,200,255,0.24), 0 0 26px -6px rgba(120,150,255,0.45)',
                 }}
               >
                 <TypingIcon className="h-6 w-6 text-white" />
@@ -546,28 +587,24 @@ export function RecordPage() {
         </div>
 
         {!speech.isSupported && (
-          <p className="mt-4 rounded-2xl border border-hairline p-3 text-xs leading-relaxed text-ink-dim">
+          <p className="mt-3 shrink-0 rounded-2xl border border-hairline p-3 text-xs leading-relaxed text-ink-dim">
             이 브라우저에서는 음성 입력을 쓸 수 없습니다. 타이핑으로 기록해주세요.
           </p>
         )}
 
-        {/* 오브는 배경 사진의 지구 지평선 **위에** 떠 있어야 한다 — 화면 맨 아래에 두면
-            지구에 파묻힌다. mt-auto로 아래로 민 뒤 다시 끌어올린다. */}
-        <div className="mt-auto flex flex-col items-center pt-12" style={{ marginBottom: '13vh' }}>
-          <div className="flex w-full items-center gap-3">
-            <span className="h-px flex-1 bg-hairline" />
-            <p className="text-[11px] tracking-wide text-ink-dim">눌러서 바로 녹음 시작</p>
-            <span className="h-px flex-1 bg-hairline" />
-          </div>
-          <div className="mt-9">
-            <RecordOrb
-              size="clamp(112px, 34vw, 148px)"
-              icon={<MicIcon className="h-9 w-9 text-white" />}
-              onClick={goToVoice}
-              disabled={!speech.isSupported}
-              aria-label="음성으로 기록 시작"
-            />
-          </div>
+        {/* 오브는 배경 사진의 지구 지평선 위에 떠 있어야 하지만, "타이핑으로 기록 카드와
+            nav바 사이 한가운데로 올려 달라"는 요청으로 바닥에 붙이는 대신(mt-auto만 쓰면
+            남은 공간의 맨 아래로 붙는다) 이 블록이 flex-1로 남은 공간 전체를 차지하고 그
+            안에서 justify-center로 세로 가운데에 놓는다. min-h-0가 있어야 부모(h-full
+            flex-col)의 남은 공간 안에서 이 블록이 실제로 줄어들 수 있다. */}
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+          <RecordOrb
+            size="clamp(100px, 26vh, 148px)"
+            icon={<MicIcon className="h-9 w-9 text-white" />}
+            onClick={goToVoice}
+            disabled={!speech.isSupported}
+            aria-label="음성으로 기록 시작"
+          />
         </div>
       </CosmicPage>
     );
@@ -587,9 +624,7 @@ export function RecordPage() {
         {/* 시각화는 배경 레이어이고 조작 요소는 전부 그 위에 얹는다. */}
         <div className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-2 pt-5">
           <div className="flex items-center justify-between">
-            <CosmicIconButton type="button" onClick={requestReturnToChoice} aria-label="뒤로">
-              <ChevronLeftIcon className="h-5 w-5" />
-            </CosmicIconButton>
+            <BackButton onClick={requestReturnToChoice} />
             <CosmicIconButton type="button" onClick={switchVoiceToTyping} aria-label="타이핑으로 전환">
               <KeyboardIcon className="h-4 w-4" />
             </CosmicIconButton>
@@ -610,7 +645,7 @@ export function RecordPage() {
           {/* 파형은 대본 위에 놓는다 — 흐름 안에 두어야 대본이 항상 그 아래로 간다. */}
           <VoiceWaveform
             analyserRef={mic.analyserRef}
-            className="pointer-events-none mt-5 h-24 w-full shrink-0"
+            className="pointer-events-none mt-5 h-32 w-full shrink-0"
           />
 
           {/* 녹음 중에는 실시간 표시(읽기 전용), 멈추면 그 자리에서 바로 고칠 수 있는 입력이 된다.
@@ -684,10 +719,13 @@ export function RecordPage() {
             </CosmicIconButton>
 
             {voiceDone ? (
+              // 완료(체크) 버튼을 누르고 나면 다음 동작이 "글로 옮겨 확인·수정"이라, 가운데
+              // 버튼도 체크 대신 쓰기 아이콘으로 바뀌어 그 다음 단계를 몸짓으로 보여준다
+              // (요청사항).
               <RecordOrb
                 size="clamp(104px, 30vw, 132px)"
                 state="processing"
-                icon={<CheckIcon className="h-9 w-9" />}
+                icon={<TypingIcon className="h-9 w-9 text-white" />}
                 onClick={goToDetailsFromVoice}
                 disabled={!canSubmitRecord(speech.transcript)}
                 aria-label="저장 화면으로"
@@ -740,9 +778,7 @@ export function RecordPage() {
     return (
       <CosmicPage variant="recording">
         <div className="flex items-start justify-between gap-3">
-          <CosmicIconButton type="button" onClick={requestReturnToChoice} aria-label="뒤로">
-            <ChevronLeftIcon className="h-5 w-5" />
-          </CosmicIconButton>
+          <BackButton onClick={requestReturnToChoice} />
           {speech.isSupported && (
             <button
               type="button"
@@ -796,7 +832,7 @@ export function RecordPage() {
 
   // step === 'details'
   return (
-    <CosmicPage variant="recording">
+    <CosmicPage variant="recording" bottomExtra={saveBarHeight}>
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
@@ -862,20 +898,79 @@ export function RecordPage() {
             만든 컬렉션이 없습니다.
           </p>
         ) : null}
-        <select
-          value={collectionChoice}
-          onChange={(e) => setCollectionChoice(e.target.value)}
-          disabled={saving}
-          className="mt-2 min-h-[3rem] w-full rounded-2xl border border-hairline bg-[rgba(10,20,40,0.38)] px-4 text-[15px] text-ink backdrop-blur-xl focus:border-hairline-active focus:outline-none disabled:opacity-50"
-        >
-          <option value="">컬렉션 없음</option>
-          {collections.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-          <option value={NEW_COLLECTION_VALUE}>+ 새 컬렉션 만들기</option>
-        </select>
+        <div ref={collectionDropdownRef} className="relative mt-2">
+          <button
+            type="button"
+            onClick={() => setCollectionDropdownOpen((prev) => !prev)}
+            disabled={saving}
+            aria-expanded={collectionDropdownOpen}
+            className="flex min-h-[3rem] w-full items-center justify-between gap-3 rounded-2xl border border-hairline bg-[rgba(10,20,40,0.38)] px-4 text-[15px] text-ink backdrop-blur-xl transition-colors focus:border-hairline-active focus:outline-none disabled:opacity-50"
+          >
+            <span className={`truncate ${collectionChoice ? 'text-ink' : 'text-ink-muted'}`}>
+              {collectionChoice === NEW_COLLECTION_VALUE
+                ? '+ 새 컬렉션 만들기'
+                : (collections.find((c) => c.id === collectionChoice)?.name ?? '컬렉션 없음')}
+            </span>
+            <ChevronRightIcon
+              className={`h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200 ${
+                collectionDropdownOpen ? '-rotate-90' : 'rotate-90'
+              }`}
+            />
+          </button>
+
+          {/* 네이티브 select의 OS 피커 대신 카드 너비 그대로 아래로 펼쳐지는 목록 —
+              grid-template-rows를 0fr↔1fr로 트랜지션해 높이를 몰라도 부드럽게
+              펼쳐지고 접힌다("세련되게 아래로 펼쳐지는 애니메이션" 요청). */}
+          <div
+            className={`grid transition-[grid-template-rows,opacity] duration-250 ease-out ${
+              collectionDropdownOpen ? 'mt-2 grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+            }`}
+          >
+            <div className="min-h-0 overflow-hidden rounded-2xl border border-hairline bg-[rgba(8,15,33,0.92)] backdrop-blur-xl">
+              <div className="max-h-56 overflow-y-auto p-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCollectionChoice('');
+                    setCollectionDropdownOpen(false);
+                  }}
+                  className={`flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-[rgba(130,160,220,0.14)] ${
+                    collectionChoice === '' ? 'text-ink' : 'text-ink-dim'
+                  }`}
+                >
+                  컬렉션 없음
+                </button>
+                {collections.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      setCollectionChoice(c.id);
+                      setCollectionDropdownOpen(false);
+                    }}
+                    className={`flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-[rgba(130,160,220,0.14)] ${
+                      collectionChoice === c.id ? 'text-ink' : 'text-ink-dim'
+                    }`}
+                  >
+                    <span className="truncate">{c.name}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCollectionChoice(NEW_COLLECTION_VALUE);
+                    setCollectionDropdownOpen(false);
+                  }}
+                  className={`flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-[rgba(130,160,220,0.14)] ${
+                    collectionChoice === NEW_COLLECTION_VALUE ? 'text-ink' : 'text-ink-dim'
+                  }`}
+                >
+                  + 새 컬렉션 만들기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         {collectionChoice === NEW_COLLECTION_VALUE && (
           <input
             type="text"
@@ -898,27 +993,6 @@ export function RecordPage() {
         </GlassCard>
       )}
 
-      {structureFailed ? (
-        <div className="mt-5 flex flex-col gap-2.5">
-          <GradientButton type="button" onClick={handleRetryStructuring} disabled={saving}>
-            {saving ? '다시 시도 중...' : '다시 시도'}
-          </GradientButton>
-          <OutlineButton type="button" onClick={handleSkipStructuring}>
-            구조화 없이 저장만 하고 나가기
-          </OutlineButton>
-        </div>
-      ) : (
-        <GradientButton
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !canSubmitRecord(content)}
-          trailing={<ChevronRightIcon className="h-4 w-4" />}
-          className="mt-5"
-        >
-          {saving ? '저장 중...' : '기록 저장하기'}
-        </GradientButton>
-      )}
-
       {confirmLeave && (
         <LeaveConfirmDialog
           alreadySaved={savedEntryIdRef.current !== null}
@@ -926,6 +1000,42 @@ export function RecordPage() {
           onConfirm={returnToChoice}
         />
       )}
+
+      {/* "기록 저장하기" 버튼을 nav바 바로 위에 고정한다 — 컬렉션 목록이 늘어나는 등
+          화면이 길어져도 항상 손 닿는 곳에 있어야 한다는 요청. 배경은 검게 막지 않고
+          BottomNav와 같은 알파(0.4)+blur로 맞춰 우주 배경이 nav바까지 이어서 비치게 한다
+          ("저장하기 버튼 뒤 검은 배경 없애고 nav바 포함해서 항상 배경이 있어야" 요청). */}
+      <div
+        className="fixed inset-x-0 bottom-[var(--bottom-nav-total)] z-30 border-t border-hairline backdrop-blur-2xl"
+        style={{
+          background: 'rgba(8, 15, 33, 0.4)',
+          borderTopLeftRadius: '1.25rem',
+          borderTopRightRadius: '1.25rem',
+          animation: 'echo-sheet-up 280ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+        }}
+      >
+        <div ref={saveBarRef} className="mx-auto w-full max-w-md p-3.5">
+          {structureFailed ? (
+            <div className="flex flex-col gap-2.5">
+              <GradientButton type="button" onClick={handleRetryStructuring} disabled={saving}>
+                {saving ? '다시 시도 중...' : '다시 시도'}
+              </GradientButton>
+              <OutlineButton type="button" onClick={handleSkipStructuring}>
+                구조화 없이 저장만 하고 나가기
+              </OutlineButton>
+            </div>
+          ) : (
+            <GradientButton
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !canSubmitRecord(content)}
+              trailing={<ChevronRightIcon className="h-4 w-4" />}
+            >
+              {saving ? '저장 중...' : '기록 저장하기'}
+            </GradientButton>
+          )}
+        </div>
+      </div>
     </CosmicPage>
   );
 }
