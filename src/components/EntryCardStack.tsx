@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { CardStackCarousel, type CardStackCarouselMeta } from './CardStackCarousel';
 import { CARD_COLOR_HEX, DEFAULT_CARD_COLOR } from '../lib/tagColors';
 import { pagerDots } from '../lib/pagerDots';
+import { ROUTES } from '../lib/routes';
 import type { CardColorKey, ExperienceTag } from '../types';
 
 export interface StackEntry {
@@ -56,7 +57,7 @@ export function EntryCardStack({ entries }: { entries: StackEntry[] }) {
         onActiveChange={setActiveIndex}
         renderItem={(entry, { isActive }: CardStackCarouselMeta) => (
           <Link
-            to={`/entries/${entry.id}`}
+            to={ROUTES.entry(entry.id)}
             onClick={(e) => {
               // active 카드가 아닐 때의 첫 탭은 CardStackCarousel이 캡처 단계에서 막아 "중앙으로
               // 이동"만 시키므로, 여기 도달했다는 건 이미 active 상태에서 눌렀다는 뜻 — 정상적으로

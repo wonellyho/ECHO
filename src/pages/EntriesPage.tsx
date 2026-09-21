@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { filterEntries } from '../lib/entryFilter';
 import { groupEntries, UNASSIGNED_KEY } from '../lib/entryGrouping';
 import { ALL_TAGS } from '../lib/tagColors';
+import { ROUTES } from '../lib/routes';
 import { CollectionSwipeView, type CollectionSwipeViewHandle } from '../components/CollectionSwipeView';
 import {
   CheckIcon,
@@ -372,7 +373,7 @@ export function EntriesPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     setOpenCardMenuId(null);
-                    navigate(`/entries/${entry.id}`);
+                    navigate(ROUTES.entry(entry.id));
                   }}
                   className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-ink-dim transition-colors hover:bg-[rgba(130,160,220,0.14)] hover:text-ink"
                 >
@@ -399,7 +400,7 @@ export function EntriesPage() {
     }
 
     return (
-      <Link key={entry.id} to={`/entries/${entry.id}`}>
+      <Link key={entry.id} to={ROUTES.entry(entry.id)}>
         <GlassCard className="h-44 overflow-hidden">{cardBody}</GlassCard>
       </Link>
     );

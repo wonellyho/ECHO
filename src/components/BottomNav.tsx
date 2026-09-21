@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { ROUTES } from '../lib/routes';
 import { CardsIcon, MicIcon, PulseIcon, UserIcon } from './icons';
 
 // 하단 네비게이션 — 화면 가장자리에 붙은 막대가 아니라 **떠 있는 유리 dock**이다 (레퍼런스 전체).
@@ -20,12 +21,12 @@ interface NavItem {
 }
 
 const ITEMS: NavItem[] = [
-  { to: '/', label: '기록', Icon: MicIcon, accent: '255, 138, 76' },
-  { to: '/entries', label: '내 경험', Icon: CardsIcon, matchPrefix: true, accent: '255, 160, 110' },
+  { to: ROUTES.app, label: '기록', Icon: MicIcon, accent: '255, 138, 76' },
+  { to: ROUTES.entries, label: '내 경험', Icon: CardsIcon, matchPrefix: true, accent: '255, 160, 110' },
   // "패턴탭 이름도 바꿔야 할 것 같다"는 요청 — 이제 소진/에너지 순간이 아니라 태그별
   // 별무리를 보여주는 화면이라 '별자리'로 바꿨다.
-  { to: '/insights', label: '별자리', Icon: PulseIcon, accent: '167, 110, 255' },
-  { to: '/profile', label: '내 정보', Icon: UserIcon, accent: '241, 74, 180' },
+  { to: ROUTES.insights, label: '별자리', Icon: PulseIcon, accent: '167, 110, 255' },
+  { to: ROUTES.profile, label: '내 정보', Icon: UserIcon, accent: '241, 74, 180' },
 ];
 
 export function BottomNav() {
@@ -54,7 +55,7 @@ export function BottomNav() {
           const active = isActive(item);
           return (
             <li key={item.to} className="flex-1">
-              {/* 기록 탭은 Link를 유지해야 한다 — 이미 "/"에 있을 때 같은 경로로의 이동이
+              {/* 기록 탭은 Link를 유지해야 한다 — 이미 "/app"에 있을 때 같은 경로로의 이동이
                   replace로 처리되며 새 location.key를 발급하고, RecordPage가 그걸
                   "첫 화면으로 돌아가라" 신호로 쓴다. */}
               <Link

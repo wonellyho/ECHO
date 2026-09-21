@@ -1,7 +1,9 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { postJson } from '../lib/apiClient';
 import { ALL_TAGS } from '../lib/tagColors';
+import { ROUTES } from '../lib/routes';
 import { CosmicPage } from '../components/cosmic/CosmicPage';
 import { GlassCard } from '../components/ui/GlassCard';
 import { BackButton, GradientButton, OutlineButton } from '../components/ui/CosmicButton';
@@ -179,13 +181,8 @@ export function EntryDetailPage() {
       setStarwlProgress((prev) => (prev < 90 ? prev + (90 - prev) * 0.15 : prev));
     }, 220);
     try {
-      const res = await fetch('/api/starwl', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(structured),
-      });
-      if (!res.ok) throw new Error('STARWL 변환에 실패했습니다.');
-      const result = await res.json();
+      // postJson이 로그인 토큰을 실어 보낸다 (src/lib/apiClient.ts 참고).
+      const result = await postJson<Record<string, unknown>>('/api/starwl', structured);
 
       const { data, error: insertError } = await supabase
         .from('starwl_conversions')
@@ -392,7 +389,7 @@ export function EntryDetailPage() {
               <p className="text-sm leading-relaxed text-ink-dim">
                 이 기록과 관련된 패턴이 아직 없어요.
               </p>
-              <Link to="/insights">
+              <Link to={ROUTES.insights}>
                 <OutlineButton type="button" className="mt-3">
                   전체 패턴 분석 보러가기
                 </OutlineButton>

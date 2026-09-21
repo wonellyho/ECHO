@@ -75,6 +75,23 @@ input:-webkit-autofill:focus {
   transition: background-color 9999s ease-in-out 0s;
 }
 
+/* 랜딩의 헤더 메뉴와 "구독 요금 확인하기" 버튼은 같은 페이지 안의 섹션으로 내려가는
+   앵커다. 뚝 끊기며 점프하면 어디로 왔는지 알기 어려워서 부드럽게 굴린다.
+   (prefers-reduced-motion은 아래 미디어쿼리에서 다시 auto로 되돌린다.) */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 가로 스크롤 캐러셀(랜딩의 앱 화면 쇼케이스)에서 스크롤바를 감춘다. 스냅으로 넘기는
+   UI라 스크롤바가 보이면 카드 아래에 회색 막대가 하나 더 생긴 것처럼 보인다. */
+.echo-hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.echo-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* 짧게 나타났다 사라지는 텍스트/배지용 범용 페이드인. 다시 마운트시킬 때(key 교체) 재생된다.
    컬렉션 스와이프 뷰의 컬렉션 이름 표시, 녹음 화면의 커서-이어녹음 안내 등에서 쓴다. */
 @keyframes fade-in-up {
@@ -145,6 +162,9 @@ input:-webkit-autofill:focus {
 /* prefers-reduced-motion: 배경의 모든 움직임을 멈춘다.
    컴포넌트 쪽에서도 개별적으로 끄지만, 여기서 한 번 더 막아 빠뜨린 곳이 없게 한다. */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .fade-in-up-enter {
     animation: none;
   }

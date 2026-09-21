@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { ROUTES } from '../lib/routes';
 import { signInWithProvider, type SocialProvider } from '../lib/oauthProviders';
 import { Logo } from '../components/Logo';
 import { SpaceScene } from '../components/cosmic/SpaceScene';
@@ -18,8 +20,13 @@ import {
 
 type Mode = 'login' | 'signup';
 
-export function LoginPage() {
-  const [mode, setMode] = useState<Mode>('login');
+export interface LoginPageProps {
+  /** /login이면 'login', /signup이면 'signup'으로 들어온다. */
+  initialMode?: Mode;
+}
+
+export function LoginPage({ initialMode = 'login' }: LoginPageProps) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -107,7 +114,9 @@ export function LoginPage() {
       <>
         <div className="flex flex-1 flex-col justify-center">
           <div className="mb-4 flex justify-center">
-            <Logo size="lg" />
+            <Link to={ROUTES.landing} aria-label="ECHO 소개로 돌아가기">
+              <Logo size="lg" />
+            </Link>
           </div>
           <GlassPanel tone="ghost" className="p-6">
             <p className="text-[15px] leading-relaxed text-ink">
@@ -146,7 +155,10 @@ export function LoginPage() {
       {/* ECHO 로고를 로그인 카드 바로 위, 가운데에 크게 둔다 — lg의 2배인 xl로 키웠다.
           로고 위 여백을 다시 넉넉히 줬다("로고 위에 여백을 좀" 요청). */}
       <div className="mt-7 flex justify-center">
-        <Logo size="xl" />
+        {/* 랜딩에서 들어온 사용자가 서비스 소개로 되돌아갈 수 있는 유일한 출구다. */}
+        <Link to={ROUTES.landing} aria-label="ECHO 소개로 돌아가기">
+          <Logo size="xl" />
+        </Link>
       </div>
 
       <GlassPanel tone="ghost" className="mt-2 p-4">
